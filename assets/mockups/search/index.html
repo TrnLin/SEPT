@@ -369,8 +369,10 @@
   .list-end { display: flex; justify-content: space-between; gap: 16px; padding: 22px 0; font: 500 12.5px/1.5 var(--mono); color: var(--theme-muted); }
 
   /* ── Map view ─────────────────────────────────────── */
-  .mapview { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 0; }
-  .mlist { margin: 0; padding: 0; list-style: none; border-right: 1px solid var(--theme-line); }
+  /* One fixed-height panel that fits the screen: the map stays put and only the short list scrolls. */
+  .mapview { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 0; height: clamp(480px, calc(100vh - var(--nav-h) - 64px), 760px); }
+  .mlist { margin: 0; padding: 0; list-style: none; border-right: 1px solid var(--theme-line); overflow-y: auto; overscroll-behavior: contain;
+           scrollbar-width: thin; scrollbar-color: var(--theme-line) transparent; }
   .mrow { display: grid; grid-template-columns: 82px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 14px 18px 14px 0;
           border-bottom: 1px solid var(--theme-line); cursor: pointer; transition: background .2s, padding .3s var(--ease-out); }
   .mrow .tile { aspect-ratio: 4 / 3; }
@@ -382,7 +384,7 @@
   .mrow .mprice small { font: 500 11px/1 var(--mono); }
   .mrow:hover, .mrow.on { background: var(--pick-tint); padding-left: 12px; }
   .mrow.on .tile { --cut: var(--theme-bg); background: var(--theme-bg); }
-  .map { position: sticky; top: calc(var(--nav-h) + 20px); height: calc(100vh - var(--nav-h) - 40px); min-height: 520px; margin-left: 20px;
+  .map { position: relative; height: 100%; min-height: 0; margin-left: 20px;
          overflow: hidden; background: var(--theme-fill); }
   .map > svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
   .m-land { fill: var(--theme-fill); }
@@ -489,9 +491,9 @@
     .mapview { grid-template-columns: 300px minmax(0, 1fr); }
   }
   @media (max-width: 1100px) {
-    .mapview { grid-template-columns: 1fr; }
+    .mapview { grid-template-columns: 1fr; height: auto; }
     .mlist { display: none; }
-    .map { margin-left: 0; margin-top: 20px; }
+    .map { height: min(70vh, 640px); min-height: 440px; margin-left: 0; margin-top: 20px; }
     .trip { display: none; }
   }
   /* Tablets and phones: the filters move into a bottom sheet. */
@@ -1349,6 +1351,8 @@ document.addEventListener('click', e => {
   if (soon) { e.preventDefault(); toast(`Prototype: the ${soon.dataset.soon} page comes later`); }
   const pick = e.target.closest('[data-pick], [data-pin]');
   if (pick) { state.picked = pick.dataset.pick || pick.dataset.pin; render();
+    const ml = $('mlist'), row = ml.querySelector('.mrow.on');
+    if (row && pick.dataset.pin) ml.scrollTo({ top: row.offsetTop - ml.offsetTop - (ml.clientHeight - row.offsetHeight) / 2, behavior: motion ? 'smooth' : 'auto' });
     if (motion) gsap.from('#mapCard', { y: 14, opacity: 0, duration: .35, ease: 'power2.out' }); }
 });
 document.addEventListener('change', e => {
