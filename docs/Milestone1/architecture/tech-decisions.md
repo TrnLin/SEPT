@@ -4,8 +4,8 @@ The rubric asks for the reason behind every choice. Fill in "Why" and "Alternati
 
 | Component | Technology | Why we chose it | Alternatives considered |
 |---|---|---|---|
-| Language | Java 21 (same version for everyone) | | |
-| Web framework | Spring Boot | | |
+| Language | Java 21 (same version for everyone) | Because the Assignment said so | Typescript everyday|
+| Web framework | Spring Boot | We have no other choice else we get annihilate| |
 | Build | Maven | | |
 | Frontend | HTML/CSS/JavaScript or React (pick one) | | |
 | Database | H2 (dev/test) or MySQL (pick one) | | |
