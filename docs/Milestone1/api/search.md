@@ -51,7 +51,7 @@ IDs in the examples: mockup listings `mel-01` to `mel-08` are vehicles 1 to 8, a
 | Filter 04 Location: Any, 2 km, 5 km, 10 km | search, facets | `maxDistanceKm` parameter. No counts |
 | Filter 04 Location: area checkboxes with counts | facets | `areas[].value`, `areas[].count` |
 | Filter 05 Transmission | search, facets | `transmission` parameter. No counts |
-| Filter 06 Seats (cars) or Engine size (motorbikes) | search, facets | `minSeats`, or `minEngineCc` and `maxEngineCc`. No counts |
+| Filter 06 Seats (cars) or Engine size (motorbikes: Any, ≤ 125, 126–160, Over 160 cc) | search, facets | `minSeats`, or `minEngineCc` and `maxEngineCc`. No counts |
 | Filter 07 Company rating: radios with counts | facets | `ratings[].minRating`, `ratings[].count` |
 | Active filter tags, Clear all, filter count on the phone "Filters" button | none (page state) | |
 | "(03) Results · 08"; phone sheet button "Show 8 vehicles" | search | `page.totalElements` |
@@ -77,7 +77,7 @@ IDs in the examples: mockup listings `mel-01` to `mel-08` are vehicles 1 to 8, a
 | Empty state: "Remove "Manual" +2 vehicles →" | facets | `relaxations[]` |
 | Empty state: "Clear all filters +8 vehicles →" | facets | `nearbyCount` |
 | Compare tray slots: "Toyota Corolla Hybrid · Yarra Car Co. · A$68/day" | Rows the page already has; `GET /api/v1/vehicles/compare` after a reload | `brand`, `model`, `company.name`, `pricePerDay` |
-| Compare tray: "Compare 2" button | Link to the compare page (no mockup yet) | `ids`, `from`, `to`, `placeId` |
+| Compare tray: "Compare 2" button | Link to the compare page, `/compare?ids={ids}&from={from}&to={to}&placeId={placeId}` (no mockup yet; SR-20) | `ids`, `from`, `to`, `placeId` |
 
 ## Endpoints
 
@@ -140,7 +140,7 @@ A shared model now: see [README.md](README.md#place).
 | `area` | string, repeatable | no | Area names from facets | Any area |
 | `transmission` | enum | no | `AUTOMATIC`, `MANUAL` | Both |
 | `minSeats` | int | no | 1 to 20. The page sends 4, 5 or 7 | Any |
-| `minEngineCc` | int | no | 0 or more. The page sends 126 | No lower bound |
+| `minEngineCc` | int | no | 0 or more. The page sends 126 or 161 | No lower bound |
 | `maxEngineCc` | int | no | `minEngineCc` or more. The page sends 125 or 160 | No upper bound |
 | `minRating` | decimal | no | 1.0 to 5.0. The page sends 4.0, 4.5 or 4.8 | Any |
 | `sort` | string | no | `recommended`, `price,asc`, `price,desc`, `rating,desc`, `distance,asc` (SR-18) | `recommended` |
@@ -255,7 +255,7 @@ Errors:
 
 Notes:
 
-- The list view asks for `size=20` and adds the next page with a "Show more" button (assumption: the mockup has 8 rows and no paging control). The map view asks once with `size=100` so every result gets a pin.
+- The list view asks for `size=20` and adds the next page with a "Show more" button (SR-22). The map view asks once with `size=100` so every result gets a pin.
 - The `sort` keys are worked out, not entity fields: the rating comes from the company and the distance from the place. Bind `sort` as a plain string, not through Spring's `Pageable` sort.
 - Dates change totals and availability only, never which vehicles match. So a date change reloads search but not facets.
 - Besides the standard `page`, the response has `availableCount` (int): how many of all `page.totalElements` results, across every page, are `AVAILABLE` for the dates (SR-9). In the example, 4 of the 5 cars are free; the Model 3 is booked.
@@ -451,7 +451,7 @@ Errors:
 Notes:
 
 - This page uses it to refill the compare tray after a reload (`?compare=1,3`). Otherwise the tray uses rows the page already has.
-- The compare page (no mockup yet) uses the same call. It may need more fields once it has a mockup.
+- The compare page uses the same call ([decision](../decisions/compare-own-page.md)). It has no mockup yet and may need more fields once it does, such as the deposit, cover options and pick-up address.
 
 ### 4. Place suggestions
 
@@ -601,7 +601,7 @@ Numbered so the SRS can pick them up. "Page" marks a rule for the frontend only.
 | `minEngineCc`, `maxEngineCc` | It is a car, or `minEngineCc ≤ engineCc ≤ maxEngineCc` |
 | `minRating` | The company's `rating` (1 decimal place) is at least `minRating`. A company with no rating fails |
 
-**SR-11.** Page: changing Type clears seats and engine size. Seats show only for Cars: Any, 4+, 5+, 7+. Engine size shows only for Motorbikes: Any, "≤ 125 cc" (sends `maxEngineCc=125`) and "126–160 cc" (sends `minEngineCc=126&maxEngineCc=160`). With All, the group says "Choose cars or motorbikes first".
+**SR-11.** Page: changing Type clears seats and engine size. Seats show only for Cars: Any, 4+, 5+, 7+. Engine size shows only for Motorbikes: Any, "≤ 125 cc" (sends `maxEngineCc=125`), "126–160 cc" (sends `minEngineCc=126&maxEngineCc=160`) and "Over 160 cc" (sends `minEngineCc=161`). With All, the group says "Choose cars or motorbikes first".
 
 **SR-12.** Page: the price slider runs from `price.min` to `price.max`. A thumb at its end sends no parameter, so the top end means "and above" ("A$140+"). The two thumbs stay at least one step apart (mockup step: A$5 in Melbourne, A$1 in Ho Chi Minh City). Results reload when a thumb is let go, not while it is dragged.
 
@@ -629,7 +629,7 @@ Numbered so the SRS can pick them up. "Page" marks a rule for the frontend only.
 | `rating,desc` | Company rating | Company rating high to low | `distanceKm`, then `id` |
 | `distance,asc` | Distance | `distanceKm` near to far | `id` |
 
-Recommended in Melbourne CBD, no filters, 11–14 Dec: Corolla Hybrid (4.72), PCX 160 (4.69), CX-5 (4.44), Primavera 150 (4.28), NMAX 155 (4.16), Swift (4.11), Carnival (2.25), then Model 3 (booked). The formula and the 3.0 default are proposals (open question 4).
+Recommended in Melbourne CBD, no filters, 11–14 Dec: Corolla Hybrid (4.72), PCX 160 (4.69), CX-5 (4.44), Primavera 150 (4.28), NMAX 155 (4.16), Swift (4.11), Carnival (2.25), then Model 3 (booked). The formula and the 3.0 default are decided ([decision](../decisions/recommended-sort-formula.md), Q4). It is the same for every visitor. A "personalised recommendations" custom feature (SRS §2.7) could later add to this score from the customer's own history; it is not part of this sort.
 
 ### Empty state
 
@@ -637,7 +637,7 @@ Recommended in Melbourne CBD, no filters, 11–14 Dec: Corolla Hybrid (4.72), PC
 
 ### Compare
 
-**SR-20.** Page: a customer can tick up to 3 vehicles. With 3 ticked, the other Compare boxes are disabled with the hint "You can compare up to 3". The tray appears at 2 ticks and shows "+ Add a third" while there are fewer than 3. Its Compare link carries the IDs, dates and place. Searching a place in another city clears the tray and every filter. Changing dates, sort or filters keeps the tray.
+**SR-20.** Page: a customer can tick up to 3 vehicles. With 3 ticked, the other Compare boxes are disabled with the hint "You can compare up to 3". The tray appears at 2 ticks and shows "+ Add a third" while there are fewer than 3. Its Compare link carries the IDs, dates and place. Searching a place in another city clears the tray and every filter. Changing dates, sort or filters keeps the tray. The Compare button opens the compare page, `/compare?ids=1,3&from=…&to=…&placeId=…`: one column per vehicle, in tick order, with the photo, price and estimated total, company and rating, specs, distance, availability for the dates, and a **View** button each. The link can be shared and reloaded; the page loads it with endpoint 3.
 
 ### Map
 
@@ -645,13 +645,13 @@ Recommended in Melbourne CBD, no filters, 11–14 Dec: Corolla Hybrid (4.72), PC
 
 ### Paging
 
-**SR-22.** The list view loads 20 rows a page. The map view loads up to 100 in one call. A `size` above 100 is rejected with `400`.
+**SR-22.** The list view loads 20 rows a page. Page: below the rows, a button "Show 20 more · 28 of 48" (fewer when fewer are left) adds the next page under the current rows; ticks and the compare tray stay. When every row is shown, the "End of results" line replaces it. Changing the filters, sort, place or dates starts again at page 0. A reload shows the first 20 again; `page` is not kept in the URL ([decision](../decisions/show-more-paging.md), Q10). The map view loads up to 100 in one call. A `size` above 100 is rejected with `400`.
 
 ### Nav
 
 **SR-23.** Page: the nav shows the first word of `fullName`. The initials are the first letters of the first and last words, in capitals ("Minh Tran" gives "MT"). `role` `CUSTOMER` shows as "Customer account".
 
-**SR-24.** Page: "My bookings" shows `activeCount` as 2 digits ("02") and hides the number when it is 0 (assumption). Active means `REQUESTED`, `APPROVED` or `PICKED_UP`.
+**SR-24.** Page: "My bookings" shows `activeCount` as 2 digits ("02", "11") and hides the number when it is 0, like an unread badge (Q17). Active means `REQUESTED` (not past its `expiresAt`), `APPROVED` or `PICKED_UP`.
 
 **SR-25.** Page: anyone can open the search page; no login is needed. On load the page calls `GET /api/v1/auth/me`. A `401` means logged out: the nav shows the logo, Help, the theme toggle, **Log in** and **Sign up**, as on the landing page (LP-24), and the page does not call `GET /api/v1/bookings/summary`. Log in and Sign up link to `/login?next=<this search URL>`, so the visitor comes back to the same search (login.md LOGIN-29). Search, filters, the map and compare all work logged out. A login is needed only to send a booking request (vehicle.md VEH-39).
 
@@ -660,6 +660,8 @@ Recommended in Melbourne CBD, no filters, 11–14 Dec: Corolla Hybrid (4.72), PC
 **SR-27.** Page: defaults for the place and dates ([decision](../decisions/search-date-and-place-defaults.md), Q11). The page saves each searched place's `id` in `localStorage` (key `rentxe-last-place`, like the theme). With no place in the URL, it uses that place, or Melbourne CBD if there is none or it no longer exists. Default dates are tomorrow and three days after, counted in the place's `timeZone`, so they always pass SR-4. If dates arrive from the landing page or a link but the pick-up is not after today at the place (the visitor's clock is ahead or behind), the page moves the pick-up to tomorrow at the place and keeps the rental length, with no error shown. Example: at 23:30 on 6 Nov in Ho Chi Minh City, a Melbourne search defaults to 8–11 Nov, because it is already 7 Nov in Melbourne.
 
 **SR-28.** Page: prices show in the currency of the city being searched ([decision](../decisions/city-currency-display.md), Q14). Each `CITY` place has a `currency` (Melbourne `AUD`, Ho Chi Minh City `VND`), and every place carries its city's. The API stores, works out and returns every amount in AUD, as the README says. For a `VND` place the page converts each amount with `GET /api/v1/exchange-rates`: amount × rate, rounded to the nearest 1,000₫, written "199,000₫ / day", with a small "≈ A$12" under it and the "Rates By Exchange Rate API" link in the page footer. The price slider shows ₫; the page converts its values back to AUD (÷ rate, to 2 decimal places) before sending `minPrice` and `maxPrice`. If the rate call fails, the page shows A$ as for Melbourne. Today's rate is used, so a ₫ price can move a little from day to day; a booking fixes its rate when it is sent (vehicle.md VEH-41). Example: A$12.00 a day for 3 days at 16,600 shows "199,000₫ / day" and "598,000₫ est. for 3 days".
+
+**SR-29.** Page: where errors show ([decision](../decisions/search-error-display.md), Q16). Errors never go in the toast; the toast is only for notices, as on the login page (login.md LOGIN-32). (1) When search or facets fail (network error or `5xx`), the results area shows "Couldn't load results." with a **Try again** button, using `role="alert"`. The last results are cleared, and the filters stay usable. (2) Field errors show under their field: "No place matches" under Where (SR-1), and a `400` on `startDate` or `endDate` under that date with the server's message, for example "Pick-up can be at most 12 months ahead". (3) Side calls fail quietly with no message: without a rate the page shows A$ (SR-28), without `GET /bookings/summary` the count is hidden, and a failed compare refill (endpoint 3) clears the tray.
 
 ## Changes to shared models
 
@@ -670,6 +672,7 @@ Merged into the README on 2026-11-06. Kept here as the reason for each change.
 | Place (new) | Add Place as a shared model. It also stores hidden other names (for example `Saigon`) that matching uses but responses leave out | Search and landing both use it. The vehicle form can use `CITY` places to fill `Location.city` |
 | Location | `city` must be the `city` of a `CITY` place, chosen from a list in the vehicle form, not typed | SR-2 matches the city as text. Typed values such as "HCMC" and "Ho Chi Minh City" would hide vehicles from search |
 | Vehicle | No `units` field: one Vehicle is one physical vehicle (Q1). A company with three identical cars lists three vehicles | Each has its own plate and odometer, and availability stays free or booked (SR-8) |
+| Place | Add `currency` (`AUD`, `VND`): the city's display currency, carried by every place in it | Pages show prices in the city's currency while amounts stay AUD (SR-28) |
 
 ## Mockup to-do
 
@@ -679,6 +682,10 @@ Decided on 2026-11-06 but not yet in `assets/mockups/search/index.html`. Change 
 |---|---|
 | Remove the "Only 2 left" badge (`avail: 'low'`); those rows show "Free for your dates" | SR-8, Q1 |
 | Headline adds "· 7 free for your dates" when some results are booked | SR-9, Q3 |
+| "Show 20 more · 28 of 48" button under the list when more rows are left | SR-22, Q10 |
+| Engine size: add "Over 160 cc" | SR-11, Q8 |
+| "Couldn't load results." with **Try again** in the results area; no errors in the toast | SR-29, Q16 |
+| New mockup: the compare page, one column per vehicle (photo, price and total, company and rating, specs, distance, availability, View) | SR-20, Q15 |
 | Ho Chi Minh City prices in ₫ with a small "≈ A$", and the "Rates By Exchange Rate API" link in the footer | SR-28, Q14 |
 | Theme toggle in the nav next to the account menu, and dark styles | README Theme |
 | Help in the nav links to `/help` | login.md LOGIN-31 |
@@ -691,14 +698,17 @@ Decided on 2026-11-06 but not yet in `assets/mockups/search/index.html`. Change 
 1. **"Only N left".** Resolved 2026-11-06 ([decision](../decisions/one-listing-one-vehicle.md)): one Vehicle is one physical vehicle, as in the README. There is no `Vehicle.units`, and `FEW_LEFT` and `unitsLeft` are dropped, so availability is `AVAILABLE` or `BOOKED` (SR-8). A company with several identical vehicles lists each one. Mockup to-do: remove the "Only 2 left" badge.
 2. **Do `REQUESTED` bookings block dates (SR-6)?** Resolved 2026-11-06 ([decision](../decisions/requests-hold-dates-and-expire.md)): yes, until they expire 24 hours after they are sent, or at the start of the pick-up day if sooner (vehicle.md VEH-36). The return day is not free for a new pick-up (SR-7; [decision](../decisions/return-day-stays-blocked.md), README decision 3).
 3. **Booked vehicles in results.** Resolved 2026-11-06 ([decision](../decisions/booked-vehicles-shown-flagged.md)): keep showing them, flagged, as the mockup does (SR-9). The headline also says how many are free for the dates, from the new `availableCount`. A "Free for my dates only" filter can come later if testers ask for it.
-4. **Recommended sort.** Accept the formula in SR-18, or pick something simpler? It could later grow into the "Personalised recommendations" custom feature.
+4. **Recommended sort.** Resolved 2026-11-06 ([decision](../decisions/recommended-sort-formula.md)): keep SR-18. Booked last, then company rating (3.0 with no reviews) − 0.1 × `distanceKm`, ties by price then `id`. It is not the personalised-recommendations custom feature, which would use the customer's own history and needs tutor approval (SRS §2.7).
 5. **Search scope.** Resolved 2026-11-06: only vehicles of live companies, meaning verified with an `ACTIVE` account (SR-2). A suspended company's vehicles leave search through its account's status, so Company needs no status of its own (login.md LOGIN-26, LOGIN-27).
 6. **Logged-out visitors.** Resolved 2026-11-06 ([decision](../decisions/search-open-to-visitors.md)): yes. The page works logged out, with the landing page's logged-out nav (SR-25). A login is needed only when the visitor clicks **Request to book** on a vehicle; they log in and come back to that vehicle (vehicle.md VEH-39, login.md LOGIN-29).
 7. **Where places come from.** Resolved 2026-11-06 ([decision](../decisions/fixed-place-list.md)): a fixed list in a seeded `Place` table, with hidden other names. No outside service, no API key, and every suggestion has vehicles nearby. Noted as a later option: open search through a geocoder such as Mapbox Search or Google Places, sending `lat` and `lng` instead of `placeId` (its account, key and limits would go in SRS §7). "Near me" from the browser's location would use the same `lat` and `lng` parameters.
-8. **Engine sizes over 160 cc.** These motorbikes match neither engine option. Add "Over 160 cc", or build the options from the data?
+8. **Engine sizes over 160 cc.** Resolved 2026-11-06 ([decision](../decisions/engine-size-over-160.md)): add a fixed "Over 160 cc" option that sends `minEngineCc=161` (SR-11). Every motorbike now fits exactly one option. No API change.
 9. **Real map.** Resolved 2026-11-06 ([decision](../decisions/leaflet-openstreetmap-map.md)): Leaflet with OpenStreetMap-based tiles, a light and a dark set that follow the theme toggle (SR-21). No account or key. Leaflet, OpenStreetMap and the tile provider go in SRS §7. Mapbox GL JS was the alternative, for a more polished map with an account and token.
-10. **List paging.** Use "Show more" (assumed in SR-22) or numbered pages? The mockup shows neither.
+10. **List paging.** Resolved 2026-11-06 ([decision](../decisions/show-more-paging.md)): a "Show more" button that adds 20 rows at a time (SR-22). No numbered pages, no infinite scroll.
 11. **Dates and defaults.** Resolved 2026-11-06 ([decision](../decisions/search-date-and-place-defaults.md)): once a place is known, the page works out default dates in the place's time zone and moves a pick-up that is already "today" there, so the server's `400` never comes from dates the visitor didn't pick. The default place is the last one searched in this browser, or else Melbourne CBD (SR-27).
 12. **Companies and admins on search.** Resolved 2026-11-06 ([decision](../decisions/company-and-admin-on-search.md)): they see the same page with their own account menu. A company gets an **Edit** button on its own vehicles that opens its vehicle form and comes back to the search afterwards (SR-26). On the vehicle page, the owner sees **Edit vehicle** instead of **Request to book**; other companies and admins see "Only customer accounts can book" (vehicle.md VEH-40).
 13. **What "near" covers.** Resolved 2026-11-06 ([decision](../decisions/whole-city-search-scope.md)): the whole city of the searched place (SR-2), not a radius or the area alone. The Where list keeps cities, areas and airports, because the place sets where distances, the Distance sort, the km filter and the map centre start from. Later open search (Q7) fits this: the server finds the city of the typed address and measures from that address.
 14. **Cities and currency.** Resolved 2026-11-06 ([decision](../decisions/city-currency-display.md)): amounts stay in AUD everywhere in the API and the database. Pages show the city's currency: A$ in Melbourne, ₫ in Ho Chi Minh City, converted with a daily rate from ExchangeRate-API (SR-28, endpoint 6). A booking stores the currency and rate shown when it is sent (vehicle.md VEH-41). Charging in each city's own currency is a later option.
+15. **Where the comparison shows.** Resolved 2026-11-06 ([decision](../decisions/compare-own-page.md)): its own compare page, opened from the tray, with a shareable URL (SR-20). Not a panel on the search page, and comparison stays in the MVP. The compare page is the next mockup to make.
+16. **Where errors show.** Resolved 2026-11-06 ([decision](../decisions/search-error-display.md)): a "Couldn't load results" message with **Try again** in the results area, field errors under their field, quiet fallbacks for side calls, and no errors in the toast (SR-29).
+17. **Booking count at 0.** Resolved 2026-11-06: the number is hidden when `activeCount` is 0, and shown as 2 digits otherwise (SR-24). Too small for its own decision file.

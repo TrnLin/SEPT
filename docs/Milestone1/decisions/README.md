@@ -54,6 +54,11 @@ Every decision and every revision made during the milestone, one file per decisi
 | [leaflet-openstreetmap-map](leaflet-openstreetmap-map.md) | Proposed | search, ui, dependencies | The search map uses Leaflet with OpenStreetMap-based light and dark tiles; no account or key |
 | [search-date-and-place-defaults](search-date-and-place-defaults.md) | Proposed | search, ui, dates | Default dates count from "today" at the place; the default place is the last one searched in this browser |
 | [city-currency-display](city-currency-display.md) | Proposed | search, vehicle, fees, dependencies | Pages show A$ or ₫ by city from a daily rate; amounts stay AUD; a booking keeps its rate |
+| [recommended-sort-formula](recommended-sort-formula.md) | Proposed | search | Recommended sort: booked last, then company rating minus 0.1 per km; the same for everyone |
+| [show-more-paging](show-more-paging.md) | Proposed | search, ui | Search results load 20 at a time with a "Show more" button; no numbered pages |
+| [engine-size-over-160](engine-size-over-160.md) | Proposed | search, ui | The motorbike engine filter adds "Over 160 cc", so every bike fits one option |
+| [compare-own-page](compare-own-page.md) | Proposed | search, ui | Comparison opens its own shareable page, one column per vehicle; it stays in the MVP |
+| [search-error-display](search-error-display.md) | Proposed | search, ui, accessibility | Search load errors show in the results area with Try again; field errors under the field; side calls fail quietly |
 
 ## Template
 

@@ -12,7 +12,7 @@ Use these files to write SRS §2 (functional requirements), §2.8 (business rule
 |---|---|---|---|
 | Landing | `assets/mockups/landing-3d/` | [landing.md](landing.md) | LP-1 to LP-25 |
 | Log in and sign up | `assets/mockups/login/` | [login.md](login.md) | LOGIN-1 to LOGIN-36 |
-| Search (customer) | `assets/mockups/search/` | [search.md](search.md) | SR-1 to SR-28 |
+| Search (customer) | `assets/mockups/search/` | [search.md](search.md) | SR-1 to SR-29 |
 | Vehicle detail (customer) | `assets/mockups/vehicle/` (not committed yet) | [vehicle.md](vehicle.md) | VEH-1 to VEH-41 |
 
 The logo concept sheet (`assets/mockups/logo/`) has no data, so it has no schema.
@@ -55,6 +55,7 @@ These parts of the brief have no mockup, so they have no endpoints here. Add a p
 |---|---|
 | 2.1 Accounts | Customer profile, company profile, admin user and company management |
 | 2.2 Vehicles | Company dashboard: add, edit and remove listings. The vehicle form (assumed at `/company/vehicles/{id}/edit`) is also opened from **Edit** on search and the vehicle page, and returns to `next` after saving (search.md SR-26, vehicle.md VEH-40) |
+| 2.3 Search and comparison | The compare page (`/compare?ids=…`), opened from the search page's compare tray. Its endpoint is ready in [search.md](search.md) (endpoint 3, SR-20) |
 | 2.4 Bookings | My bookings (list, detail, cancel, extend: VEH-38); company: approve or reject requests and extensions |
 | 2.5 Pick-up and return | Company: record pick-up, return, condition and the final fee |
 | 2.6 Reviews | Write a review after a returned booking; company page with its reviews |
