@@ -25,7 +25,7 @@ One page to log in, sign up as a renter or a rental company, and ask for a passw
 - Any state can also carry `next`, the page to return to after success, for example `login/?next=%2Fvehicles%2F68%3Fstart%3D2026-12-11%26end%3D2026-12-14` (LOGIN-29). Switching the view or account type keeps it.
 - Switching the view or account type rewrites the URL without a reload.
 - The landing page links to all four states. The customer nav's "Log out" link ends here too.
-- Other states: field errors (shown on submit, then updated as the user types), a busy button ("Logging in…", "Creating account…"), and a toast.
+- Other states: field errors (shown on submit, then updated as the user types), the error banner for errors that aren't about one field (LOGIN-32), a busy button ("Logging in…", "Creating account…", "Sending…", "Saving…"), and a toast for notices only, never errors.
 - There is no admin tab. An admin can log in with either tab selected.
 
 ## What the page shows
@@ -321,7 +321,7 @@ Notes for Spring Security:
 
 Ends the session.
 
-**SRS:** 2.1 · **Access:** Public. Works with or without a session, and always returns `204`.
+**SRS:** 2.1 · **Access:** Public. Works with or without a session. Like every `POST`, it needs the CSRF header (LOGIN-36).
 
 No request body. `204 No Content`.
 
@@ -329,11 +329,11 @@ No request body. `204 No Content`.
 
 | Status | When |
 |---|---|
-| none | Always `204` |
+| `403` | The `X-XSRF-TOKEN` header is missing or wrong (LOGIN-36). Nothing changes. |
 
 Notes:
 - Called from the "Log out" item in every logged-in nav. The page then goes to the log in page.
-- `POST` only, so another site can't log a user out with a link or an image.
+- `POST` only, with the CSRF header, so another site can't log a user out with a link, an image or a hidden form.
 - Spring: `.logout(l -> l.logoutUrl("/api/v1/auth/logout").logoutSuccessHandler(new HttpStatusReturningLogoutSuccessHandler(HttpStatus.NO_CONTENT)).deleteCookies("JSESSIONID"))`. The remember-me service clears its own cookie on logout.
 
 ### GET /api/v1/auth/me
@@ -553,6 +553,8 @@ Merged into the README on 2026-11-06. Kept here as the reason for each change.
 |---|---|---|
 | User | Add `termsAcceptedAt` (timestamp). Set at sign-up. Stored but never returned, like the password hash. `null` for seeded admins. | Record of consent (LOGIN-8) |
 | User | Note on `fullName`: for `COMPANY` accounts it is the person who registered the company. | Q1: company sign-up asks for the person's name |
+| User | Note on `role`: one role per account, set at sign-up. | Q11, LOGIN-4 |
+| Company | Note on `name`: unique, ignoring case and extra spaces. | Q12, LOGIN-11 |
 | Company | Add `phone` (string). Set at sign-up. Returned only to the company itself (in CurrentUser) and to admins, never in public responses such as search or the vehicle page. | Q1: the admin needs a way to contact the company before verifying it (LOGIN-25) |
 | Company | Note on `verified`: `false` when created at sign-up | LOGIN-10 |
 | New: CurrentUser | All User fields plus `company` (Company \| null, set when `role` is `COMPANY`) | Returned by log in, both register endpoints and `/auth/me`. Every logged-in nav uses it. |
@@ -563,9 +565,26 @@ Changes to the README conventions:
 | Topic | Change |
 |---|---|
 | Status codes | Add `429` too many requests, with a `Retry-After` header (LOGIN-23). Done. |
-| Status codes | `403` also means "account suspended" on log in (LOGIN-15). The list now says only "wrong role". |
+| Status codes | `403` also means "account suspended" on log in (LOGIN-15), or a missing or wrong CSRF token (LOGIN-36). Done. |
 | Errors | A `409` may also carry `errors`, so the page can show the message under a field |
-| Error example | Its `instance` is `/api/v1/auth/register`, which this file splits in two. Change it to `/api/v1/auth/register/customer`. |
+| Error example | Its `instance` is now `/api/v1/auth/register/customer`, because this file splits register in two. Done. |
+| Auth | Spring Security session; Supabase is only the database (Q16). Done. |
+| CSRF, Origin | Token cookie and header; pages and API on one origin (LOGIN-36). Done. |
+
+## Mockup to-do
+
+Decided on 2026-11-06 but not yet in `assets/mockups/login/index.html`. Change the mockup only when the team asks.
+
+| Change | Rule or question |
+|---|---|
+| Company sign-up: add "Your name" and "Phone" | LOGIN-7, LOGIN-25, Q1 |
+| Toast after customer sign-up: say it opens Search, not bookings | LOGIN-28, Q3 |
+| Theme toggle at the right end of the top row, and dark styles | Q13 |
+| Help links to `/help` | LOGIN-31, Q14 |
+| Error banner at the top of the form; no errors in the toast | LOGIN-32, Q15 |
+| Forgot view (`?view=forgot`) and reset view (`?view=reset&token=…`); "Forgot password?" opens the forgot view instead of sending at once | LOGIN-33, Q4 |
+| New wireframe: the `/help` page | LOGIN-31 |
+| Landing mockup: the `?user=company` sample user is "Yarra Car Co."; make it a person, for example "Lan Nguyen", because `fullName` is the person who registered | Q1, landing.md LP-24 |
 
 ## Open questions
 

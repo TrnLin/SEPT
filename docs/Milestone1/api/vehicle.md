@@ -434,7 +434,7 @@ Errors:
 |---|---|
 | `400` | Missing field, badly formed date, `startDate` not after today, `endDate` not after `startDate`, unknown `insurance` |
 | `401` | Not logged in. The page sends the customer to log in with `next` set to this URL, so they come back to the same vehicle and dates (login.md LOGIN-29). |
-| `403` | Role is not `CUSTOMER`, or the account is `SUSPENDED` |
+| `403` | Role is not `CUSTOMER`, the account is `SUSPENDED`, or the CSRF header is missing or wrong (login.md LOGIN-36) |
 | `404` | No vehicle with `vehicleId`, or not listed |
 | `409` | Some of the dates are blocked when the booking is saved (VEH-19, VEH-20). Adds `bookedDates`. |
 

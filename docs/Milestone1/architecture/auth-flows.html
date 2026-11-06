@@ -39,12 +39,12 @@
 </head>
 <body>
 <div class="page" id="page">
-  <div class="kicker">RentXe · login.md decision #1 · draft for the team</div>
+  <div class="kicker">RentXe · login.md Q16 · option A chosen</div>
   <h1>How login works: <em>option A</em> vs <em>option B</em></h1>
   <p class="lede">Both use Supabase as the Postgres database. They differ in who checks the password and what the browser holds afterwards: a session cookie (A) or a Supabase token (B).</p>
 
   <section>
-    <div class="head"><span class="tag">Option A</span><h2>Spring Security handles login</h2><span class="rec">Recommended</span></div>
+    <div class="head"><span class="tag">Option A</span><h2>Spring Security handles login</h2><span class="rec">Chosen</span></div>
     <p class="sum">Spring checks the password and keeps a session. The browser only holds a cookie with a random session ID. Supabase is just the database, and its Auth feature stays off.</p>
     <svg id="a"></svg>
   </section>
@@ -74,7 +74,7 @@
     </table>
   </section>
 
-  <div class="foot">Endpoints and rule numbers (LOGIN-n) refer to docs/Milestone1/api/login.md. Not agreed by the team yet.</div>
+  <div class="foot">Endpoints and rule numbers (LOGIN-n) refer to docs/Milestone1/api/login.md. Option A chosen on 6 Nov 2026 (docs/Milestone1/decisions/login-auth-approach.md), to confirm with the team.</div>
 </div>
 
 <script>

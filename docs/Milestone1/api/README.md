@@ -99,7 +99,7 @@ Status codes used:
 | `204` | Done, no body |
 | `400` | Validation failed |
 | `401` | Not logged in, or wrong email or password |
-| `403` | Wrong role, or the account is suspended (log in) |
+| `403` | Wrong role, the account is suspended (log in), or the CSRF token is missing or wrong on a `POST`, `PATCH`, `PUT` or `DELETE` ([login.md](login.md) LOGIN-36) |
 | `404` | Not found, or hidden from this caller (for example an unlisted vehicle) |
 | `409` | Conflict: the email is taken, or the dates clash with a booking |
 | `429` | Too many failed log ins, with a `Retry-After` header ([login.md](login.md) LOGIN-23) |
