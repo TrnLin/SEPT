@@ -335,6 +335,18 @@ footer { border-top: 1px solid var(--ink); margin-top: 64px; padding: 20px 0 40p
         <div class="arrow"><small>by role</small><div class="ln"></div><small class="under">LOGIN rules</small></div>
         <div class="node ghost multi"><b>My bookings</b><small>customer</small><b>Company dashboard</b><small>company</small><b>Admin</b><small>admin · assumed</small></div>
       </div>
+      <div class="flow-row">
+        <div class="node"><b>Search</b><small>search</small></div>
+        <div class="arrow"><small>ids, from, to,<br>placeId</small><div class="ln"></div><small class="under">SR-20</small></div>
+        <div class="node ghost"><b>Compare</b><small>no mockup</small></div>
+      </div>
+      <div class="flow-row">
+        <div class="node"><b>Vehicle</b><small>logged out</small></div>
+        <div class="arrow"><small>Request to book<br>next=this page</small><div class="ln"></div><small class="under">VEH-39</small></div>
+        <div class="node"><b>Log in</b><small>login</small></div>
+        <div class="arrow"><small>back to next,<br>same dates</small><div class="ln"></div><small class="under">LOGIN-29</small></div>
+        <div class="node"><b>Vehicle</b><small>click again to send</small></div>
+      </div>
     </div>
     <div class="legend" style="margin-bottom:12px">
       <span><span class="dot own"></span> defined here, called here</span>
@@ -353,7 +365,7 @@ footer { border-top: 1px solid var(--ink); margin-top: 64px; padding: 20px 0 40p
   <section class="block" id="life">
     <div class="block-head">
       <div><p class="label">(03) Booking lifecycle</p><h2>One booking, start to finish.</h2></div>
-      <p>The six statuses in the Booking model. Orange states block the vehicle's dates (SR-6, VEH-6). Only the first step has an endpoint so far; the dashed steps belong to pages with no mockup yet.</p>
+      <p>The seven statuses in the Booking model. Orange states block the vehicle's dates (SR-6, VEH-6). Only the first step has an endpoint so far; the dashed steps belong to pages with no mockup yet. Extending a rental keeps it <code>PICKED_UP</code> and moves its return date (VEH-38).</p>
     </div>
     <div class="life">
       <svg viewBox="0 0 1090 360" role="img" aria-label="Booking status diagram">
@@ -372,7 +384,8 @@ footer { border-top: 1px solid var(--ink); margin-top: 64px; padding: 20px 0 40p
             <line x1="500" y1="168" x2="628" y2="168" marker-end="url(#ah)" stroke-dasharray="5 4"/>
             <line x1="780" y1="168" x2="908" y2="168" marker-end="url(#ah)" stroke-dasharray="5 4"/>
             <line x1="985" y1="196" x2="985" y2="278" marker-end="url(#ah)" stroke-dasharray="5 4"/>
-            <line x1="145" y1="140" x2="145" y2="82" marker-end="url(#ah)" stroke-dasharray="2 4" stroke="#6F6F6F"/>
+            <line x1="145" y1="140" x2="145" y2="82" marker-end="url(#ah)" stroke-dasharray="5 4"/>
+            <path d="M680 140C680 96 730 96 730 136" marker-end="url(#ah)" stroke-dasharray="5 4"/>
           </g>
           <circle cx="24" cy="168" r="7" fill="#0E0E0E"/>
           <!-- states -->
@@ -395,9 +408,10 @@ footer { border-top: 1px solid var(--ink); margin-top: 64px; padding: 20px 0 40p
             <rect x="910" y="280" width="150" height="56" rx="9" fill="url(#hatch)" stroke="#6F6F6F" stroke-dasharray="5 4"/>
             <text x="985" y="304" text-anchor="middle" fill="#0E0E0E">Review</text>
             <text x="985" y="322" text-anchor="middle" font-size="10.5" fill="#6F6F6F">one per booking</text>
-            <rect x="70" y="24" width="150" height="56" rx="9" fill="url(#hatch)" stroke="#6F6F6F" stroke-dasharray="5 4"/>
-            <text x="145" y="48" text-anchor="middle" fill="#6F6F6F">EXPIRED?</text>
-            <text x="145" y="66" text-anchor="middle" font-size="10.5" fill="#6F6F6F">not in model</text>
+            <rect x="70" y="24" width="150" height="56" rx="9" fill="#fff" stroke="#0E0E0E" stroke-width="1.5"/>
+            <text x="145" y="48" text-anchor="middle" font-weight="500">EXPIRED</text>
+            <text x="145" y="66" text-anchor="middle" font-size="10.5" fill="#6F6F6F">no answer in time</text>
+            <text x="760" y="104" font-size="10.5" fill="#6F6F6F">extend ≤ 30 days</text>
           </g>
           <!-- step numbers -->
           <g font-size="11" text-anchor="middle">
@@ -409,7 +423,8 @@ footer { border-top: 1px solid var(--ink); margin-top: 64px; padding: 20px 0 40p
             <g><circle cx="564" cy="168" r="10" fill="#fff" stroke="#0E0E0E"/><text x="564" y="172">5</text></g>
             <g><circle cx="844" cy="168" r="10" fill="#fff" stroke="#0E0E0E"/><text x="844" y="172">6</text></g>
             <g><circle cx="985" cy="238" r="10" fill="#fff" stroke="#0E0E0E"/><text x="985" y="242">7</text></g>
-            <g><circle cx="145" cy="111" r="10" fill="#fff" stroke="#6F6F6F"/><text x="145" y="115" fill="#6F6F6F">8</text></g>
+            <g><circle cx="145" cy="111" r="10" fill="#fff" stroke="#0E0E0E"/><text x="145" y="115">8</text></g>
+            <g><circle cx="705" cy="104" r="10" fill="#fff" stroke="#0E0E0E"/><text x="705" y="108">9</text></g>
           </g>
         </g>
       </svg>
@@ -421,15 +436,16 @@ footer { border-top: 1px solid var(--ink); margin-top: 64px; padding: 20px 0 40p
         <li><span class="n">5</span><div><b>Company records pick-up.</b><small>Deposit held. No endpoint yet (§2.5)</small></div></li>
         <li><span class="n">6</span><div><b>Company records return.</b><small>Condition, odometer, late fee (VEH-24, VEH-25). Booking has no condition field yet</small></div></li>
         <li><span class="n">7</span><div><b>Customer writes a review.</b><small>One per RETURNED booking. No endpoint yet</small></div></li>
-        <li><span class="n">8</span><div><b>Unanswered request expires?</b><small>Not in the model. Decision 1</small></div></li>
+        <li><span class="n">8</span><div><b>Unanswered request expires.</b><small>24 h after it was sent, or at the start of the pick-up day if sooner. A scheduled job; availability already skips it (VEH-36, decision 1)</small></div></li>
+        <li><span class="n">9</span><div><b>Customer extends the rental.</b><small>From 7 days before return, up to 30 days at a time; the company approves. Stays PICKED_UP. No endpoint yet: My bookings (VEH-38)</small></div></li>
       </ol>
     </div>
 
     <div class="clash">
-      <p class="label">Decision 3 · SR-7, VEH-7</p>
+      <p class="label">Decision 3 · decided 6 Nov · SR-7, VEH-7</p>
       <h3>Does a booking's return day block the next pick-up?</h3>
       <p>The Tesla Model 3 is booked 11–12 Dec. Each row is a new request. Flip the switch to see which requests change if the return day becomes free.</p>
-      <label class="switch" style="margin-bottom:14px"><input type="checkbox" id="tReturn"> Return day is free for the next pick-up (current default: off)</label>
+      <label class="switch" style="margin-bottom:14px"><input type="checkbox" id="tReturn"> Return day is free for the next pick-up (decided: off; try it to see the rejected option)</label>
       <div class="table-scroll"><div class="days" id="days"></div></div>
     </div>
   </section>
@@ -443,7 +459,7 @@ footer { border-top: 1px solid var(--ink); margin-top: 64px; padding: 20px 0 40p
     <div class="calc">
       <div class="calc-grid">
         <div>
-          <div class="field"><label for="cDays">Rental length · <output id="oDays">3 days</output></label><input type="range" id="cDays" min="1" max="14" value="3"></div>
+          <div class="field"><label for="cDays">Rental length · <output id="oDays">3 days</output></label><input type="range" id="cDays" min="1" max="30" value="3"></div>
           <div class="field"><label>Cover</label><div class="seg" id="cCover"><button type="button" data-v="BASIC" aria-pressed="true">Basic · included</button><button type="button" data-v="PREMIUM" aria-pressed="false">Premium · A$14/day</button></div></div>
           <div class="field"><label for="cLate">Returned late by · <output id="oLate">0 h</output></label><input type="range" id="cLate" min="0" max="30" value="0" step="1"></div>
           <p class="label" style="line-height:1.6">VEH-10 to VEH-15 fee · VEH-22, VEH-23 cancel · VEH-24, VEH-25 late</p>
@@ -457,7 +473,7 @@ footer { border-top: 1px solid var(--ink); margin-top: 64px; padding: 20px 0 40p
   <section class="block" id="decisions">
     <div class="block-head">
       <div><p class="label">(05) Decisions for the team</p><h2>Defaults to confirm.</h2></div>
-      <p>The four files agree on each default below. Keep it, or mark it for change and say what to do instead. Changing one means changing every rule it lists. Decisions 2, 6 and 7 were settled on 6 Nov.</p>
+      <p>The four files agree on each default below. Keep it, or mark it for change and say what to do instead. Changing one means changing every rule it lists. Every decision except 9 (payment) was settled on 6 Nov; 9 keeps its default until the team confirms it.</p>
     </div>
     <div class="decs" id="decs"></div>
   </section>
@@ -666,8 +682,9 @@ const ENDPOINTS = [
 ];
 const MISSING = {
   '2.1': 'Still to mock up: customer profile, company profile, admin user and company management',
-  '2.2': 'Still to mock up: company dashboard to add, edit and remove listings',
-  '2.4': 'Still to mock up: My bookings (list, cancel); company approve or reject',
+  '2.2': 'Still to mock up: company dashboard to add, edit and remove listings. Its vehicle form is also opened from Edit on search and the vehicle page (SR-26, VEH-40)',
+  '2.3': 'Still to mock up: the compare page, /compare?ids=… (SR-20); its endpoint is ready',
+  '2.4': 'Still to mock up: My bookings (list, cancel, extend: VEH-38); company approves or rejects requests and extensions',
   '2.5': 'No endpoints yet. Still to mock up: record pick-up, return, condition and final fee',
   '2.6': 'Still to mock up: write a review; company page with its reviews. Landing reviews are static (LP-21); /reviews/featured is an option for later',
 };
