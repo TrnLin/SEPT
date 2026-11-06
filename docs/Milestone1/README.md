@@ -15,7 +15,7 @@
 | `meeting-minutes/` | Minutes for every meeting; copy `_template.md` |
 | `definition-of-done.md` | The team's Definition of Done |
 | `user-story-guide.md` | Story format, acceptance criteria, INVEST |
-| `decision-log.md` | Every decision and revision this milestone |
+| `decisions/` | Every decision and revision this milestone, one file each; `decisions/README.md` indexes them |
 
 ## Checklist
 
