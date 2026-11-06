@@ -87,7 +87,8 @@
 <!-- GSAP for the reveals and the filter, tray and drawer transitions (free "standard" licence). The page works without it. -->
 <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
 <style>
-  :root { --nav-h: 72px; --side-w: 288px; --pick-tint: var(--brand-tint); }
+  :root { --nav-h: 72px; --side-w: 288px; --pick-tint: var(--brand-tint);
+          --content-max: 1680px; }   /* wider than the shared 1320px: a results page uses big screens */
   :root[data-theme="dark"] { --pick-tint: color-mix(in srgb, var(--brand) 18%, var(--theme-bg)); }
   * { box-sizing: border-box; }
   html, body { margin: 0; }
