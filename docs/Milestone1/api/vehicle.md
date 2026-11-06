@@ -92,7 +92,7 @@ Numbers refer to the endpoints below.
 | (06) Reviews | "Show all 50 reviews →" | 1 `reviewSummary.count`; links to an all-reviews page (no mockup) |
 | Panel | "A$68 / day" | 1 `pricePerDay` |
 | Panel | "Free for your dates" / "Booked 11–12 Dec" / "Booked for your dates" | 3 `available`, `bookedDates` |
-| Panel | "Free · only 2 left" | Not modelled. See open question 12. |
+| Panel | "Free · only 2 left" | Dropped: one listing is one vehicle (question 12). Mockup to-do: show "Free for your dates" |
 | Panel | Pick-up "Fri 11 Dec from 10:00", Return "Mon 14 Dec by 10:00 · 3 days" | URL dates; 1 `pickUpTime`, `returnTime`; 3 `days` |
 | Panel | Basic cover "Included, Excess A$3,000"; Premium cover "+A$14 / day, Excess A$500" | 1 `insuranceOptions` |
 | Panel | "A$68 × 3 days A$204", cover line, "Total A$204" | 3 `pricePerDay`, `rentalAmount`, `insurancePerDay`, `insuranceAmount`, `totalPrice` |
@@ -180,7 +180,8 @@ Example: `GET /api/v1/vehicles/1?placeId=2`
     "directions": "Front desk, ground floor",
     "lat": -37.8163,
     "lng": 144.9662,
-    "timeZone": "Australia/Melbourne"
+    "timeZone": "Australia/Melbourne",
+    "currency": "AUD"
   },
   "imageUrls": [],
   "listed": true,
@@ -229,7 +230,7 @@ Errors:
 | Status | When |
 |---|---|
 | `400` | Unknown `placeId` |
-| `404` | No vehicle with this id, or `listed` is `false` (VEH-35) |
+| `404` | No vehicle with this id, `listed` is `false`, or its company is not live (VEH-35) |
 
 Notes:
 - An empty `imageUrls` is normal. The page shows the drawing until the company uploads photos.
@@ -367,7 +368,7 @@ Errors:
 
 | Status | When |
 |---|---|
-| `400` | Missing or badly formed date, `startDate` not after today, `endDate` not after `startDate`, unknown `insurance` |
+| `400` | Missing or badly formed date, `startDate` not after today, `endDate` not after `startDate`, a rental over 30 days or `startDate` more than 365 days after today (VEH-37), unknown `insurance` |
 | `404` | No vehicle with this id, or not listed |
 
 Notes:
@@ -423,6 +424,9 @@ Response `201`, with `Location: /api/v1/bookings/1207`. The body is a **Booking*
   "deposit": 300.00,
   "totalPrice": 204.00,
   "respondedAt": null,
+  "expiresAt": "2026-11-07T08:30:00Z",
+  "displayCurrency": "AUD",
+  "exchangeRate": 1.0,
   "createdAt": "2026-11-06T08:30:00Z",
   "currency": "AUD"
 }
@@ -432,9 +436,9 @@ Errors:
 
 | Status | When |
 |---|---|
-| `400` | Missing field, badly formed date, `startDate` not after today, `endDate` not after `startDate`, unknown `insurance` |
-| `401` | Not logged in. The page sends the customer to log in, then back to the same URL. |
-| `403` | Role is not `CUSTOMER`, or the account is `SUSPENDED` |
+| `400` | Missing field, badly formed date, `startDate` not after today, `endDate` not after `startDate`, a rental over 30 days or `startDate` more than 365 days after today (VEH-37), unknown `insurance` |
+| `401` | Not logged in. The page sends the customer to log in with `next` set to this URL, so they come back to the same vehicle and dates (login.md LOGIN-29). |
+| `403` | Role is not `CUSTOMER`, the account is `SUSPENDED`, or the CSRF header is missing or wrong (login.md LOGIN-36) |
 | `404` | No vehicle with `vehicleId`, or not listed |
 | `409` | Some of the dates are blocked when the booking is saved (VEH-19, VEH-20). Adds `bookedDates`. |
 
@@ -466,7 +470,7 @@ Errors:
 
 Notes:
 - When the clash is checked: the quote only reports it. The real check runs in the same transaction that saves the booking, after locking the vehicle row (JPA `@Lock(PESSIMISTIC_WRITE)` on the vehicle, then the overlap query, then the insert). This works on H2 and MySQL.
-- Overlap query: a booking for the same vehicle with status in (`REQUESTED`, `APPROVED`, `PICKED_UP`), `startDate <= :endDate` and `endDate >= :startDate`.
+- Overlap query: a booking for the same vehicle that is `APPROVED` or `PICKED_UP`, or `REQUESTED` with `expiresAt > now` (VEH-36), with `startDate <= :endDate` and `endDate >= :startDate`.
 - On `409` the page reloads availability and the quote, then shows the unavailable state with the next free dates.
 - On `201` the page opens the new booking (assumption: on the My bookings page, not designed yet).
 - The button is disabled while the request is in flight. A repeat of the same request gets `409`, because the customer's own `REQUESTED` booking blocks the dates.
@@ -586,7 +590,6 @@ Example: `GET /api/v1/vehicles/1/similar?startDate=2026-12-11&endDate=2026-12-14
       "totalPrice": 387.00,
       "availability": {
         "status": "BOOKED",
-        "unitsLeft": null,
         "bookedRanges": [{ "startDate": "2026-12-11", "endDate": "2026-12-12" }]
       }
     }
@@ -629,6 +632,7 @@ Numbered so the SRS can use them. Rules marked §2.8 go into SRS §2.8. The exam
 | VEH-1 | `days` = `endDate − startDate` in calendar days. 11 Dec → 14 Dec is 3 days. |
 | VEH-2 | `endDate` must be after `startDate`. A request with the same date for both gets `400`. |
 | VEH-3 | `startDate` must be after today, where today is the date at the pick-up place (`location.timeZone`). On 6 Nov 2026 in Melbourne, 6 Nov gets `400` and 7 Nov is accepted. |
+| VEH-37 | A booking is 1 to 30 days long (VEH-1), and `startDate` is at most 365 days after today (VEH-3's today). Otherwise `400`: "A rental can be at most 30 days" on `endDate`, or "Pick-up can be at most 12 months ahead" on `startDate`. The same for every company. Longer rentals use extensions (VEH-38). Page: the date pickers stop at these limits. |
 | VEH-4 | Pick-up is from 10:00 on `startDate`. Return is by 10:00 on `endDate`. Local time at the pick-up place. Assumption: the same for every vehicle. |
 | VEH-5 | Pick-up and return are at the same place: the vehicle's `location`. |
 
@@ -636,7 +640,7 @@ Numbered so the SRS can use them. Rules marked §2.8 go into SRS §2.8. The exam
 
 | # | Rule |
 |---|---|
-| VEH-6 | A booking with status `REQUESTED`, `APPROVED` or `PICKED_UP` blocks every day from its `startDate` to its `endDate`, both included. `REJECTED`, `CANCELLED` and `RETURNED` bookings block nothing. |
+| VEH-6 | A booking with status `REQUESTED` (until its `expiresAt`, VEH-36), `APPROVED` or `PICKED_UP` blocks every day from its `startDate` to its `endDate`, both included. `REJECTED`, `CANCELLED`, `EXPIRED` and `RETURNED` bookings block nothing. A waiting extension also blocks its extra days (VEH-38). |
 | VEH-7 | A date range is free when none of its days, both ends included, is blocked. With a booking for 11–12 Dec: 10–11 Dec clashes, 12–15 Dec clashes, 13–16 Dec is free. |
 | VEH-8 | The calendar shows blocked days only as "Booked". It never shows who booked or the booking status. Days before today are not returned. |
 | VEH-9 | Next free dates: try each start date after the chosen `startDate` (and after today), up to 240 days ahead. The first one whose range of the same length is free wins. If none is free, there is no suggestion. Tesla booked 11–12 Dec, chosen 11–14 Dec: next free is 13–16 Dec. |
@@ -657,11 +661,15 @@ Numbered so the SRS can use them. Rules marked §2.8 go into SRS §2.8. The exam
 | # | Rule |
 |---|---|
 | VEH-16 | Only a logged-in `CUSTOMER` with status `ACTIVE` can send a request. Not logged in: `401`. Other role or suspended: `403`. |
-| VEH-17 | The vehicle must exist and be listed. Otherwise `404`. |
-| VEH-18 | The dates must pass VEH-2 and VEH-3. Otherwise `400`. |
+| VEH-39 | Anyone can open the vehicle page; no login is needed. On load the page calls `GET /api/v1/auth/me`. When it returns `401`, **Request to book** opens `/login?next=<this vehicle page's URL>` instead of sending the request, with no `POST` and no error. The URL holds the vehicle, dates and place, so after log in or sign-up the customer is back on the same vehicle with the same dates (login.md LOGIN-29). Nothing is sent by itself; the customer clicks **Request to book** again. If the session ends while the page is open, the `401` from `POST /api/v1/bookings` does the same. |
+| VEH-40 | A logged-in `COMPANY` or `ADMIN` sees the page with their own account menu (search.md SR-26). In place of **Request to book**, the booking panel shows **Edit vehicle** when the vehicle belongs to the caller's company (`company.id` equals `CurrentUser.companyId`), linking to `/company/vehicles/{id}/edit?next=<this page's URL>`. Any other company or admin sees "Only customer accounts can book" with the button disabled. The price and calendar still work, so the company can check what customers see. |
+| VEH-41 | The page shows prices in the currency of the vehicle's city (`location.currency`), converted as search.md SR-28 describes: the price, the quote lines, the total, the deposit and the excess. When a request is saved, the server stores the currency and the day's rate on the booking (`displayCurrency`, `exchangeRate`; `AUD` and `1.0` in Melbourne). The amounts on record stay AUD; My bookings shows the stored ₫ amounts with that rate, so they never move after sending. If the server has no rate, it stores `AUD` and `1.0`. |
+| VEH-17 | The vehicle must exist, be listed and belong to a live company (VEH-35). Otherwise `404`. |
+| VEH-18 | The dates must pass VEH-2, VEH-3 and VEH-37. Otherwise `400`. |
 | VEH-19 | The dates must be free (VEH-7) when the booking is saved. Otherwise `409` with the blocked days. A quote does not hold the dates. |
 | VEH-20 | If two requests for overlapping dates on one vehicle arrive together, the first to be saved gets `201` and the other gets `409`. This also applies when the same customer sends the same request twice. |
-| VEH-21 | A new booking starts as `REQUESTED`. The customer is not charged until the company approves (page text). |
+| VEH-21 | A new booking starts as `REQUESTED`, with `expiresAt` set by VEH-36. The customer is not charged until the company approves (page text). |
+| VEH-36 | A `REQUESTED` booking expires if the company has not approved or rejected it by its `expiresAt`: 24 hours after `createdAt`, or the start of the pick-up day (00:00 in `location.timeZone`) if that is sooner. It becomes `EXPIRED`, frees its dates, and no longer counts as active. A scheduled job marks expired requests every 15 minutes. Until it runs, the clash check (VEH-19), the calendar, search and `GET /bookings/summary` already treat a `REQUESTED` booking past its `expiresAt` as expired. The company cannot approve it after `expiresAt` (`409`). The customer sees "The company didn't answer in time". Example: sent Tue 18:00 for Thu to Sun, it expires Wed 18:00; sent Tue 18:00 for Wed, it expires Wed 00:00. |
 
 ### Cancellation (§2.8). Enforced on My bookings, shown here.
 
@@ -669,6 +677,12 @@ Numbered so the SRS can use them. Rules marked §2.8 go into SRS §2.8. The exam
 |---|---|
 | VEH-22 | Cancelling is free until 24 hours before pick-up (VEH-4). Pick-up Fri 11 Dec 10:00 in Melbourne: free until Thu 10 Dec 10:00 (`2026-12-09T23:00:00Z`). |
 | VEH-23 | After that, the fee is 50% of `totalPrice`. `204.00` → `102.00`. `387.00` → `193.50`. |
+
+### Extending a rental (§2.4, §2.8). Enforced on My bookings (no mockup yet), described here.
+
+| # | Rule |
+|---|---|
+| VEH-38 | The customer can ask to extend a `PICKED_UP` booking, from 7 days before its `endDate` until the day before it (dates at the pick-up place). The new return date is 1 to 30 days after the current `endDate`, so each extension adds at most 30 days, with no limit on how many. Only one extension can wait at a time. The extra days (the day after `endDate` to the new return date) must be free (VEH-6, VEH-7), otherwise `409`. A waiting extension holds those days and expires like a request (VEH-36): 24 hours after it is sent, or at 00:00 on the current `endDate` if sooner. The company approves or rejects it; the customer can withdraw it while it waits. On approval, the booking's `endDate` becomes the new date and its `totalPrice` grows by extra days × (`pricePerDay` + `insurancePerDay`), the booking's own rates. The deposit doesn't change, and the late fee (VEH-24) counts from the new return date. It stays one booking, with one pick-up, one return and one review. Example: 1 to 31 Dec at `68.00`, basic cover. Between 24 and 30 Dec Minh asks for 30 Jan; on approval the total grows by 30 × `68.00` = `2,040.00`. From 23 Jan he can ask again. |
 
 ### Late return (§2.8). Enforced at return (§2.5), shown here.
 
@@ -700,7 +714,7 @@ Numbered so the SRS can use them. Rules marked §2.8 go into SRS §2.8. The exam
 | # | Rule |
 |---|---|
 | VEH-34 | `completedRentals` = the company's `RETURNED` bookings. `fleet` = its listed vehicles by type. `replyTimeMinutes` = the median minutes from `createdAt` to `respondedAt` over the company's bookings answered in the last 90 days, `null` if none (assumption). |
-| VEH-35 | A vehicle with `listed: false` returns `404` from every endpoint in this file and cannot be requested. Assumption: its own company and admins can still read it. |
+| VEH-35 | A vehicle with `listed: false`, or whose company is not live (not `verified`, or its account is `SUSPENDED`; login.md LOGIN-26, LOGIN-27), returns `404` from every endpoint in this file and cannot be requested. Its own company and admins can still read it. |
 
 ## Changes to shared models
 
@@ -734,6 +748,7 @@ InsuranceOption:
 |---|---|---|
 | `directions` | string \| null | How to find the desk, for example `Front desk, ground floor` |
 | `timeZone` | string | IANA zone, for example `Australia/Melbourne`, `Asia/Ho_Chi_Minh`. Sets "today" (VEH-3) and the 10:00 times (VEH-4, VEH-22). |
+| `currency` | string | _derived_ from the city's place, not stored: the display currency for VEH-41 |
 
 ### Company: add
 
@@ -752,30 +767,35 @@ InsuranceOption:
 | `excess` | decimal | The chosen cover's excess then |
 | `deposit` | decimal | The vehicle's deposit then |
 | `respondedAt` | timestamp \| null | When the company approved or rejected. Used for `replyTimeMinutes`. |
+| `expiresAt` | timestamp | _derived_ once when the request is saved (VEH-36), then stored |
+| `displayCurrency` | string | _derived_ when saved: the currency of the vehicle's city, `AUD` or `VND` (VEH-41) |
+| `exchangeRate` | decimal | _derived_ when saved: the day's AUD rate for `displayCurrency`, `1.0` for AUD (VEH-41) |
 
 ### Booking: change
 
 | Field | Change |
 |---|---|
 | `totalPrice` | Still _derived_, but worked out once when the request is saved (VEH-12, VEH-15) and stored. Never recomputed from the vehicle's current price. |
+| `status` | Add `EXPIRED`: a request the company did not answer by `expiresAt` (VEH-36) |
+| `endDate` | Moves later when an extension is approved (VEH-38). A new table, BookingExtension, keeps each extension request (README). |
 
 Review needs no change. `authorName` and `rentalDays` are derived in endpoint 5.
 
 ## Open questions
 
-1. **Do pending requests hold dates?** This file makes `REQUESTED` block days (VEH-6), so the first request wins and the company never chooses between two. The alternative: only `APPROVED` blocks, several customers can request the same dates, and approving one rejects the rest. Pick one. README decision 1.
-2. **Unanswered requests.** With question 1 as written, a request the company never answers holds the dates. Reject it automatically after some hours, or at pick-up time? There is no `EXPIRED` status.
-3. **Same-day turnaround.** Return and the next pick-up are both at 10:00, but the mockup treats the return day as booked (VEH-7). Allow a pick-up on another booking's return day? README decision 3.
+1. **Do pending requests hold dates?** Resolved 2026-11-06 ([decision](../decisions/requests-hold-dates-and-expire.md)): yes. `REQUESTED` blocks its days (VEH-6), so the first request wins and an approval never clashes. README decision 1.
+2. **Unanswered requests.** Resolved 2026-11-06 ([decision](../decisions/requests-hold-dates-and-expire.md)): a request expires 24 hours after it is sent, or at the start of the pick-up day if sooner, and becomes `EXPIRED` (VEH-36).
+3. **Same-day turnaround.** Resolved 2026-11-06 ([decision](../decisions/return-day-stays-blocked.md)): no. The return day stays blocked (VEH-7), so the next pick-up is the day after at the earliest. README decision 3.
 4. **Pick-up today.** The date fields and the URL check make tomorrow the earliest pick-up (VEH-3), but the calendar lets you click today. Which is right? The mockup should match. README decision 2.
-5. **Limits.** There is no maximum rental length. The calendar's last page shows October 2027, 11 months ahead, but the date fields have no limit. Set a booking horizon and a maximum length?
+5. **Limits.** Resolved 2026-11-06 ([decision](../decisions/rental-length-and-horizon.md)): a booking is at most 30 days and starts at most 12 months ahead (VEH-37). Longer rentals are extended 30 days at a time from the last week of the rental, with the company's approval ([decision](../decisions/extend-rental-by-30-days.md), VEH-38).
 6. **Pick-up time and opening hours.** Is 10:00 fixed for every vehicle, or set by the company? Southbank Rentals is closed on Sundays, yet a Sunday 10:00 pick-up is allowed. Block closed days? If so, opening hours need real times instead of display text. Also: hours per company (the mockup) or per pick-up place?
 7. **Insurance.** Who sets the premium price and the excess amounts: the company for each vehicle (this file) or RentXe for each vehicle class? Who is the insurer?
 8. **Payment.** The page says "You won't be charged until the company approves", and the rules charge cancellation and late fees. The brief does not mention payment. Does RentXe only record amounts owed, or take payment?
 9. **Late return over 24 hours.** The fee is capped at one daily rate (VEH-25). Does the cap hold however late the return is, or does each further day add a daily rate?
 10. **Age and licence.** User has no date of birth or licence type, so the server cannot check `minimumAge` or the licence. Check at pick-up only (this file's assumption), or add the fields and check at request time?
 11. **Price change between quote and request.** The server charges the current price and ignores the client's total (VEH-15). Should it instead return `409` when the total differs from the one the customer saw?
-12. **"Only 2 left".** Each listing is one vehicle with one plate, so what does the number count? search.md owns this badge.
+12. **"Only 2 left".** Resolved 2026-11-06 ([decision](../decisions/one-listing-one-vehicle.md)): each listing is one vehicle with one plate, so there is nothing to count. The badge is dropped here and in search (search.md Q1, SR-8).
 13. **Card shape.** Resolved: endpoint 6 returns search.md's SearchResult.
 14. **Confirm step.** The button's link (`#booking?id=…&from=…&to=…&cover=…`) suggests a confirm page before the request is sent. Is there one? The API is the same either way.
 15. **Searched place.** Resolved: the search page adds `placeId` to the View link, and this page reads the place's name and point from search.md's places endpoint.
-16. **Login.** This file makes the read endpoints public so shared links work. Does the page itself require a login, or only the **Request to book** button?
+16. **Login.** Resolved 2026-11-06 ([decision](../decisions/search-open-to-visitors.md)): the page is open to everyone, and only **Request to book** needs a login. A logged-out visitor who clicks it goes to log in and comes back to this vehicle with the same dates (VEH-39). Mockup to-do: a logged-out nav, as on the search page (search.md SR-25).
