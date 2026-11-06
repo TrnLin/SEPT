@@ -180,7 +180,8 @@ Example: `GET /api/v1/vehicles/1?placeId=2`
     "directions": "Front desk, ground floor",
     "lat": -37.8163,
     "lng": 144.9662,
-    "timeZone": "Australia/Melbourne"
+    "timeZone": "Australia/Melbourne",
+    "currency": "AUD"
   },
   "imageUrls": [],
   "listed": true,
@@ -424,6 +425,8 @@ Response `201`, with `Location: /api/v1/bookings/1207`. The body is a **Booking*
   "totalPrice": 204.00,
   "respondedAt": null,
   "expiresAt": "2026-11-07T08:30:00Z",
+  "displayCurrency": "AUD",
+  "exchangeRate": 1.0,
   "createdAt": "2026-11-06T08:30:00Z",
   "currency": "AUD"
 }
@@ -658,6 +661,9 @@ Numbered so the SRS can use them. Rules marked §2.8 go into SRS §2.8. The exam
 | # | Rule |
 |---|---|
 | VEH-16 | Only a logged-in `CUSTOMER` with status `ACTIVE` can send a request. Not logged in: `401`. Other role or suspended: `403`. |
+| VEH-39 | Anyone can open the vehicle page; no login is needed. On load the page calls `GET /api/v1/auth/me`. When it returns `401`, **Request to book** opens `/login?next=<this vehicle page's URL>` instead of sending the request, with no `POST` and no error. The URL holds the vehicle, dates and place, so after log in or sign-up the customer is back on the same vehicle with the same dates (login.md LOGIN-29). Nothing is sent by itself; the customer clicks **Request to book** again. If the session ends while the page is open, the `401` from `POST /api/v1/bookings` does the same. |
+| VEH-40 | A logged-in `COMPANY` or `ADMIN` sees the page with their own account menu (search.md SR-26). In place of **Request to book**, the booking panel shows **Edit vehicle** when the vehicle belongs to the caller's company (`company.id` equals `CurrentUser.companyId`), linking to `/company/vehicles/{id}/edit?next=<this page's URL>`. Any other company or admin sees "Only customer accounts can book" with the button disabled. The price and calendar still work, so the company can check what customers see. |
+| VEH-41 | The page shows prices in the currency of the vehicle's city (`location.currency`), converted as search.md SR-28 describes: the price, the quote lines, the total, the deposit and the excess. When a request is saved, the server stores the currency and the day's rate on the booking (`displayCurrency`, `exchangeRate`; `AUD` and `1.0` in Melbourne). The amounts on record stay AUD; My bookings shows the stored ₫ amounts with that rate, so they never move after sending. If the server has no rate, it stores `AUD` and `1.0`. |
 | VEH-17 | The vehicle must exist, be listed and belong to a live company (VEH-35). Otherwise `404`. |
 | VEH-18 | The dates must pass VEH-2, VEH-3 and VEH-37. Otherwise `400`. |
 | VEH-19 | The dates must be free (VEH-7) when the booking is saved. Otherwise `409` with the blocked days. A quote does not hold the dates. |
@@ -742,6 +748,7 @@ InsuranceOption:
 |---|---|---|
 | `directions` | string \| null | How to find the desk, for example `Front desk, ground floor` |
 | `timeZone` | string | IANA zone, for example `Australia/Melbourne`, `Asia/Ho_Chi_Minh`. Sets "today" (VEH-3) and the 10:00 times (VEH-4, VEH-22). |
+| `currency` | string | _derived_ from the city's place, not stored: the display currency for VEH-41 |
 
 ### Company: add
 
@@ -761,6 +768,8 @@ InsuranceOption:
 | `deposit` | decimal | The vehicle's deposit then |
 | `respondedAt` | timestamp \| null | When the company approved or rejected. Used for `replyTimeMinutes`. |
 | `expiresAt` | timestamp | _derived_ once when the request is saved (VEH-36), then stored |
+| `displayCurrency` | string | _derived_ when saved: the currency of the vehicle's city, `AUD` or `VND` (VEH-41) |
+| `exchangeRate` | decimal | _derived_ when saved: the day's AUD rate for `displayCurrency`, `1.0` for AUD (VEH-41) |
 
 ### Booking: change
 
@@ -789,4 +798,4 @@ Review needs no change. `authorName` and `rentalDays` are derived in endpoint 5.
 13. **Card shape.** Resolved: endpoint 6 returns search.md's SearchResult.
 14. **Confirm step.** The button's link (`#booking?id=…&from=…&to=…&cover=…`) suggests a confirm page before the request is sent. Is there one? The API is the same either way.
 15. **Searched place.** Resolved: the search page adds `placeId` to the View link, and this page reads the place's name and point from search.md's places endpoint.
-16. **Login.** This file makes the read endpoints public so shared links work. Does the page itself require a login, or only the **Request to book** button?
+16. **Login.** Resolved 2026-11-06 ([decision](../decisions/search-open-to-visitors.md)): the page is open to everyone, and only **Request to book** needs a login. A logged-out visitor who clicks it goes to log in and comes back to this vehicle with the same dates (VEH-39). Mockup to-do: a logged-out nav, as on the search page (search.md SR-25).

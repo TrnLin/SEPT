@@ -47,6 +47,13 @@ Every decision and every revision made during the milestone, one file per decisi
 | [booked-vehicles-shown-flagged](booked-vehicles-shown-flagged.md) | Proposed | search, ui | Booked vehicles stay in search results, flagged; the headline says how many are free for the dates |
 | [rental-length-and-horizon](rental-length-and-horizon.md) | Proposed | booking, search, vehicle | A booking is at most 30 days and starts at most 12 months ahead |
 | [extend-rental-by-30-days](extend-rental-by-30-days.md) | Proposed | booking, data-model | From the last week of a rental, the customer can ask for up to 30 more days; the company approves |
+| [search-open-to-visitors](search-open-to-visitors.md) | Proposed | search, vehicle, auth, ui | Search and vehicle pages work logged out; Request to book sends visitors to log in and back to the vehicle |
+| [company-and-admin-on-search](company-and-admin-on-search.md) | Proposed | search, vehicle, company, ui | Companies and admins use search with their own menu; a company can edit its own vehicles straight from search and the vehicle page |
+| [fixed-place-list](fixed-place-list.md) | Proposed | search, data-model | "Where" suggests from a fixed, seeded Place table; open search through a geocoder is a later option |
+| [whole-city-search-scope](whole-city-search-scope.md) | Proposed | search | Search covers the whole city of the picked place; the place sets where distances are measured from |
+| [leaflet-openstreetmap-map](leaflet-openstreetmap-map.md) | Proposed | search, ui, dependencies | The search map uses Leaflet with OpenStreetMap-based light and dark tiles; no account or key |
+| [search-date-and-place-defaults](search-date-and-place-defaults.md) | Proposed | search, ui, dates | Default dates count from "today" at the place; the default place is the last one searched in this browser |
+| [city-currency-display](city-currency-display.md) | Proposed | search, vehicle, fees, dependencies | Pages show A$ or ₫ by city from a daily rate; amounts stay AUD; a booking keeps its rate |
 
 ## Template
 

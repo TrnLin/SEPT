@@ -23,9 +23,9 @@ Hand-off from the landing page (landing.md): `?type=MOTORBIKE&location=District%
 
 | Landing parameter | The search page |
 |---|---|
-| `location` | Turns the text into a place by SR-1, then shows `placeId` in its URL instead. Missing: uses the default place, Melbourne CBD (assumption) |
+| `location` | Turns the text into a place by SR-1, then shows `placeId` in its URL instead. Missing: the last place searched in this browser, or else Melbourne CBD (SR-27) |
 | `type` | Uses it as the `type` filter |
-| `from`, `to` | Uses them as the dates. Missing: tomorrow and three days after, as landing rule LP-2 |
+| `from`, `to` | Uses them as the dates, moved forward if the pick-up is not after today at the place (SR-27). Missing: tomorrow and three days after, in the place's time zone |
 
 IDs in the examples: mockup listings `mel-01` to `mel-08` are vehicles 1 to 8, and `hcm-01` to `hcm-04` are 9 to 12. Companies: Yarra Car Co. 1, Southbank Rentals 2, Laneway Motors 3, Tullamarine Drive 4, Two Wheels Melbourne 5, Saigon Wheels Co. 6, Ben Thanh Scooters 7, Tan Son Nhat Auto 8. The coordinates are made up but match the mockup's distances.
 
@@ -40,6 +40,7 @@ IDs in the examples: mockup listings `mel-01` to `mel-08` are vehicles 1 to 8, a
 | Nav and account menu: "My bookings 02" | `GET /api/v1/bookings/summary` | `activeCount` (SR-24) |
 | Account menu: Log out | `POST /api/v1/auth/logout` (login.md) | none |
 | Account menu: Profile, My reviews, Settings; nav: Help | none | Later pages |
+| Nav when logged out: Help, theme toggle, Log in, Sign up | `GET /api/v1/auth/me` returns `401` | None (SR-25) |
 | Where field and its suggestions | `GET /api/v1/places` | `content[].label`. The picked `id` is sent as `placeId` |
 | Pick-up and Return dates | none (page state) | Sent as `startDate` and `endDate` |
 | Headline "8 vehicles near Melbourne CBD · 7 free for your dates." | search; facets | `page.totalElements`, `availableCount` (SR-9); `place.name` |
@@ -62,10 +63,11 @@ IDs in the examples: mockup listings `mel-01` to `mel-08` are vehicles 1 to 8, a
 | Row: specs "Automatic / 5 seats / Hybrid / 2 bags", "157 cc / Automatic / 2 helmets" | search | `transmission`, `seats` (cars), `engineCc` (motorbikes), `fuel`, `fuelDetail`, `bags` (cars), `helmets` (motorbikes), `features` |
 | Row: "Yarra Car Co. ★ 4.8 (212)" | search | `company.name`, `company.rating`, `company.reviewCount` |
 | Row: "Melbourne CBD · 0.8 km away" | search | `location.area`, `distanceKm` |
-| Row: "A$68 / day" | search | `pricePerDay` |
-| Row: "A$204 est. for 3 days" | search | `totalPrice`, `rentalDays` |
+| Row: "A$68 / day"; in Ho Chi Minh City "199,000₫ / day" with "≈ A$12" | search; exchange rates | `pricePerDay`, converted for a `VND` place (SR-28) |
+| Row: "A$204 est. for 3 days" (₫ in Ho Chi Minh City) | search; exchange rates | `totalPrice`, `rentalDays` (SR-28) |
 | Row: "Free for your dates", "Booked 11–12 Dec" | search | `availability.status`, `availability.bookedRanges`. The mockup's "Only 2 left" is dropped (Q1) |
 | Row: Compare checkbox | none (page state) | `id` |
+| Row, map card, compare tray: **Edit** (only on a logged-in company's own vehicles) | Link to the company's vehicle form | `company.id` compared with `CurrentUser.companyId` from `GET /api/v1/auth/me` (SR-26) |
 | Row: View button | Link to the vehicle page | `../vehicle/index.html?id={id}&from={from}&to={to}&placeId={placeId}`. `placeId` lets the vehicle page show the distance and the "Your search" marker |
 | List end: "End of results · 8 of 8 listings near Melbourne CBD", "3 hidden by your filters" | search; facets | `page.totalElements`; `nearbyCount` minus `page.totalElements` |
 | Map: price pins, outlined when booked | search with `size=100` | `location.lat`, `location.lng`, `pricePerDay`, `availability.status` |
@@ -87,8 +89,9 @@ IDs in the examples: mockup listings `mel-01` to `mel-08` are vehicles 1 to 8, a
 | `GET /api/v1/places` | Suggestions for the Where field. The landing page uses it too | 2.3 | Public |
 | `GET /api/v1/places/{id}` | One place, to refill the Where field from `placeId` after a reload. The vehicle page uses it too | 2.3 | Public |
 | `GET /api/v1/bookings/summary` | The current customer's active booking count, for the nav | 2.4 | `CUSTOMER` |
+| `GET /api/v1/exchange-rates` | The day's AUD rates, to show prices in the city's currency | 2.3 | Public |
 
-Search works logged out. The search, facets, compare and place endpoints are Public, so the landing page and visitors can search. Booking needs a login (vehicle.md). Whether the search page itself needs a login is open question 6.
+Search works logged out. The search, facets, compare and place endpoints are Public, so the landing page and visitors can search. Booking needs a login (vehicle.md VEH-39). The search page itself is open to logged-out visitors (SR-25, Q6).
 
 Why `/vehicles/search` and not `GET /vehicles?…`: a row is a search-only shape (distance, total and availability for the dates). This leaves `GET /vehicles` free for the listing-management pages and `/vehicles/{id}` for vehicle.md. Spring matches the fixed path `/vehicles/search` before `/vehicles/{id}`.
 
@@ -299,7 +302,8 @@ Example: Melbourne CBD, no filters.
     "city": "Melbourne",
     "lat": -37.8136,
     "lng": 144.9631,
-    "timeZone": "Australia/Melbourne"
+    "timeZone": "Australia/Melbourne",
+    "currency": "AUD"
   },
   "currency": "AUD",
   "nearbyCount": 8,
@@ -465,9 +469,9 @@ Used by this page's Where field and the landing page's "Pick-up location" field 
 ```json
 {
   "content": [
-    { "id": 1, "name": "Melbourne", "label": "Melbourne, VIC", "kind": "CITY", "city": "Melbourne", "lat": -37.8136, "lng": 144.9631, "timeZone": "Australia/Melbourne" },
-    { "id": 3, "name": "Melbourne Airport", "label": "Melbourne Airport, VIC", "kind": "AIRPORT", "city": "Melbourne", "lat": -37.6690, "lng": 144.8410, "timeZone": "Australia/Melbourne" },
-    { "id": 2, "name": "Melbourne CBD", "label": "Melbourne CBD, VIC", "kind": "AREA", "city": "Melbourne", "lat": -37.8136, "lng": 144.9631, "timeZone": "Australia/Melbourne" }
+    { "id": 1, "name": "Melbourne", "label": "Melbourne, VIC", "kind": "CITY", "city": "Melbourne", "lat": -37.8136, "lng": 144.9631, "timeZone": "Australia/Melbourne", "currency": "AUD" },
+    { "id": 3, "name": "Melbourne Airport", "label": "Melbourne Airport, VIC", "kind": "AIRPORT", "city": "Melbourne", "lat": -37.6690, "lng": 144.8410, "timeZone": "Australia/Melbourne", "currency": "AUD" },
+    { "id": 2, "name": "Melbourne CBD", "label": "Melbourne CBD, VIC", "kind": "AREA", "city": "Melbourne", "lat": -37.8136, "lng": 144.9631, "timeZone": "Australia/Melbourne", "currency": "AUD" }
   ],
   "page": { "size": 8, "number": 0, "totalElements": 3, "totalPages": 1 }
 }
@@ -478,8 +482,9 @@ Errors: `400` when `q` is over 100 characters or `size` is out of range.
 Notes:
 
 - Matching: `q` is found anywhere in `label` or in the place's other names, ignoring case and accents ("ben thanh" finds "Bến Thành"). Places whose `name` starts with `q` come first, then A to Z by `name`.
-- Other names (assumption): each place stores a hidden list such as `Saigon`, `HCMC` for Ho Chi Minh City places. They are searched but not returned. The mockup already treats "Saigon" as Ho Chi Minh City.
-- Places come from a `Place` table that the team seeds: the cities, suburbs or districts, and airports where companies list vehicles (assumption, open question 7).
+- Other names: each place stores a hidden list such as `Saigon`, `HCMC` for Ho Chi Minh City places. They are searched but not returned. The mockup already treats "Saigon" as Ho Chi Minh City.
+- Places come from a fixed `Place` table that the team seeds: the cities, suburbs or districts, and airports where companies list vehicles ([decision](../decisions/fixed-place-list.md), Q7). Customers can only pick from it; a street address finds nothing. Seed data: Melbourne (the CBD, the suburbs in the mockup, the airport) and Ho Chi Minh City (Districts 1, 3, 7, Binh Thanh, Tan Son Nhat airport), loaded at start-up. A new city means new seed rows.
+- Later option, not in the MVP: open search through an outside geocoder (Mapbox Search, Google Places). The page would send the picked point as `lat` and `lng` instead of `placeId`, and the server would match the city from the point. See Q7.
 
 ### 4b. One place
 
@@ -490,7 +495,7 @@ Returns one Place. The search page calls it when it opens with `placeId` in its 
 `GET /api/v1/places/2`
 
 ```json
-{ "id": 2, "name": "Melbourne CBD", "label": "Melbourne CBD, VIC", "kind": "AREA", "city": "Melbourne", "lat": -37.8136, "lng": 144.9631, "timeZone": "Australia/Melbourne" }
+{ "id": 2, "name": "Melbourne CBD", "label": "Melbourne CBD, VIC", "kind": "AREA", "city": "Melbourne", "lat": -37.8136, "lng": 144.9631, "timeZone": "Australia/Melbourne", "currency": "AUD" }
 ```
 
 Errors: `404` when no place has this `id`.
@@ -516,6 +521,29 @@ Notes:
 
 - It sits under `/bookings`, next to vehicle.md's `POST /api/v1/bookings` and the future "My bookings" list. Every customer page calls it along with `GET /api/v1/auth/me`.
 
+### 6. Exchange rates
+
+`GET /api/v1/exchange-rates` · SRS 2.3 · Public
+
+No parameters. The day's rates from AUD to every display currency (SR-28). The server fetches them once a day from ExchangeRate-API's open endpoint (`open.er-api.com/v6/latest/AUD`, no key) and keeps them in memory.
+
+```json
+{
+  "base": "AUD",
+  "rates": { "VND": 16600.0 },
+  "updatedAt": "2026-11-06T00:00:00Z",
+  "source": "Rates By Exchange Rate API",
+  "sourceUrl": "https://www.exchangerate-api.com"
+}
+```
+
+Errors: `503` when the server has no rate yet (the first fetch failed). The page then shows A$ (SR-28).
+
+Notes:
+
+- `rates` holds only the currencies some `CITY` place uses, other than AUD. The rate in the example is made up.
+- If a daily fetch fails, the server keeps the last rates and their `updatedAt`. Tests replace the fetcher with a fixed rate, so they run offline.
+
 ## Endpoints used from other pages
 
 | Endpoint | Defined in | Used for |
@@ -532,7 +560,7 @@ Numbered so the SRS can pick them up. "Page" marks a rule for the frontend only.
 
 **SR-1.** A search needs a place and both dates. Picking a suggestion sets the place. On submit with typed text, or with `location` from the landing page, the page calls `GET /api/v1/places?q=<text>`. It uses the place whose `label` equals the text (ignoring case), or else the first suggestion. If there are no suggestions, the Where field shows its error state ("No place matches"), and no search is sent.
 
-**SR-2.** A vehicle is in scope when `listed` is `true`, its company is live, meaning `verified` with an `ACTIVE` account (login.md LOGIN-26, LOGIN-27), and its `location.city` equals the place's `city`, ignoring case. Vehicles out of scope never appear and are not counted anywhere on the page.
+**SR-2.** A vehicle is in scope when `listed` is `true`, its company is live, meaning `verified` with an `ACTIVE` account (login.md LOGIN-26, LOGIN-27), and its `location.city` equals the place's `city`, ignoring case. Vehicles out of scope never appear and are not counted anywhere on the page. The searched place only sets the point distances are measured from (SR-3), so every place in a city gives the same vehicles: "Melbourne Airport" shows all Melbourne vehicles, nearest to the airport first ([decision](../decisions/whole-city-search-scope.md), Q13).
 
 **SR-3.** `distanceKm` is the straight-line distance (haversine, Earth radius 6371 km) from the place's `lat`/`lng` to the vehicle's pick-up `lat`/`lng`, rounded half-up to 1 decimal place. Filters and sorts use the rounded value. Example: Melbourne CBD (−37.8136, 144.9631) to Richmond (−37.8230, 145.0000) is 3.4 km.
 
@@ -613,7 +641,7 @@ Recommended in Melbourne CBD, no filters, 11–14 Dec: Corolla Hybrid (4.72), PC
 
 ### Map
 
-**SR-21.** Page: the map shows one pin per result (up to 100) at the vehicle's pick-up point, labelled with the price per day. `BOOKED` pins are outlined. Rings mark 2, 5 and 10 km around the place. The first result is picked when the map opens. If the picked vehicle leaves the results, the first result is picked again.
+**SR-21.** Page: the map shows one pin per result (up to 100) at the vehicle's pick-up point, labelled with the price per day. `BOOKED` pins are outlined. Rings mark 2, 5 and 10 km around the place. The first result is picked when the map opens. If the picked vehicle leaves the results, the first result is picked again. The map is drawn with Leaflet on OpenStreetMap-based tiles: a light tile set, and a dark one when the theme is dark (README Theme). Pins are Leaflet markers, the rings are Leaflet circles, and the map shows "© OpenStreetMap contributors" plus the tile provider's credit ([decision](../decisions/leaflet-openstreetmap-map.md), Q9).
 
 ### Paging
 
@@ -624,6 +652,14 @@ Recommended in Melbourne CBD, no filters, 11–14 Dec: Corolla Hybrid (4.72), PC
 **SR-23.** Page: the nav shows the first word of `fullName`. The initials are the first letters of the first and last words, in capitals ("Minh Tran" gives "MT"). `role` `CUSTOMER` shows as "Customer account".
 
 **SR-24.** Page: "My bookings" shows `activeCount` as 2 digits ("02") and hides the number when it is 0 (assumption). Active means `REQUESTED`, `APPROVED` or `PICKED_UP`.
+
+**SR-25.** Page: anyone can open the search page; no login is needed. On load the page calls `GET /api/v1/auth/me`. A `401` means logged out: the nav shows the logo, Help, the theme toggle, **Log in** and **Sign up**, as on the landing page (LP-24), and the page does not call `GET /api/v1/bookings/summary`. Log in and Sign up link to `/login?next=<this search URL>`, so the visitor comes back to the same search (login.md LOGIN-29). Search, filters, the map and compare all work logged out. A login is needed only to send a booking request (vehicle.md VEH-39).
+
+**SR-26.** Page: a logged-in `COMPANY` or `ADMIN` can use the search page too. The nav shows their own account menu, as on the landing page (LP-24): **Dashboard** for a company, **Admin** for an admin, then **Log out**. There is no **My bookings**, and the page does not call `GET /api/v1/bookings/summary`. On a company's own vehicles (a row's `company.id` equals `CurrentUser.companyId`), the row, the map card and the compare tray show an **Edit** button next to **View**. It opens the company's vehicle form, `/company/vehicles/{id}/edit?next=<this page's URL>` (assumption: the dashboard has no mockup yet). After saving or cancelling, the form returns to `next`, checked as in login.md LOGIN-29, so the company lands back on the same search. The button is only a link: the edit endpoint itself checks that the vehicle belongs to the caller's company. Admins get no Edit button.
+
+**SR-27.** Page: defaults for the place and dates ([decision](../decisions/search-date-and-place-defaults.md), Q11). The page saves each searched place's `id` in `localStorage` (key `rentxe-last-place`, like the theme). With no place in the URL, it uses that place, or Melbourne CBD if there is none or it no longer exists. Default dates are tomorrow and three days after, counted in the place's `timeZone`, so they always pass SR-4. If dates arrive from the landing page or a link but the pick-up is not after today at the place (the visitor's clock is ahead or behind), the page moves the pick-up to tomorrow at the place and keeps the rental length, with no error shown. Example: at 23:30 on 6 Nov in Ho Chi Minh City, a Melbourne search defaults to 8–11 Nov, because it is already 7 Nov in Melbourne.
+
+**SR-28.** Page: prices show in the currency of the city being searched ([decision](../decisions/city-currency-display.md), Q14). Each `CITY` place has a `currency` (Melbourne `AUD`, Ho Chi Minh City `VND`), and every place carries its city's. The API stores, works out and returns every amount in AUD, as the README says. For a `VND` place the page converts each amount with `GET /api/v1/exchange-rates`: amount × rate, rounded to the nearest 1,000₫, written "199,000₫ / day", with a small "≈ A$12" under it and the "Rates By Exchange Rate API" link in the page footer. The price slider shows ₫; the page converts its values back to AUD (÷ rate, to 2 decimal places) before sending `minPrice` and `maxPrice`. If the rate call fails, the page shows A$ as for Melbourne. Today's rate is used, so a ₫ price can move a little from day to day; a booking fixes its rate when it is sent (vehicle.md VEH-41). Example: A$12.00 a day for 3 days at 16,600 shows "199,000₫ / day" and "598,000₫ est. for 3 days".
 
 ## Changes to shared models
 
@@ -643,9 +679,12 @@ Decided on 2026-11-06 but not yet in `assets/mockups/search/index.html`. Change 
 |---|---|
 | Remove the "Only 2 left" badge (`avail: 'low'`); those rows show "Free for your dates" | SR-8, Q1 |
 | Headline adds "· 7 free for your dates" when some results are booked | SR-9, Q3 |
+| Ho Chi Minh City prices in ₫ with a small "≈ A$", and the "Rates By Exchange Rate API" link in the footer | SR-28, Q14 |
 | Theme toggle in the nav next to the account menu, and dark styles | README Theme |
 | Help in the nav links to `/help` | login.md LOGIN-31 |
 | Log out sends `POST /api/v1/auth/logout` with the CSRF header, then opens the login page | login.md LOGIN-36 |
+| A `?user=guest` preview with the logged-out nav: Help, theme toggle, Log in, Sign up | SR-25, Q6 |
+| A `?user=company` preview: the company menu (Dashboard, Log out), no My bookings, and **Edit** on that company's rows | SR-26, Q12 |
 
 ## Open questions
 
@@ -654,9 +693,12 @@ Decided on 2026-11-06 but not yet in `assets/mockups/search/index.html`. Change 
 3. **Booked vehicles in results.** Resolved 2026-11-06 ([decision](../decisions/booked-vehicles-shown-flagged.md)): keep showing them, flagged, as the mockup does (SR-9). The headline also says how many are free for the dates, from the new `availableCount`. A "Free for my dates only" filter can come later if testers ask for it.
 4. **Recommended sort.** Accept the formula in SR-18, or pick something simpler? It could later grow into the "Personalised recommendations" custom feature.
 5. **Search scope.** Resolved 2026-11-06: only vehicles of live companies, meaning verified with an `ACTIVE` account (SR-2). A suspended company's vehicles leave search through its account's status, so Company needs no status of its own (login.md LOGIN-26, LOGIN-27).
-6. **Logged-out visitors.** Can they open the search page? The API allows it. They would need a logged-out nav, which has no mockup.
-7. **Where places come from.** A seeded `Place` table (proposal) or an external geocoder such as Nominatim or Google Places (licence, API key and rate limits go in SRS §7)? "Near me" from the browser's location would need `lat` and `lng` parameters. It is not in the mockup.
+6. **Logged-out visitors.** Resolved 2026-11-06 ([decision](../decisions/search-open-to-visitors.md)): yes. The page works logged out, with the landing page's logged-out nav (SR-25). A login is needed only when the visitor clicks **Request to book** on a vehicle; they log in and come back to that vehicle (vehicle.md VEH-39, login.md LOGIN-29).
+7. **Where places come from.** Resolved 2026-11-06 ([decision](../decisions/fixed-place-list.md)): a fixed list in a seeded `Place` table, with hidden other names. No outside service, no API key, and every suggestion has vehicles nearby. Noted as a later option: open search through a geocoder such as Mapbox Search or Google Places, sending `lat` and `lng` instead of `placeId` (its account, key and limits would go in SRS §7). "Near me" from the browser's location would use the same `lat` and `lng` parameters.
 8. **Engine sizes over 160 cc.** These motorbikes match neither engine option. Add "Over 160 cc", or build the options from the data?
-9. **Real map.** The mockup draws a stylised SVG. The real page needs a map library and tiles (for example Leaflet with OpenStreetMap), which go in SRS §7.
+9. **Real map.** Resolved 2026-11-06 ([decision](../decisions/leaflet-openstreetmap-map.md)): Leaflet with OpenStreetMap-based tiles, a light and a dark set that follow the theme toggle (SR-21). No account or key. Leaflet, OpenStreetMap and the tile provider go in SRS §7. Mapbox GL JS was the alternative, for a more polished map with an account and token.
 10. **List paging.** Use "Show more" (assumed in SR-22) or numbered pages? The mockup shows neither.
-11. **Dates and defaults.** The server takes "today" from the place's `timeZone` (SR-4), while landing rule LP-2 picks default dates in the visitor's own time zone. The two can differ by a day near midnight; is that acceptable? Also: is Melbourne CBD the right default place when the landing page sends no `location`, or should the page use the customer's last search?
+11. **Dates and defaults.** Resolved 2026-11-06 ([decision](../decisions/search-date-and-place-defaults.md)): once a place is known, the page works out default dates in the place's time zone and moves a pick-up that is already "today" there, so the server's `400` never comes from dates the visitor didn't pick. The default place is the last one searched in this browser, or else Melbourne CBD (SR-27).
+12. **Companies and admins on search.** Resolved 2026-11-06 ([decision](../decisions/company-and-admin-on-search.md)): they see the same page with their own account menu. A company gets an **Edit** button on its own vehicles that opens its vehicle form and comes back to the search afterwards (SR-26). On the vehicle page, the owner sees **Edit vehicle** instead of **Request to book**; other companies and admins see "Only customer accounts can book" (vehicle.md VEH-40).
+13. **What "near" covers.** Resolved 2026-11-06 ([decision](../decisions/whole-city-search-scope.md)): the whole city of the searched place (SR-2), not a radius or the area alone. The Where list keeps cities, areas and airports, because the place sets where distances, the Distance sort, the km filter and the map centre start from. Later open search (Q7) fits this: the server finds the city of the typed address and measures from that address.
+14. **Cities and currency.** Resolved 2026-11-06 ([decision](../decisions/city-currency-display.md)): amounts stay in AUD everywhere in the API and the database. Pages show the city's currency: A$ in Melbourne, ₫ in Ho Chi Minh City, converted with a daily rate from ExchangeRate-API (SR-28, endpoint 6). A booking stores the currency and rate shown when it is sent (vehicle.md VEH-41). Charging in each city's own currency is a later option.

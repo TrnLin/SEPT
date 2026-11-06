@@ -536,6 +536,7 @@ const MODELS = [
     ['city', 'string', '', 'Same spelling as Location.city, so search can match it.'],
     ['lat, lng', 'decimal', '', 'The point distances are measured from.'],
     ['timeZone', 'string', '', 'IANA zone. Decides "today" for a search.'],
+    ['currency', 'string', 'new', 'AUD or VND: the city\'s display currency. Prices stay AUD (SR-28).', 'search.md'],
     ['otherNames', 'string[]', 'srv', 'Saigon, HCMC: matched by suggestions, never returned.'],
   ]},
   { id: 'Review', area: 'review', kind: 'table', fields: [
@@ -564,6 +565,7 @@ const MODELS = [
     ['createdAt', 'timestamp', ''],
     ['respondedAt', 'timestamp?', 'new', 'When the company approved or rejected. Feeds the company\'s reply time.', 'vehicle.md'],
     ['extensions', 'BookingExtension[]', 'new', 'Requests to keep the vehicle longer, up to 30 days each; approval moves endDate (VEH-38).', 'vehicle.md'],
+    ['displayCurrency, exchangeRate', 'string, decimal', 'new der', 'The currency shown and the day\'s rate when sent; amounts stay AUD (VEH-41).', 'vehicle.md'],
     ['expiresAt', 'timestamp', 'new der', '24 h after createdAt, or the start of the pick-up day if sooner (VEH-36).', 'vehicle.md'],
     ['pick-up and return condition', '—', 'pend', 'SRS §2.5 needs condition notes; Booking has no field for them yet.', 'landing.md LP-16'],
   ]},
@@ -658,6 +660,7 @@ const ENDPOINTS = [
   ['2.3', 'GET', '/vehicles/{id}/similar', 'Up to 3 similar vehicles', 'Public', 'vehicle', ['vehicle']],
   ['2.4', 'GET', '/vehicles/{id}/quote', 'Price for chosen dates and cover', 'Public', 'vehicle', ['vehicle']],
   ['2.4', 'POST', '/bookings', 'Send a booking request (starts REQUESTED)', 'CUSTOMER', 'vehicle', ['vehicle']],
+  ['2.3', 'GET', '/exchange-rates', 'The day\'s AUD rates, to show the city\'s currency', 'Public', 'search', ['search', 'vehicle']],
   ['2.4', 'GET', '/bookings/summary', 'Active booking count for the nav', 'CUSTOMER', 'search', ['search', 'vehicle']],
   ['2.6', 'GET', '/vehicles/{id}/reviews', 'Reviews of one vehicle', 'Public', 'vehicle', ['vehicle']],
 ];
@@ -677,10 +680,11 @@ const DECISIONS = [
   { q: 'Which companies appear in search?', done: true, now: 'Decided 6 Nov: only live companies, verified by an admin with an ACTIVE account. Unverified companies set up while hidden; rejecting means suspending the account.', alt: 'The admin page still needs a list of companies waiting for approval.', rules: 'SR-2 · VEH-35 · LOGIN-26 · LOGIN-27' },
   { q: 'One rating per review, or two?', done: true, now: 'Decided 6 Nov: one rating for the vehicle and the service together. It counts toward the vehicle\'s and the company\'s average.', alt: 'The landing copy was reworded to match.', rules: 'landing Q3' },
   { q: 'One cancellation rule, or one per company?', done: true, now: 'Decided 6 Nov: one rule for everyone. Free until 24 h before pick-up, then 50% of totalPrice.', alt: 'The landing copy was reworded to match.', rules: 'VEH-22 · VEH-23 · landing Q4' },
-  { q: 'Can logged-out visitors use search and vehicle pages?', now: 'The read endpoints are Public. Sending a request needs a CUSTOMER login. No logged-out nav is mocked up.', alt: 'Require a login for the pages as well.', rules: 'search Q6 · vehicle Q16' },
+  { q: 'Can logged-out visitors use search and vehicle pages?', done: true, now: 'Decided 6 Nov: yes, with the landing page\'s logged-out nav. Request to book sends a logged-out visitor to log in, then back to the same vehicle and dates.', alt: 'Rejected: a login wall on search, which would stop visitors coming from the landing page.', rules: 'SR-25 · VEH-39 · LOGIN-29 · search Q6 · vehicle Q16' },
   { q: 'Is payment in scope?', now: 'No. RentXe records amounts. The page says "You won\'t be charged until the company approves".', alt: 'Take payment. Needs a payment provider, which goes in SRS §7.', rules: 'vehicle Q8' },
   { q: 'How does login work: Spring sessions (A) or Supabase Auth (B)?', done: true, now: 'Decided 6 Nov: A. Spring checks the password and keeps a session; the browser holds an HttpOnly cookie. Supabase is only the database.', alt: 'Rejected B: the page logging in with Supabase Auth and Spring checking the JWT. See architecture/auth-flows.html.', rules: 'LOGIN-12 · LOGIN-15 to LOGIN-24 · login Q4, Q5, Q8, Q9, Q16' },
   { q: 'How long can a rental be, and how far ahead?', done: true, now: 'Decided 6 Nov: at most 30 days, starting at most 12 months ahead. Extend a running rental by up to 30 days at a time, from its last week, with the company\'s approval.', alt: 'Rejected: no limits, or a 12-month horizon with any length.', rules: 'VEH-37 · VEH-38 · SR-4 · vehicle Q5' },
+  { q: 'Which currency do pages show?', done: true, now: 'Decided 6 Nov: the city\'s. A$ in Melbourne, ₫ in Ho Chi Minh City from a daily rate; amounts stay AUD and a booking keeps its rate.', alt: 'Later option: each city sets and charges prices in its own currency.', rules: 'SR-28 · VEH-41 · search Q14' },
 ];
 
 // [number, text, status: '' | 'done', decision number or 0]
@@ -722,12 +726,15 @@ const QUESTIONS = {
     [3, 'Booked vehicles stay in the results, flagged; the headline adds "N free for your dates" from availableCount (SR-9).', 'done', 0],
     [4, 'Accept the Recommended sort formula (SR-18), or pick something simpler?', '', 0],
     [5, 'Only live companies (verified, account ACTIVE) appear in search.', 'done', 5],
-    [6, 'Can logged-out visitors open the search page?', '', 8],
-    [7, 'Places: a seeded table (proposal) or an external geocoder with its licence and key?', '', 0],
+    [6, 'Search is open to logged-out visitors, with the landing page\'s logged-out nav (SR-25).', 'done', 8],
+    [7, 'Places come from a fixed, seeded Place table; open search through a geocoder is a later option.', 'done', 0],
     [8, 'Motorbikes over 160 cc match neither engine-size option.', '', 0],
-    [9, 'Which map library and tiles (for example Leaflet and OpenStreetMap)? Goes in SRS §7.', '', 0],
+    [9, 'Leaflet with OpenStreetMap-based light and dark tiles (SR-21); goes in SRS §7.', 'done', 0],
     [10, '"Show more" or numbered pages?', '', 0],
-    [11, 'Server "today" and the visitor\'s time zone can differ near midnight. And which place is the default?', '', 0],
+    [11, 'Default dates are counted at the place; the default place is the last one searched, else Melbourne CBD (SR-27).', 'done', 0],
+    [12, 'Companies and admins see search with their own menu; a company gets Edit on its own vehicles (SR-26, VEH-40).', 'done', 0],
+    [13, 'Search covers the whole city of the place; the place only sets where distances start (SR-2).', 'done', 0],
+    [14, 'Pages show the city\'s currency (A$ or ₫) from a daily rate; amounts stay AUD (SR-28).', 'done', 12],
   ]},
   vehicle: { file: 'vehicle.md', items: [
     [1, 'Pending requests hold dates (VEH-6).', 'done', 1],
@@ -745,7 +752,7 @@ const QUESTIONS = {
     [13, 'Similar card and search card shapes.', 'done', 0],
     [14, 'Is there a confirm step before the request is sent?', '', 0],
     [15, 'How the searched place reaches this page.', 'done', 0],
-    [16, 'Do the pages need a login, or only the Request to book button?', '', 8],
+    [16, 'Only Request to book needs a login; logged out, it goes to log in and back to this vehicle (VEH-39).', 'done', 8],
   ]},
 };
 

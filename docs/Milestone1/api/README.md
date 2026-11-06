@@ -12,8 +12,8 @@ Use these files to write SRS §2 (functional requirements), §2.8 (business rule
 |---|---|---|---|
 | Landing | `assets/mockups/landing-3d/` | [landing.md](landing.md) | LP-1 to LP-25 |
 | Log in and sign up | `assets/mockups/login/` | [login.md](login.md) | LOGIN-1 to LOGIN-36 |
-| Search (customer) | `assets/mockups/search/` | [search.md](search.md) | SR-1 to SR-24 |
-| Vehicle detail (customer) | `assets/mockups/vehicle/` (not committed yet) | [vehicle.md](vehicle.md) | VEH-1 to VEH-38 |
+| Search (customer) | `assets/mockups/search/` | [search.md](search.md) | SR-1 to SR-28 |
+| Vehicle detail (customer) | `assets/mockups/vehicle/` (not committed yet) | [vehicle.md](vehicle.md) | VEH-1 to VEH-41 |
 
 The logo concept sheet (`assets/mockups/logo/`) has no data, so it has no schema.
 
@@ -36,6 +36,7 @@ Static pages with no API: `/for-companies`, `/terms` and `/privacy`, linked from
 | `GET /api/v1/vehicles/search` | Search results for a place and dates | 2.3 | Public | [search.md](search.md) |
 | `GET /api/v1/vehicles/search/facets` | Filter options with counts, empty-state suggestions | 2.3 | Public | [search.md](search.md) |
 | `GET /api/v1/vehicles/compare` | Up to 3 vehicles side by side | 2.3 | Public | [search.md](search.md) |
+| `GET /api/v1/exchange-rates` | The day's AUD rates, for showing prices in the city's currency | 2.3 | Public | [search.md](search.md) |
 | `GET /api/v1/bookings/summary` | Active booking count for the nav, and where a customer goes after log in (login.md LOGIN-28) | 2.4 | `CUSTOMER` | [search.md](search.md) |
 | `GET /api/v1/vehicles/{id}` | One vehicle, with its company and review summary | 2.2 | Public | [vehicle.md](vehicle.md) |
 | `GET /api/v1/vehicles/{id}/availability` | Booked days for the calendar | 2.2 | Public | [vehicle.md](vehicle.md) |
@@ -53,7 +54,7 @@ These parts of the brief have no mockup, so they have no endpoints here. Add a p
 | Area | Pages still to mock up |
 |---|---|
 | 2.1 Accounts | Customer profile, company profile, admin user and company management |
-| 2.2 Vehicles | Company dashboard: add, edit and remove listings |
+| 2.2 Vehicles | Company dashboard: add, edit and remove listings. The vehicle form (assumed at `/company/vehicles/{id}/edit`) is also opened from **Edit** on search and the vehicle page, and returns to `next` after saving (search.md SR-26, vehicle.md VEH-40) |
 | 2.4 Bookings | My bookings (list, detail, cancel, extend: VEH-38); company: approve or reject requests and extensions |
 | 2.5 Pick-up and return | Company: record pick-up, return, condition and the final fee |
 | 2.6 Reviews | Write a review after a returned booking; company page with its reviews |
@@ -69,7 +70,7 @@ These parts of the brief have no mockup, so they have no endpoints here. Add a p
 | Rental dates in the API | Query parameters and bodies call them `startDate` and `endDate`, like Booking. Page URLs keep the mockups' `from` and `to`. |
 | "Today" | The date in the pick-up place's time zone (`Location.timeZone`), or the searched place's (`Place.timeZone`) when there is no single vehicle. |
 | Searched place | Travels between pages and to the API as `placeId`. The server works out distances from it. |
-| Money | Amounts are decimals with 2 places (`BigDecimal` in Java), for example `68.00`. Every price is in AUD. A response that holds prices also has `"currency": "AUD"`. |
+| Money | Amounts are decimals with 2 places (`BigDecimal` in Java), for example `68.00`. Every price is stored, worked out and returned in AUD. A response that holds prices also has `"currency": "AUD"`. Pages show amounts in the city's currency (`Place.currency`), converted with a daily rate ([search.md](search.md) SR-28); a booking keeps the rate it was sent with (VEH-41). |
 | Auth | Spring Security session (team decision 10). Supabase is only the database. Log in sets an `HttpOnly` session cookie. "Keep me logged in" adds a remember-me cookie. Endpoints marked **Public** need no session. For `/api/**`, an unauthenticated call gets `401`, not a redirect to a login form. |
 | CSRF | Spring's CSRF protection stays on. A readable `XSRF-TOKEN` cookie; the shared `api()` wrapper sends it back in the `X-XSRF-TOKEN` header on every `POST`, `PATCH`, `PUT` and `DELETE`. Missing or wrong: `403` ([login.md](login.md) LOGIN-36). |
 | Origin | The pages and the API share one origin, so cookies work without CORS: Spring serves the pages, or a frontend dev server proxies `/api` to Spring. |
@@ -159,7 +160,7 @@ _server only_. `id`, `userId`, `tokenHash`, `expiresAt`, `usedAt` (timestamp \| 
 
 ### Place
 
-A point customers search from: a city, an area (suburb or district) or an airport. The team seeds them.
+A point customers search from: a city, an area (suburb or district) or an airport. The team seeds them: customers pick from this fixed list, with no outside geocoder ([decision](../decisions/fixed-place-list.md)). Open search through a geocoder is noted as a later option in [search.md](search.md) Q7.
 
 | Field | Type | Notes |
 |---|---|---|
@@ -170,6 +171,7 @@ A point customers search from: a city, an area (suburb or district) or an airpor
 | `city` | string | Same spelling as `Location.city`, so search can match it |
 | `lat`, `lng` | decimal | The point distances are measured from |
 | `timeZone` | string | IANA zone, for example `Australia/Melbourne` |
+| `currency` | string | The city's display currency, `AUD` or `VND`. Every place carries its city's. Prices are still stored in AUD (SR-28). |
 | `otherNames` | string[] | _server only_. Matched by suggestions, for example `Saigon`, `HCMC` |
 
 ### Location
@@ -184,6 +186,7 @@ A vehicle's pick-up and return point.
 | `directions` | string \| null | How to find the desk, for example `Front desk, ground floor` |
 | `lat`, `lng` | decimal | For distance and the map |
 | `timeZone` | string | IANA zone, for example `Asia/Ho_Chi_Minh`. Decides "today" and the 10:00 pick-up time. |
+| `currency` | string | _derived_ from the `CITY` place for `city`: the display currency, `AUD` or `VND` ([search.md](search.md) SR-28). Not stored. |
 
 ### Vehicle
 
@@ -243,6 +246,7 @@ InsuranceOption:
 | `totalPrice` | decimal | _derived_ once, when the request is saved, by the fee rule ([vehicle.md](vehicle.md) VEH-10 to VEH-15), then stored. A later price change does not change it. |
 | `createdAt` | timestamp | |
 | `respondedAt` | timestamp \| null | When the company approved or rejected |
+| `displayCurrency`, `exchangeRate` | string, decimal | _derived_ when the request is saved: the currency shown for the vehicle's city and the day's AUD rate for it (`AUD`, `1.0` in Melbourne). Amounts on record stay AUD (VEH-41). |
 | `expiresAt` | timestamp | _derived_ when the request is saved: 24 hours after `createdAt`, or 00:00 on the pick-up day in the pick-up place's time zone if sooner (VEH-36) |
 
 ### BookingExtension
@@ -293,7 +297,8 @@ The four files agree on each default below. Change one, and change every rule it
 | 5 | Which companies appear in search? | Decided: only live companies, meaning `verified` by an admin with an `ACTIVE` account. Unverified companies can set up their profile and vehicles while hidden. An admin rejects or removes a company by suspending its account, so Company has no status of its own. | SR-2, VEH-35, LOGIN-26, LOGIN-27, login.md Q2, search.md Q5 |
 | 6 | One rating per review, or one for the vehicle and one for the company? | Decided: one `rating` for the vehicle and the service together. The landing copy will be reworded. | landing.md Q3 |
 | 7 | One cancellation rule for everyone, or one per company? | Decided: one rule for everyone. Free until 24 hours before pick-up, then 50% of `totalPrice`. The landing copy will be reworded. | VEH-22, VEH-23, landing.md Q4 |
-| 8 | Can logged-out visitors use search and vehicle pages? | The read endpoints are Public; sending a booking needs a `CUSTOMER` login. No logged-out nav is mocked up. | search.md Q6, vehicle.md Q16 |
+| 8 | Can logged-out visitors use search and vehicle pages? | Decided: yes. Both pages work logged out, with the landing page's logged-out nav. Only **Request to book** needs a `CUSTOMER` login: a logged-out visitor goes to log in and comes back to the same vehicle and dates. | SR-25, VEH-39, LOGIN-29, search.md Q6, vehicle.md Q16 |
 | 9 | Is payment in scope? | No. RentXe records amounts; the page says "You won't be charged until the company approves". | vehicle.md Q8 |
 | 10 | How does login work? | Decided: option A, Spring Security sessions with an `HttpOnly` cookie and remember-me. Supabase is only the Postgres database; its Auth feature is not used. See [the decision](../decisions/login-auth-approach.md) and [the diagram](../architecture/auth-flows.html). | Every `/auth/*` endpoint, LOGIN-12 and LOGIN-15 to LOGIN-24, login.md Q4, Q5, Q8, Q9, Q16 |
 | 11 | How long can a rental be, and how far ahead? | Decided: at most 30 days, starting at most 12 months ahead. A customer extends a running rental by up to 30 days at a time, from the last week before return, with the company's approval. | VEH-37, VEH-38, SR-4, vehicle.md Q5 |
+| 12 | Which currency do pages show? | Decided: the city's. Amounts are stored and returned in AUD; pages show A$ in Melbourne and ₫ in Ho Chi Minh City, converted with a daily rate from ExchangeRate-API. A booking stores the currency and rate it was sent with. | SR-28, VEH-41, search.md Q14 |
