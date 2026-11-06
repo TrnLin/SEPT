@@ -41,6 +41,24 @@ Every decision and every revision made during the milestone, one file per decisi
 | [form-error-banner](form-error-banner.md) | Proposed | ui, auth, accessibility | Field errors under the field; other errors in a banner at the top of the form, never a toast |
 | [static-help-page](static-help-page.md) | Proposed | ui, static-pages, auth | Help opens a static `/help` FAQ about accounts and renting, for every visitor |
 | [unique-company-names](unique-company-names.md) | Proposed | company, signup, data-model | Company names are unique, ignoring case and extra spaces, so look-alikes can't borrow reviews |
+| [one-listing-one-vehicle](one-listing-one-vehicle.md) | Proposed | search, vehicle, booking, data-model | One listing is one physical vehicle; no `units`, and the "Only N left" label is dropped |
+| [requests-hold-dates-and-expire](requests-hold-dates-and-expire.md) | Proposed | booking, search, vehicle, data-model | Requests block their dates; unanswered after 24 h (or by the pick-up day) they become `EXPIRED` |
+| [return-day-stays-blocked](return-day-stays-blocked.md) | Proposed | booking, search, vehicle | A booking blocks its return day too; the next pick-up is the day after at the earliest |
+| [booked-vehicles-shown-flagged](booked-vehicles-shown-flagged.md) | Proposed | search, ui | Booked vehicles stay in search results, flagged; the headline says how many are free for the dates |
+| [rental-length-and-horizon](rental-length-and-horizon.md) | Proposed | booking, search, vehicle | A booking is at most 30 days and starts at most 12 months ahead |
+| [extend-rental-by-30-days](extend-rental-by-30-days.md) | Proposed | booking, data-model | From the last week of a rental, the customer can ask for up to 30 more days; the company approves |
+| [search-open-to-visitors](search-open-to-visitors.md) | Proposed | search, vehicle, auth, ui | Search and vehicle pages work logged out; Request to book sends visitors to log in and back to the vehicle |
+| [company-and-admin-on-search](company-and-admin-on-search.md) | Proposed | search, vehicle, company, ui | Companies and admins use search with their own menu; a company can edit its own vehicles straight from search and the vehicle page |
+| [fixed-place-list](fixed-place-list.md) | Proposed | search, data-model | "Where" suggests from a fixed, seeded Place table; open search through a geocoder is a later option |
+| [whole-city-search-scope](whole-city-search-scope.md) | Proposed | search | Search covers the whole city of the picked place; the place sets where distances are measured from |
+| [leaflet-openstreetmap-map](leaflet-openstreetmap-map.md) | Proposed | search, ui, dependencies | The search map uses Leaflet with OpenStreetMap-based light and dark tiles; no account or key |
+| [search-date-and-place-defaults](search-date-and-place-defaults.md) | Proposed | search, ui, dates | Default dates count from "today" at the place; the default place is the last one searched in this browser |
+| [city-currency-display](city-currency-display.md) | Proposed | search, vehicle, fees, dependencies | Pages show A$ or ₫ by city from a daily rate; amounts stay AUD; a booking keeps its rate |
+| [recommended-sort-formula](recommended-sort-formula.md) | Proposed | search | Recommended sort: booked last, then company rating minus 0.1 per km; the same for everyone |
+| [show-more-paging](show-more-paging.md) | Proposed | search, ui | Search results load 10 at a time with a "Show more" button; no numbered pages |
+| [engine-size-over-160](engine-size-over-160.md) | Proposed | search, ui | The motorbike engine filter adds "Over 160 cc", so every bike fits one option |
+| [compare-own-page](compare-own-page.md) | Proposed | search, ui | Comparison opens its own shareable page, one column per vehicle; it stays in the MVP |
+| [search-error-display](search-error-display.md) | Proposed | search, ui, accessibility | Search load errors show in the results area with Try again; field errors under the field; side calls fail quietly |
 
 ## Template
 

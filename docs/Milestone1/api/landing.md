@@ -211,7 +211,7 @@ Hero search form:
 | ID | Rule |
 |---|---|
 | LP-1 | Vehicle type is `CAR` or `MOTORBIKE`. Default `CAR`. `?vehicle=bike` on the landing URL starts on `MOTORBIKE`. |
-| LP-2 | The pick-up date defaults to tomorrow and the return date to three days after it, in the visitor's local time zone. |
+| LP-2 | The pick-up date defaults to tomorrow and the return date to three days after it, in the visitor's local time zone. The search page re-checks them against "today" at the searched place and moves the pick-up forward if needed (search.md SR-27). |
 | LP-3 | The pick-up date must be after today: the earliest pick-up is tomorrow, because every booking waits for the company to approve it. Same rule as search.md SR-4 and vehicle.md VEH-3 (README, cross-page decision 2). |
 | LP-4 | The return date must be after the pick-up date. If the visitor picks a return date on or before the pick-up date, the form moves it to the day after pick-up, as the search page does. |
 | LP-5 | Pick-up location is optional free text, trimmed, at most 100 characters (assumption). If blank, `location` is not sent and the search page uses its default city. |

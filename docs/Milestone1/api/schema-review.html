@@ -307,7 +307,7 @@ footer { border-top: 1px solid var(--ink); margin-top: 64px; padding: 20px 0 40p
     <div class="shapes">
       <article><p class="label">Response shape · login.md</p><h4>CurrentUser</h4><p>Returned by log in, both sign-ups and <code>/auth/me</code>.</p><div class="mono">User fields + company (Company | null)</div></article>
       <article><p class="label">Response shape · search.md</p><h4>SearchResult</h4><p>One result card. Search, compare and similar vehicles all return it.</p><div class="mono">vehicle card fields, company {id, name, rating, reviewCount}, distanceKm, rentalDays, totalPrice, availability</div></article>
-      <article><p class="label">Response shape · search.md</p><h4>Availability</h4><p>On each card, for the chosen dates.</p><div class="mono">status AVAILABLE · FEW_LEFT · BOOKED, unitsLeft, bookedRanges[]</div></article>
+      <article><p class="label">Response shape · search.md</p><h4>Availability</h4><p>On each card, for the chosen dates.</p><div class="mono">status AVAILABLE · BOOKED, bookedRanges[]</div></article>
       <article><p class="label">Response shape · vehicle.md</p><h4>Quote</h4><p>The booking panel's price, before a request is sent.</p><div class="mono">days, available, bookedDates, nextAvailable, insurance, rentalAmount, insuranceAmount, totalPrice, cancellation {freeUntil, feeAfter}</div></article>
     </div>
   </section>
@@ -335,6 +335,18 @@ footer { border-top: 1px solid var(--ink); margin-top: 64px; padding: 20px 0 40p
         <div class="arrow"><small>by role</small><div class="ln"></div><small class="under">LOGIN rules</small></div>
         <div class="node ghost multi"><b>My bookings</b><small>customer</small><b>Company dashboard</b><small>company</small><b>Admin</b><small>admin · assumed</small></div>
       </div>
+      <div class="flow-row">
+        <div class="node"><b>Search</b><small>search</small></div>
+        <div class="arrow"><small>ids, from, to,<br>placeId</small><div class="ln"></div><small class="under">SR-20</small></div>
+        <div class="node ghost"><b>Compare</b><small>no mockup</small></div>
+      </div>
+      <div class="flow-row">
+        <div class="node"><b>Vehicle</b><small>logged out</small></div>
+        <div class="arrow"><small>Request to book<br>next=this page</small><div class="ln"></div><small class="under">VEH-39</small></div>
+        <div class="node"><b>Log in</b><small>login</small></div>
+        <div class="arrow"><small>back to next,<br>same dates</small><div class="ln"></div><small class="under">LOGIN-29</small></div>
+        <div class="node"><b>Vehicle</b><small>click again to send</small></div>
+      </div>
     </div>
     <div class="legend" style="margin-bottom:12px">
       <span><span class="dot own"></span> defined here, called here</span>
@@ -353,7 +365,7 @@ footer { border-top: 1px solid var(--ink); margin-top: 64px; padding: 20px 0 40p
   <section class="block" id="life">
     <div class="block-head">
       <div><p class="label">(03) Booking lifecycle</p><h2>One booking, start to finish.</h2></div>
-      <p>The six statuses in the Booking model. Orange states block the vehicle's dates (SR-6, VEH-6). Only the first step has an endpoint so far; the dashed steps belong to pages with no mockup yet.</p>
+      <p>The seven statuses in the Booking model. Orange states block the vehicle's dates (SR-6, VEH-6). Only the first step has an endpoint so far; the dashed steps belong to pages with no mockup yet. Extending a rental keeps it <code>PICKED_UP</code> and moves its return date (VEH-38).</p>
     </div>
     <div class="life">
       <svg viewBox="0 0 1090 360" role="img" aria-label="Booking status diagram">
@@ -372,7 +384,8 @@ footer { border-top: 1px solid var(--ink); margin-top: 64px; padding: 20px 0 40p
             <line x1="500" y1="168" x2="628" y2="168" marker-end="url(#ah)" stroke-dasharray="5 4"/>
             <line x1="780" y1="168" x2="908" y2="168" marker-end="url(#ah)" stroke-dasharray="5 4"/>
             <line x1="985" y1="196" x2="985" y2="278" marker-end="url(#ah)" stroke-dasharray="5 4"/>
-            <line x1="145" y1="140" x2="145" y2="82" marker-end="url(#ah)" stroke-dasharray="2 4" stroke="#6F6F6F"/>
+            <line x1="145" y1="140" x2="145" y2="82" marker-end="url(#ah)" stroke-dasharray="5 4"/>
+            <path d="M680 140C680 96 730 96 730 136" marker-end="url(#ah)" stroke-dasharray="5 4"/>
           </g>
           <circle cx="24" cy="168" r="7" fill="#0E0E0E"/>
           <!-- states -->
@@ -395,9 +408,10 @@ footer { border-top: 1px solid var(--ink); margin-top: 64px; padding: 20px 0 40p
             <rect x="910" y="280" width="150" height="56" rx="9" fill="url(#hatch)" stroke="#6F6F6F" stroke-dasharray="5 4"/>
             <text x="985" y="304" text-anchor="middle" fill="#0E0E0E">Review</text>
             <text x="985" y="322" text-anchor="middle" font-size="10.5" fill="#6F6F6F">one per booking</text>
-            <rect x="70" y="24" width="150" height="56" rx="9" fill="url(#hatch)" stroke="#6F6F6F" stroke-dasharray="5 4"/>
-            <text x="145" y="48" text-anchor="middle" fill="#6F6F6F">EXPIRED?</text>
-            <text x="145" y="66" text-anchor="middle" font-size="10.5" fill="#6F6F6F">not in model</text>
+            <rect x="70" y="24" width="150" height="56" rx="9" fill="#fff" stroke="#0E0E0E" stroke-width="1.5"/>
+            <text x="145" y="48" text-anchor="middle" font-weight="500">EXPIRED</text>
+            <text x="145" y="66" text-anchor="middle" font-size="10.5" fill="#6F6F6F">no answer in time</text>
+            <text x="760" y="104" font-size="10.5" fill="#6F6F6F">extend ≤ 30 days</text>
           </g>
           <!-- step numbers -->
           <g font-size="11" text-anchor="middle">
@@ -409,7 +423,8 @@ footer { border-top: 1px solid var(--ink); margin-top: 64px; padding: 20px 0 40p
             <g><circle cx="564" cy="168" r="10" fill="#fff" stroke="#0E0E0E"/><text x="564" y="172">5</text></g>
             <g><circle cx="844" cy="168" r="10" fill="#fff" stroke="#0E0E0E"/><text x="844" y="172">6</text></g>
             <g><circle cx="985" cy="238" r="10" fill="#fff" stroke="#0E0E0E"/><text x="985" y="242">7</text></g>
-            <g><circle cx="145" cy="111" r="10" fill="#fff" stroke="#6F6F6F"/><text x="145" y="115" fill="#6F6F6F">8</text></g>
+            <g><circle cx="145" cy="111" r="10" fill="#fff" stroke="#0E0E0E"/><text x="145" y="115">8</text></g>
+            <g><circle cx="705" cy="104" r="10" fill="#fff" stroke="#0E0E0E"/><text x="705" y="108">9</text></g>
           </g>
         </g>
       </svg>
@@ -421,15 +436,16 @@ footer { border-top: 1px solid var(--ink); margin-top: 64px; padding: 20px 0 40p
         <li><span class="n">5</span><div><b>Company records pick-up.</b><small>Deposit held. No endpoint yet (§2.5)</small></div></li>
         <li><span class="n">6</span><div><b>Company records return.</b><small>Condition, odometer, late fee (VEH-24, VEH-25). Booking has no condition field yet</small></div></li>
         <li><span class="n">7</span><div><b>Customer writes a review.</b><small>One per RETURNED booking. No endpoint yet</small></div></li>
-        <li><span class="n">8</span><div><b>Unanswered request expires?</b><small>Not in the model. Decision 1</small></div></li>
+        <li><span class="n">8</span><div><b>Unanswered request expires.</b><small>24 h after it was sent, or at the start of the pick-up day if sooner. A scheduled job; availability already skips it (VEH-36, decision 1)</small></div></li>
+        <li><span class="n">9</span><div><b>Customer extends the rental.</b><small>From 7 days before return, up to 30 days at a time; the company approves. Stays PICKED_UP. No endpoint yet: My bookings (VEH-38)</small></div></li>
       </ol>
     </div>
 
     <div class="clash">
-      <p class="label">Decision 3 · SR-7, VEH-7</p>
+      <p class="label">Decision 3 · decided 6 Nov · SR-7, VEH-7</p>
       <h3>Does a booking's return day block the next pick-up?</h3>
       <p>The Tesla Model 3 is booked 11–12 Dec. Each row is a new request. Flip the switch to see which requests change if the return day becomes free.</p>
-      <label class="switch" style="margin-bottom:14px"><input type="checkbox" id="tReturn"> Return day is free for the next pick-up (current default: off)</label>
+      <label class="switch" style="margin-bottom:14px"><input type="checkbox" id="tReturn"> Return day is free for the next pick-up (decided: off; try it to see the rejected option)</label>
       <div class="table-scroll"><div class="days" id="days"></div></div>
     </div>
   </section>
@@ -443,7 +459,7 @@ footer { border-top: 1px solid var(--ink); margin-top: 64px; padding: 20px 0 40p
     <div class="calc">
       <div class="calc-grid">
         <div>
-          <div class="field"><label for="cDays">Rental length · <output id="oDays">3 days</output></label><input type="range" id="cDays" min="1" max="14" value="3"></div>
+          <div class="field"><label for="cDays">Rental length · <output id="oDays">3 days</output></label><input type="range" id="cDays" min="1" max="30" value="3"></div>
           <div class="field"><label>Cover</label><div class="seg" id="cCover"><button type="button" data-v="BASIC" aria-pressed="true">Basic · included</button><button type="button" data-v="PREMIUM" aria-pressed="false">Premium · A$14/day</button></div></div>
           <div class="field"><label for="cLate">Returned late by · <output id="oLate">0 h</output></label><input type="range" id="cLate" min="0" max="30" value="0" step="1"></div>
           <p class="label" style="line-height:1.6">VEH-10 to VEH-15 fee · VEH-22, VEH-23 cancel · VEH-24, VEH-25 late</p>
@@ -457,7 +473,7 @@ footer { border-top: 1px solid var(--ink); margin-top: 64px; padding: 20px 0 40p
   <section class="block" id="decisions">
     <div class="block-head">
       <div><p class="label">(05) Decisions for the team</p><h2>Defaults to confirm.</h2></div>
-      <p>The four files agree on each default below. Keep it, or mark it for change and say what to do instead. Changing one means changing every rule it lists. Decisions 2, 6 and 7 were settled on 6 Nov.</p>
+      <p>The four files agree on each default below. Keep it, or mark it for change and say what to do instead. Changing one means changing every rule it lists. Every decision except 9 (payment) was settled on 6 Nov; 9 keeps its default until the team confirms it.</p>
     </div>
     <div class="decs" id="decs"></div>
   </section>
@@ -536,6 +552,7 @@ const MODELS = [
     ['city', 'string', '', 'Same spelling as Location.city, so search can match it.'],
     ['lat, lng', 'decimal', '', 'The point distances are measured from.'],
     ['timeZone', 'string', '', 'IANA zone. Decides "today" for a search.'],
+    ['currency', 'string', 'new', 'AUD or VND: the city\'s display currency. Prices stay AUD (SR-28).', 'search.md'],
     ['otherNames', 'string[]', 'srv', 'Saigon, HCMC: matched by suggestions, never returned.'],
   ]},
   { id: 'Review', area: 'review', kind: 'table', fields: [
@@ -554,7 +571,7 @@ const MODELS = [
     ['customerId', 'long', 'fk', '→ User'],
     ['companyId', 'long', 'der', 'Copied from the vehicle.'],
     ['startDate, endDate', 'date', '', 'Pick-up and return days. Both block the vehicle (decision 3).'],
-    ['status', 'enum', '', 'REQUESTED · APPROVED · REJECTED · CANCELLED · PICKED_UP · RETURNED'],
+    ['status', 'enum', 'chg', 'REQUESTED · APPROVED · REJECTED · CANCELLED · EXPIRED · PICKED_UP · RETURNED. EXPIRED: no answer in time (VEH-36).', 'vehicle.md'],
     ['insurance', 'enum', 'new', 'BASIC (default) · PREMIUM', 'vehicle.md'],
     ['pricePerDay', 'decimal', 'new', 'The daily rate when the request was saved.', 'vehicle.md'],
     ['insurancePerDay', 'decimal', 'new', '0.00 for BASIC.', 'vehicle.md'],
@@ -563,6 +580,9 @@ const MODELS = [
     ['totalPrice', 'decimal', 'der chg', 'Worked out once when the request is saved, then stored. A later price change does not touch it (VEH-15).', 'vehicle.md'],
     ['createdAt', 'timestamp', ''],
     ['respondedAt', 'timestamp?', 'new', 'When the company approved or rejected. Feeds the company\'s reply time.', 'vehicle.md'],
+    ['extensions', 'BookingExtension[]', 'new', 'Requests to keep the vehicle longer, up to 30 days each; approval moves endDate (VEH-38).', 'vehicle.md'],
+    ['displayCurrency, exchangeRate', 'string, decimal', 'new der', 'The currency shown and the day\'s rate when sent; amounts stay AUD (VEH-41).', 'vehicle.md'],
+    ['expiresAt', 'timestamp', 'new der', '24 h after createdAt, or the start of the pick-up day if sooner (VEH-36).', 'vehicle.md'],
     ['pick-up and return condition', '—', 'pend', 'SRS §2.5 needs condition notes; Booking has no field for them yet.', 'landing.md LP-16'],
   ]},
   { id: 'Vehicle', area: 'vehicle', kind: 'table', fields: [
@@ -591,7 +611,6 @@ const MODELS = [
     ['location', 'Location', '', 'Embedded pick-up and return point.'],
     ['imageUrls', 'string[]', '', 'Empty: the page draws a silhouette.'],
     ['listed', 'boolean', '', 'false hides it from customers without deleting it.'],
-    ['units', 'int', 'pend', 'Identical vehicles in one listing, so "Only 2 left" can count something.', 'decision 4'],
   ]},
   { id: 'Location', area: 'side', kind: 'embedded in Vehicle', fields: [
     ['area', 'string', '', 'Suburb or district: Carlton, District 1.'],
@@ -657,28 +676,32 @@ const ENDPOINTS = [
   ['2.3', 'GET', '/vehicles/{id}/similar', 'Up to 3 similar vehicles', 'Public', 'vehicle', ['vehicle']],
   ['2.4', 'GET', '/vehicles/{id}/quote', 'Price for chosen dates and cover', 'Public', 'vehicle', ['vehicle']],
   ['2.4', 'POST', '/bookings', 'Send a booking request (starts REQUESTED)', 'CUSTOMER', 'vehicle', ['vehicle']],
+  ['2.3', 'GET', '/exchange-rates', 'The day\'s AUD rates, to show the city\'s currency', 'Public', 'search', ['search', 'vehicle']],
   ['2.4', 'GET', '/bookings/summary', 'Active booking count for the nav', 'CUSTOMER', 'search', ['search', 'vehicle']],
   ['2.6', 'GET', '/vehicles/{id}/reviews', 'Reviews of one vehicle', 'Public', 'vehicle', ['vehicle']],
 ];
 const MISSING = {
   '2.1': 'Still to mock up: customer profile, company profile, admin user and company management',
-  '2.2': 'Still to mock up: company dashboard to add, edit and remove listings',
-  '2.4': 'Still to mock up: My bookings (list, cancel); company approve or reject',
+  '2.2': 'Still to mock up: company dashboard to add, edit and remove listings. Its vehicle form is also opened from Edit on search and the vehicle page (SR-26, VEH-40)',
+  '2.3': 'Still to mock up: the compare page, /compare?ids=… (SR-20); its endpoint is ready',
+  '2.4': 'Still to mock up: My bookings (list, cancel, extend: VEH-38); company approves or rejects requests and extensions',
   '2.5': 'No endpoints yet. Still to mock up: record pick-up, return, condition and final fee',
   '2.6': 'Still to mock up: write a review; company page with its reviews. Landing reviews are static (LP-21); /reviews/featured is an option for later',
 };
 
 const DECISIONS = [
-  { q: 'Does a REQUESTED booking hold its dates?', now: 'Yes. REQUESTED, APPROVED and PICKED_UP block. No expiry and no EXPIRED status yet.', alt: 'Only APPROVED blocks. Several customers can request the same days; approving one rejects the rest.', rules: 'SR-6 · VEH-6 · search Q2 · vehicle Q1, Q2' },
+  { q: 'Does a REQUESTED booking hold its dates?', done: true, now: 'Decided 6 Nov: yes. An unanswered request expires after 24 h, or at the start of the pick-up day if sooner, and becomes EXPIRED.', alt: 'Rejected: only APPROVED blocks, and approving one request rejects the rest.', rules: 'SR-6 · VEH-6 · VEH-36 · search Q2 · vehicle Q1, Q2' },
   { q: 'Can a rental start today?', done: true, now: 'Decided 6 Nov: no. The earliest pick-up is tomorrow. The landing review now says "picked it up the next morning".', alt: 'The vehicle calendar still lets you click today (vehicle Q4).', rules: 'LP-3 · SR-4 · VEH-3 · vehicle Q4' },
-  { q: 'Is the return day free for the next pick-up?', now: 'No. A booking blocks both its start and end days, as the vehicle calendar shows.', alt: 'Yes. Return and the next pick-up are both at 10:00, so they could share a day. Try it in (03).', rules: 'SR-7 · VEH-6 · VEH-7 · vehicle Q3' },
-  { q: '"Only 2 left": is one Vehicle row one physical vehicle?', now: 'Yes, so the label has nothing to count.', alt: 'A: add Vehicle.units (what search.md shows). B: drop the label and list each vehicle separately.', rules: 'SR-8 · search Q1 · vehicle Q12' },
+  { q: 'Is the return day free for the next pick-up?', done: true, now: 'Decided 6 Nov: no. A booking blocks both its start and end days, as the vehicle calendar shows.', alt: 'Rejected: return and the next pick-up sharing the 10:00 slot. Try it in (03).', rules: 'SR-7 · VEH-6 · VEH-7 · vehicle Q3' },
+  { q: '"Only 2 left": is one Vehicle row one physical vehicle?', done: true, now: 'Decided 6 Nov: yes. No Vehicle.units; a company lists each identical vehicle separately. The "Only N left" label is dropped.', alt: 'Rejected A: Vehicle.units with per-day unit counting in search, the calendar and the booking check.', rules: 'SR-8 · search Q1 · vehicle Q12' },
   { q: 'Which companies appear in search?', done: true, now: 'Decided 6 Nov: only live companies, verified by an admin with an ACTIVE account. Unverified companies set up while hidden; rejecting means suspending the account.', alt: 'The admin page still needs a list of companies waiting for approval.', rules: 'SR-2 · VEH-35 · LOGIN-26 · LOGIN-27' },
   { q: 'One rating per review, or two?', done: true, now: 'Decided 6 Nov: one rating for the vehicle and the service together. It counts toward the vehicle\'s and the company\'s average.', alt: 'The landing copy was reworded to match.', rules: 'landing Q3' },
   { q: 'One cancellation rule, or one per company?', done: true, now: 'Decided 6 Nov: one rule for everyone. Free until 24 h before pick-up, then 50% of totalPrice.', alt: 'The landing copy was reworded to match.', rules: 'VEH-22 · VEH-23 · landing Q4' },
-  { q: 'Can logged-out visitors use search and vehicle pages?', now: 'The read endpoints are Public. Sending a request needs a CUSTOMER login. No logged-out nav is mocked up.', alt: 'Require a login for the pages as well.', rules: 'search Q6 · vehicle Q16' },
+  { q: 'Can logged-out visitors use search and vehicle pages?', done: true, now: 'Decided 6 Nov: yes, with the landing page\'s logged-out nav. Request to book sends a logged-out visitor to log in, then back to the same vehicle and dates.', alt: 'Rejected: a login wall on search, which would stop visitors coming from the landing page.', rules: 'SR-25 · VEH-39 · LOGIN-29 · search Q6 · vehicle Q16' },
   { q: 'Is payment in scope?', now: 'No. RentXe records amounts. The page says "You won\'t be charged until the company approves".', alt: 'Take payment. Needs a payment provider, which goes in SRS §7.', rules: 'vehicle Q8' },
   { q: 'How does login work: Spring sessions (A) or Supabase Auth (B)?', done: true, now: 'Decided 6 Nov: A. Spring checks the password and keeps a session; the browser holds an HttpOnly cookie. Supabase is only the database.', alt: 'Rejected B: the page logging in with Supabase Auth and Spring checking the JWT. See architecture/auth-flows.html.', rules: 'LOGIN-12 · LOGIN-15 to LOGIN-24 · login Q4, Q5, Q8, Q9, Q16' },
+  { q: 'How long can a rental be, and how far ahead?', done: true, now: 'Decided 6 Nov: at most 30 days, starting at most 12 months ahead. Extend a running rental by up to 30 days at a time, from its last week, with the company\'s approval.', alt: 'Rejected: no limits, or a 12-month horizon with any length.', rules: 'VEH-37 · VEH-38 · SR-4 · vehicle Q5' },
+  { q: 'Which currency do pages show?', done: true, now: 'Decided 6 Nov: the city\'s. A$ in Melbourne, ₫ in Ho Chi Minh City from a daily rate; amounts stay AUD and a booking keeps its rate.', alt: 'Later option: each city sets and charges prices in its own currency.', rules: 'SR-28 · VEH-41 · search Q14' },
 ];
 
 // [number, text, status: '' | 'done', decision number or 0]
@@ -715,35 +738,41 @@ const QUESTIONS = {
     [17, 'Login lasts 30 minutes idle or 14 days with remember-me; sessions in memory, signed remember-me cookie (LOGIN-17).', 'done', 0],
   ]},
   search: { file: 'search.md', items: [
-    [1, '"Only N left" when one Vehicle row is one vehicle.', '', 4],
-    [2, 'Do REQUESTED bookings block? Can a vehicle be picked up on a return day?', '', 1],
-    [3, 'Booked vehicles in results: show them flagged (mockup), hide them, or add a filter?', '', 0],
-    [4, 'Accept the Recommended sort formula (SR-18), or pick something simpler?', '', 0],
+    [1, 'One listing is one vehicle; "Only N left" is dropped, so availability is AVAILABLE or BOOKED (SR-8).', 'done', 4],
+    [2, 'REQUESTED blocks until it expires (24 h, or the pick-up day if sooner). The return day stays blocked.', 'done', 1],
+    [3, 'Booked vehicles stay in the results, flagged; the headline adds "N free for your dates" from availableCount (SR-9).', 'done', 0],
+    [4, 'Recommended sort: booked last, then rating (3.0 if none) − 0.1 × km (SR-18).', 'done', 0],
     [5, 'Only live companies (verified, account ACTIVE) appear in search.', 'done', 5],
-    [6, 'Can logged-out visitors open the search page?', '', 8],
-    [7, 'Places: a seeded table (proposal) or an external geocoder with its licence and key?', '', 0],
-    [8, 'Motorbikes over 160 cc match neither engine-size option.', '', 0],
-    [9, 'Which map library and tiles (for example Leaflet and OpenStreetMap)? Goes in SRS §7.', '', 0],
-    [10, '"Show more" or numbered pages?', '', 0],
-    [11, 'Server "today" and the visitor\'s time zone can differ near midnight. And which place is the default?', '', 0],
+    [6, 'Search is open to logged-out visitors, with the landing page\'s logged-out nav (SR-25).', 'done', 8],
+    [7, 'Places come from a fixed, seeded Place table; open search through a geocoder is a later option.', 'done', 0],
+    [8, 'Engine size gets "Over 160 cc" (minEngineCc=161), so every bike fits one option (SR-11).', 'done', 0],
+    [9, 'Leaflet with OpenStreetMap-based light and dark tiles (SR-21); goes in SRS §7.', 'done', 0],
+    [10, '"Show more" adds 10 rows at a time (SR-22).', 'done', 0],
+    [11, 'Default dates are counted at the place; the default place is the last one searched, else Melbourne CBD (SR-27).', 'done', 0],
+    [12, 'Companies and admins see search with their own menu; a company gets Edit on its own vehicles (SR-26, VEH-40).', 'done', 0],
+    [13, 'Search covers the whole city of the place; the place only sets where distances start (SR-2).', 'done', 0],
+    [14, 'Pages show the city\'s currency (A$ or ₫) from a daily rate; amounts stay AUD (SR-28).', 'done', 12],
+    [15, 'Comparison gets its own shareable page, /compare (SR-20); next mockup to make.', 'done', 0],
+    [16, 'Load errors show in the results area with Try again; field errors under the field; no errors in the toast (SR-29).', 'done', 0],
+    [17, 'The My bookings count is hidden at 0 and shown as 2 digits otherwise (SR-24).', 'done', 0],
   ]},
   vehicle: { file: 'vehicle.md', items: [
-    [1, 'Do pending requests hold dates?', '', 1],
-    [2, 'Unanswered requests: reject them automatically after some hours? There is no EXPIRED status.', '', 1],
-    [3, 'Same-day turnaround on a return day.', '', 3],
+    [1, 'Pending requests hold dates (VEH-6).', 'done', 1],
+    [2, 'Unanswered requests expire after 24 h, or at the start of the pick-up day if sooner, as EXPIRED (VEH-36).', 'done', 1],
+    [3, 'No pick-up on another booking\'s return day (VEH-7).', 'done', 3],
     [4, 'Pick-up today: the date fields say no, the calendar says yes.', '', 2],
-    [5, 'No maximum rental length and no booking horizon.', '', 0],
+    [5, 'At most 30 days, at most 12 months ahead (VEH-37); extend by up to 30 days at a time (VEH-38).', 'done', 11],
     [6, 'Is 10:00 fixed? Should closed days (Southbank Rentals is closed Sundays) block pick-up?', '', 0],
     [7, 'Who sets the premium price and excess, and who is the insurer?', '', 0],
     [8, 'Is payment in scope?', '', 9],
     [9, 'Late return over 24 hours: does the one-day cap still hold?', '', 0],
     [10, 'Age and licence cannot be checked: User has no date of birth.', '', 0],
     [11, 'If the price changes between quote and request: charge the new price (now) or return 409?', '', 0],
-    [12, '"Only 2 left".', '', 4],
+    [12, '"Only 2 left" is dropped: one listing is one vehicle.', 'done', 4],
     [13, 'Similar card and search card shapes.', 'done', 0],
     [14, 'Is there a confirm step before the request is sent?', '', 0],
     [15, 'How the searched place reaches this page.', 'done', 0],
-    [16, 'Do the pages need a login, or only the Request to book button?', '', 8],
+    [16, 'Only Request to book needs a login; logged out, it goes to log in and back to this vehicle (VEH-39).', 'done', 8],
   ]},
 };
 
