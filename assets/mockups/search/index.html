@@ -47,6 +47,30 @@
 
   font-family: var(--sans);
 }
+
+/* Theme colours. Light by default; dark when the html element has data-theme="dark".
+   The rules are in docs/Milestone1/api/README.md, section Theme. Use these for page and card backgrounds,
+   body text and rules, so one attribute flips a page. --ink and --paper stay fixed black and white,
+   for things that keep their colour in both themes (the hero, orange buttons, the black CTA button). */
+:root {
+  --theme-bg: #FFFFFF;            /* page background */
+  --theme-text: #0E0E0E;          /* body text */
+  --theme-muted: #6F6F6F;         /* secondary text */
+  --theme-line: #E6E6E6;          /* hairline rules */
+  --theme-fill: #F3F3F3;          /* inputs, hovers, soft tags */
+  --theme-card: #FFFFFF;          /* cards, menus */
+  --theme-band: #0E0E0E;          /* black bands and the footer */
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --theme-bg: #0E0E0E;
+  --theme-text: #F2F2F2;
+  --theme-muted: #A3A3A3;         /* 8:1 on the background */
+  --theme-line: #2A2A2A;
+  --theme-fill: #1C1C1C;
+  --theme-card: #222222;
+  --theme-band: #181818;
+}
 </style>
 <!-- GSAP for the reveals and the filter, tray and drawer transitions (free "standard" licence). The page works without it. -->
 <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>

@@ -1,0 +1,1032 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>API schema review — RentXe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Same palette as assets/mockups/shared/tokens.css: orange, black and white, neutral greys, solid fills. */
+:root {
+  --brand: #FF6A3D; --brand-dark: #E2532A; --brand-tint: #FFF1EC;
+  --ink: #0E0E0E; --paper: #FFFFFF; --muted: #6F6F6F; --line: #E6E6E6; --fill: #F3F3F3;
+  --sans: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --gutter: clamp(18px, 4vw, 56px);
+  --max: 1320px;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 400 15px/1.55 var(--sans); -webkit-font-smoothing: antialiased; }
+a { color: inherit; }
+code, .mono { font-family: var(--mono); font-size: .86em; }
+button { font: inherit; color: inherit; cursor: pointer; }
+.wrap { max-width: var(--max); margin: 0 auto; padding: 0 var(--gutter); }
+.label { font: 500 12px/1.2 var(--mono); text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+
+/* Top bar */
+.top { position: sticky; top: 0; z-index: 20; background: var(--paper); border-bottom: 1px solid var(--ink); }
+.top .wrap { display: flex; align-items: center; gap: 28px; height: 56px; }
+.logo { font-weight: 800; font-size: 19px; letter-spacing: -.02em; text-decoration: none; }
+.logo b { color: var(--brand); }
+.top nav { display: flex; gap: 20px; overflow-x: auto; scrollbar-width: none; flex: 1; }
+.top nav a { font: 500 12px/1 var(--mono); text-transform: uppercase; letter-spacing: .05em; text-decoration: none; color: var(--muted); white-space: nowrap; }
+.top nav a:hover { color: var(--ink); }
+.pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; background: var(--ink); color: var(--paper); font: 500 12px/1 var(--mono); text-decoration: none; white-space: nowrap; }
+.pill span { background: var(--brand); color: var(--ink); border-radius: 999px; padding: 2px 7px; }
+
+/* Hero */
+.hero { padding: 64px var(--gutter) 40px; }
+.hero h1 { font-size: clamp(38px, 6.4vw, 88px); line-height: .98; letter-spacing: -.045em; font-weight: 800; margin: 18px 0 22px; max-width: 13ch; }
+.hero h1 em { font-style: normal; color: var(--brand); }
+.hero .lede { font-size: 18px; max-width: 60ch; margin: 0; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); border-top: 1px solid var(--ink); margin: 44px 0 0; }
+.stats div { padding: 16px 16px 0 0; }
+.stats dt { font: 500 12px/1.2 var(--mono); text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.stats dd { margin: 6px 0 0; font-size: 44px; font-weight: 800; letter-spacing: -.04em; line-height: 1; }
+.stats dd.hot { color: var(--brand); }
+
+/* Sections */
+section.block { padding: 56px 0 24px; border-top: 1px solid var(--ink); margin-top: 40px; }
+.block-head { display: grid; grid-template-columns: minmax(200px, 1fr) 2fr; gap: 24px; align-items: end; margin-bottom: 28px; }
+.block-head h2 { font-size: clamp(28px, 3.6vw, 46px); line-height: 1; letter-spacing: -.035em; margin: 10px 0 0; font-weight: 800; }
+.block-head p { margin: 0; color: var(--muted); max-width: 62ch; }
+@media (max-width: 760px) { .block-head { grid-template-columns: 1fr; } }
+
+/* Controls */
+.controls { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; margin-bottom: 18px; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; font-size: 13px; color: var(--muted); }
+.legend > span { display: inline-flex; align-items: center; gap: 6px; }
+.switch { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; user-select: none; }
+.switch input { appearance: none; width: 30px; height: 18px; border-radius: 999px; background: var(--line); position: relative; margin: 0; cursor: pointer; transition: background .15s; }
+.switch input::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--paper); transition: transform .15s; }
+.switch input:checked { background: var(--ink); }
+.switch input:checked::after { transform: translateX(12px); }
+
+/* Badges */
+.b { display: inline-block; font: 500 9.5px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; padding: 3px 5px; border-radius: 4px; white-space: nowrap; vertical-align: 1px; }
+.b-new { background: var(--brand); color: var(--ink); }
+.b-chg { box-shadow: inset 0 0 0 1px var(--brand-dark); color: var(--brand-dark); }
+.b-pend { box-shadow: inset 0 0 0 1px var(--muted); color: var(--muted); border-radius: 4px; background: repeating-linear-gradient(135deg, transparent 0 3px, var(--fill) 3px 6px); }
+.b-der { background: var(--fill); color: var(--muted); }
+.b-srv { background: var(--ink); color: var(--paper); }
+.b-key { color: var(--muted); padding-left: 0; padding-right: 0; }
+
+/* ER diagram */
+.er-scroll { overflow-x: auto; padding-bottom: 8px; }
+.er { position: relative; min-width: 1176px; display: grid; grid-template-columns: repeat(4, minmax(228px, 1fr)); grid-template-areas: "prt user company place" "review booking vehicle side"; gap: 84px 88px; align-items: start; }
+.er svg.lines { position: absolute; inset: 0; pointer-events: none; overflow: visible; z-index: 0; }
+.side { grid-area: side; display: flex; flex-direction: column; gap: 56px; }
+.card { position: relative; z-index: 1; background: var(--paper); border: 1px solid var(--ink); border-radius: 10px; transition: box-shadow .15s; }
+.card.hot { box-shadow: 0 0 0 3px var(--brand); }
+.card header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 8px; padding: 11px 12px 10px; border-bottom: 1px solid var(--ink); }
+.card header .nb { flex-basis: 100%; }
+.card header h3 { margin: 0; font-size: 16px; font-weight: 800; letter-spacing: -.01em; }
+.card header .kind { font: 500 10.5px/1.2 var(--mono); text-transform: uppercase; letter-spacing: .04em; color: var(--muted); text-align: right; }
+.card.is-new header { background: var(--brand-tint); }
+.card .blurb { margin: 0; padding: 8px 12px; font-size: 12.5px; color: var(--muted); border-bottom: 1px solid var(--line); }
+.fields { list-style: none; margin: 0; padding: 4px 0; }
+.f { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 8px; padding: 4px 8px 4px 24px; border-top: 1px solid transparent; }
+.f .flag { position: absolute; left: 2px; top: 3px; width: 20px; height: 20px; }
+.f + .f { border-top-color: var(--line); }
+.f .nm { font: 500 12.5px/1.35 var(--mono); overflow-wrap: break-word; }
+.f .nm i { font-style: normal; color: var(--muted); font-weight: 400; }
+.f .rt { display: flex; align-items: center; gap: 4px; justify-content: flex-end; }
+.f .note { grid-column: 1 / -1; display: none; font-size: 12px; line-height: 1.4; color: var(--muted); padding-right: 6px; }
+.f .src { font: 400 10.5px/1 var(--mono); color: var(--brand-dark); }
+.f.pend { background: repeating-linear-gradient(135deg, transparent 0 6px, var(--fill) 6px 12px); }
+.f.pend .nm { color: var(--muted); }
+.f.flagged { background: var(--brand-tint); }
+.er.notes .f .note { display: block; }
+.er.only-new .f:not(.is-new):not(.pend):not(.chg) { display: none; }
+.er.only-new .card:not(.is-new) .fields:not(:has(.f.is-new, .f.pend, .f.chg))::after { content: 'No new or pending fields'; display: block; padding: 6px 12px; font-size: 12px; color: var(--muted); }
+
+.flag { width: 22px; height: 22px; display: inline-grid; place-items: center; border: 0; border-radius: 5px; background: transparent; color: var(--muted); opacity: 0; transition: opacity .12s, background .12s; padding: 0; flex: none; }
+.flag svg { width: 13px; height: 13px; }
+.f:hover .flag, .flag:focus-visible, tr:hover .flag, li:hover > .flag, .q:hover .flag { opacity: 1; }
+.flag:hover { background: var(--fill); color: var(--ink); }
+.flag[aria-pressed="true"] { opacity: 1; background: var(--brand); color: var(--ink); }
+@media (hover: none) { .flag { opacity: .7; } }
+
+.rels { margin-top: 26px; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0 32px; font-size: 13px; }
+.rels div { padding: 7px 0; border-top: 1px solid var(--line); display: flex; gap: 10px; }
+.rels code { color: var(--ink); }
+.rels span { color: var(--muted); }
+.rels span.card-n { white-space: nowrap; }
+
+.shapes { margin-top: 36px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0 28px; }
+.shapes article { border-top: 1px solid var(--ink); padding-top: 12px; }
+.shapes h4 { margin: 6px 0 4px; font-size: 16px; }
+.shapes p { margin: 0 0 6px; font-size: 13px; color: var(--muted); }
+.shapes .mono { font-size: 12px; line-height: 1.6; }
+
+/* Page flow */
+.flow { display: grid; gap: 14px; margin-bottom: 36px; }
+.flow-row { display: flex; align-items: center; flex-wrap: wrap; gap: 0; }
+.node { border: 1px solid var(--ink); border-radius: 10px; padding: 10px 14px; min-width: 120px; background: var(--paper); }
+.node b { display: block; font-size: 15px; }
+.node small { font: 400 11px/1.3 var(--mono); color: var(--muted); }
+.node.ghost { border-style: dashed; border-color: var(--muted); color: var(--muted); }
+.node.multi { display: flex; flex-direction: column; gap: 2px; }
+.arrow { display: flex; flex-direction: column; justify-content: center; align-items: center; min-width: 120px; padding: 0 8px; }
+.arrow .ln { width: 100%; height: 1px; background: var(--ink); position: relative; }
+.arrow .ln::after { content: ''; position: absolute; right: -1px; top: -4px; border: 4.5px solid transparent; border-left: 7px solid var(--ink); border-right: 0; }
+.arrow small { font: 400 11px/1.3 var(--mono); color: var(--brand-dark); text-align: center; margin-bottom: 4px; }
+.arrow small.under { margin: 4px 0 0; color: var(--muted); }
+
+/* Matrix */
+.table-scroll { overflow-x: auto; }
+table.mx { width: 100%; border-collapse: collapse; min-width: 900px; font-size: 13.5px; }
+.mx th, .mx td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.mx thead th { font: 500 11px/1.2 var(--mono); text-transform: uppercase; letter-spacing: .05em; color: var(--muted); border-bottom: 1px solid var(--ink); background: var(--paper); }
+.mx th.pg, .mx td.pg { text-align: center; width: 76px; }
+.mx tr.grp td { padding-top: 22px; border-bottom: 1px solid var(--ink); font-weight: 700; font-size: 14px; }
+.mx tr.grp td .label { margin-left: 10px; }
+.mx tr.empty td { color: var(--muted); font-style: italic; }
+.mx tr.flagged td { background: var(--brand-tint); }
+.mx .method { font: 500 11px/1 var(--mono); padding: 4px 6px; border-radius: 4px; border: 1px solid var(--ink); }
+.mx .method.POST { background: var(--ink); color: var(--paper); }
+.mx .acc { font: 400 12px/1 var(--mono); color: var(--muted); }
+.mx .acc.lock { color: var(--ink); }
+.dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: middle; }
+.dot.own { background: var(--brand); }
+.dot.own-only { box-shadow: inset 0 0 0 2px var(--brand); }
+.dot.use { background: var(--ink); }
+
+/* Lifecycle */
+.life { display: grid; grid-template-columns: minmax(0, 3fr) minmax(260px, 1.3fr); gap: 36px; align-items: start; }
+@media (max-width: 980px) { .life { grid-template-columns: 1fr; } }
+.life svg { width: 100%; height: auto; display: block; }
+.life svg [stroke="#0E0E0E"] { stroke: var(--ink); }
+.life svg [fill="#0E0E0E"] { fill: var(--ink); }
+.life svg [fill="#fff"] { fill: var(--paper); }
+.life svg [stroke="#6F6F6F"] { stroke: var(--muted); }
+.life svg [fill="#6F6F6F"] { fill: var(--muted); }
+.life svg [fill="#FFF1EC"] { fill: var(--brand-tint); }
+.life svg [stroke="#E6E6E6"] { stroke: var(--line); }
+.life svg text:not([fill]) { fill: var(--ink); }
+.life ol { list-style: none; margin: 0; padding: 0; counter-reset: t; font-size: 13.5px; }
+.life li { display: grid; grid-template-columns: 24px 1fr; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); }
+.life li .n { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font: 500 11px/1 var(--mono); border: 1px solid var(--ink); }
+.life li.ok .n { background: var(--ink); color: var(--paper); }
+.life li small { display: block; color: var(--muted); font-size: 12.5px; }
+
+.clash { margin-top: 40px; border-top: 1px solid var(--ink); padding-top: 18px; }
+.clash h3, .calc h3 { margin: 6px 0 4px; font-size: 22px; letter-spacing: -.02em; }
+.clash > p, .calc > p { margin: 0 0 16px; color: var(--muted); max-width: 70ch; }
+.days { display: grid; grid-template-columns: 150px repeat(8, minmax(44px, 1fr)) 90px; align-items: center; gap: 4px; font-size: 13px; min-width: 640px; }
+.days .hd { font: 500 11px/1.2 var(--mono); color: var(--muted); text-align: center; }
+.days .rl { font: 500 12px/1.2 var(--mono); }
+.days .c { height: 30px; border-radius: 5px; background: var(--fill); }
+.days .c.bk { background: repeating-linear-gradient(135deg, var(--ink) 0 2px, transparent 2px 6px); box-shadow: inset 0 0 0 1px var(--ink); }
+.days .c.ret { background: repeating-linear-gradient(135deg, #BDBDBD 0 2px, transparent 2px 6px); box-shadow: inset 0 0 0 1px #BDBDBD; }
+.days .c.rq { background: var(--brand-tint); box-shadow: inset 0 0 0 1px var(--brand); }
+.days .c.rq.hit { background: var(--brand); }
+.days .v { font: 500 12px/1 var(--mono); text-align: right; }
+.days .v.no { color: var(--brand-dark); }
+
+/* Calculator */
+.calc { margin-top: 0; }
+.calc-grid { display: grid; grid-template-columns: minmax(260px, 1fr) minmax(300px, 1.4fr); gap: 36px; }
+@media (max-width: 860px) { .calc-grid { grid-template-columns: 1fr; } }
+.field { margin-bottom: 18px; }
+.field label { display: block; font: 500 11px/1.2 var(--mono); text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 8px; }
+.field output { font-weight: 700; }
+input[type=range] { width: 100%; accent-color: var(--brand); }
+.seg { display: inline-flex; border: 1px solid var(--ink); border-radius: 999px; padding: 3px; gap: 2px; }
+.seg button { border: 0; background: transparent; border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 600; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.receipt { border-top: 1px solid var(--ink); }
+.receipt div { display: flex; justify-content: space-between; gap: 16px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.receipt div span:first-child small { display: block; font: 400 11px/1.3 var(--mono); color: var(--muted); }
+.receipt div span:last-child { font: 500 14px/1.4 var(--mono); white-space: nowrap; }
+.receipt .tot { border-bottom: 1px solid var(--ink); font-weight: 800; font-size: 17px; }
+.receipt .tot span:last-child { font-size: 17px; color: var(--ink); }
+.receipt .aside span:last-child { color: var(--muted); }
+
+/* Decisions */
+.decs { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 0 32px; }
+.dec { border-top: 1px solid var(--ink); padding: 16px 0 22px; }
+.dec .top-line { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.dec h3 { margin: 6px 0 10px; font-size: 18px; line-height: 1.25; letter-spacing: -.015em; }
+.dec dl { margin: 0 0 12px; font-size: 13.5px; }
+.dec dt { font: 500 10.5px/1.2 var(--mono); text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-top: 8px; }
+.dec dd { margin: 3px 0 0; }
+.dec .rules { font: 400 11.5px/1.4 var(--mono); color: var(--muted); }
+.dec.changed { background: linear-gradient(var(--brand-tint), var(--brand-tint)) top / 100% 3px no-repeat; }
+.dec .seg button { padding: 5px 12px; font-size: 12.5px; }
+.dec .seg button.chg[aria-pressed="true"] { background: var(--brand); color: var(--ink); }
+textarea { width: 100%; font: 400 13.5px/1.45 var(--sans); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; resize: vertical; min-height: 40px; background: var(--paper); margin-top: 10px; }
+textarea:focus { outline: 2px solid var(--brand); outline-offset: -1px; border-color: transparent; }
+
+/* Questions */
+.qs { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 0 28px; }
+.qs section h3 { margin: 0; padding: 10px 0; border-top: 1px solid var(--ink); font-size: 17px; display: flex; justify-content: space-between; align-items: baseline; }
+.qs section h3 .label { font-size: 11px; }
+.q { display: grid; grid-template-columns: 22px minmax(0, 1fr) 22px; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 13.5px; line-height: 1.45; }
+.q .n { font: 500 11px/1.5 var(--mono); color: var(--muted); }
+.q.done { color: var(--muted); }
+.q.done p { text-decoration: line-through; text-decoration-color: #BDBDBD; }
+.q p { margin: 0; }
+.q .to { display: inline-block; margin-top: 3px; }
+.q.flagged { background: var(--brand-tint); }
+
+/* Change list */
+.changes { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(300px, 1fr); gap: 36px; align-items: start; }
+@media (max-width: 900px) { .changes { grid-template-columns: 1fr; } }
+.cl-empty { color: var(--muted); border-top: 1px solid var(--ink); padding: 14px 0; }
+.cl-item { border-top: 1px solid var(--line); padding: 12px 0; }
+.cl-item:first-child { border-top-color: var(--ink); }
+.cl-item .row { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+.cl-item .what { font: 500 13px/1.4 var(--mono); }
+.cl-item .what .label { margin-right: 8px; }
+.x { border: 0; background: transparent; color: var(--muted); font-size: 12.5px; text-decoration: underline; padding: 0; }
+.x:hover { color: var(--ink); }
+.md-box { position: sticky; top: 76px; }
+.md-box pre { margin: 0; padding: 14px; background: var(--ink); color: var(--paper); border-radius: 10px; font: 400 12px/1.55 var(--mono); max-height: 420px; overflow: auto; white-space: pre-wrap; }
+.btns { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.btn { border: 1px solid var(--ink); background: var(--ink); color: var(--paper); border-radius: 999px; padding: 9px 16px; font-weight: 600; font-size: 13.5px; }
+.btn.ghost { background: var(--paper); color: var(--ink); }
+.btn:hover { background: var(--brand); border-color: var(--brand); color: var(--ink); }
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px); opacity: 0; background: var(--ink); color: var(--paper); padding: 10px 16px; border-radius: 999px; font-size: 13.5px; transition: .2s; pointer-events: none; z-index: 50; }
+.toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+footer { border-top: 1px solid var(--ink); margin-top: 64px; padding: 20px 0 40px; color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="logo" href="#">Rent<b>Xe</b></a>
+    <nav aria-label="Sections">
+      <a href="#model">(01) Model</a>
+      <a href="#pages">(02) Pages</a>
+      <a href="#life">(03) Bookings</a>
+      <a href="#fees">(04) Fees</a>
+      <a href="#decisions">(05) Decisions</a>
+      <a href="#questions">(06) Questions</a>
+    </nav>
+    <a class="pill" href="#changes">Change list <span id="pillCount">0</span></a>
+  </div>
+</header>
+
+<div class="hero wrap">
+  <p class="label">(00) API schema review · draft · docs/Milestone1/api</p>
+  <h1>The backend, as the mockups <em>see it.</em></h1>
+  <p class="lede">Everything the four mockup pages need from the server so far. Flag any field, endpoint or question you want changed, then pick keep or change for each team decision. Your choices are saved in this browser, and section (07) turns them into a list you can use for the files in <code>decisions/</code>.</p>
+  <dl class="stats" id="stats"></dl>
+</div>
+
+<main class="wrap">
+
+  <!-- (01) Data model -->
+  <section class="block" id="model">
+    <div class="block-head">
+      <div><p class="label">(01) Data model</p><h2>Tables and how they connect.</h2></div>
+      <p>The README's shared models after the page agents' additions were merged. Orange <span class="b b-new">new</span> marks fields a page asked for on 6 Nov. Striped <span class="b b-pend">pending</span> rows are proposals that are not in the model yet. Hover a table to light up its links; hover a field to flag it.</p>
+    </div>
+    <div class="controls">
+      <label class="switch"><input type="checkbox" id="tNotes"> Show notes</label>
+      <label class="switch"><input type="checkbox" id="tOnly"> Only new, changed and pending</label>
+      <div class="legend">
+        <span><span class="b b-new">new</span> added from a page</span>
+        <span><span class="b b-chg">rule</span> existing field, rule changed</span>
+        <span><span class="b b-pend">pending</span> proposed, not merged</span>
+        <span><span class="b b-der">derived</span> server works it out</span>
+        <span><span class="b b-srv">server</span> never returned</span>
+      </div>
+    </div>
+    <div class="er-scroll">
+      <div class="er" id="er"><svg class="lines" id="erLines" aria-hidden="true"></svg></div>
+    </div>
+    <div class="rels" id="rels"></div>
+
+    <div class="shapes">
+      <article><p class="label">Response shape · login.md</p><h4>CurrentUser</h4><p>Returned by log in, both sign-ups and <code>/auth/me</code>.</p><div class="mono">User fields + company (Company | null)</div></article>
+      <article><p class="label">Response shape · search.md</p><h4>SearchResult</h4><p>One result card. Search, compare and similar vehicles all return it.</p><div class="mono">vehicle card fields, company {id, name, rating, reviewCount}, distanceKm, rentalDays, totalPrice, availability</div></article>
+      <article><p class="label">Response shape · search.md</p><h4>Availability</h4><p>On each card, for the chosen dates.</p><div class="mono">status AVAILABLE · FEW_LEFT · BOOKED, unitsLeft, bookedRanges[]</div></article>
+      <article><p class="label">Response shape · vehicle.md</p><h4>Quote</h4><p>The booking panel's price, before a request is sent.</p><div class="mono">days, available, bookedDates, nextAvailable, insurance, rentalAmount, insuranceAmount, totalPrice, cancellation {freeUntil, feeAfter}</div></article>
+    </div>
+  </section>
+
+  <!-- (02) Pages and endpoints -->
+  <section class="block" id="pages">
+    <div class="block-head">
+      <div><p class="label">(02) Pages and endpoints</p><h2>Who calls what.</h2></div>
+      <p>How the pages hand off to each other, then every endpoint by SRS area. A filled orange dot means the page's file defines the endpoint and the page calls it. A ring means the file defines it but no mocked screen calls it yet. A black dot means the page calls an endpoint another file defines.</p>
+    </div>
+    <div class="flow" id="flow">
+      <div class="flow-row">
+        <div class="node"><b>Landing</b><small>landing-3d</small></div>
+        <div class="arrow"><small>type, location,<br>from, to</small><div class="ln"></div></div>
+        <div class="node"><b>Search</b><small>search</small></div>
+        <div class="arrow"><small>id, from, to,<br>placeId</small><div class="ln"></div></div>
+        <div class="node"><b>Vehicle</b><small>vehicle · not committed</small></div>
+        <div class="arrow"><small>POST /bookings</small><div class="ln"></div><small class="under">REQUESTED</small></div>
+        <div class="node ghost"><b>My bookings</b><small>no mockup</small></div>
+      </div>
+      <div class="flow-row">
+        <div class="node"><b>Landing</b><small>landing-3d</small></div>
+        <div class="arrow"><small>view=signup,<br>as=company</small><div class="ln"></div></div>
+        <div class="node"><b>Log in</b><small>login</small></div>
+        <div class="arrow"><small>by role</small><div class="ln"></div><small class="under">LOGIN rules</small></div>
+        <div class="node ghost multi"><b>My bookings</b><small>customer</small><b>Company dashboard</b><small>company</small><b>Admin</b><small>admin · assumed</small></div>
+      </div>
+    </div>
+    <div class="legend" style="margin-bottom:12px">
+      <span><span class="dot own"></span> defined here, called here</span>
+      <span><span class="dot own-only"></span> defined here, no screen yet</span>
+      <span><span class="dot use"></span> called here, defined elsewhere</span>
+    </div>
+    <div class="table-scroll">
+      <table class="mx" id="mx">
+        <thead><tr><th>Method</th><th>Path <span style="text-transform:none">/api/v1…</span></th><th>What it does</th><th>Access</th><th class="pg">Landing</th><th class="pg">Log in</th><th class="pg">Search</th><th class="pg">Vehicle</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- (03) Booking lifecycle -->
+  <section class="block" id="life">
+    <div class="block-head">
+      <div><p class="label">(03) Booking lifecycle</p><h2>One booking, start to finish.</h2></div>
+      <p>The six statuses in the Booking model. Orange states block the vehicle's dates (SR-6, VEH-6). Only the first step has an endpoint so far; the dashed steps belong to pages with no mockup yet.</p>
+    </div>
+    <div class="life">
+      <svg viewBox="0 0 1090 360" role="img" aria-label="Booking status diagram">
+        <defs>
+          <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#0E0E0E"/></marker>
+          <pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" fill="#fff"/><line x1="0" y1="0" x2="0" y2="8" stroke="#E6E6E6" stroke-width="4"/></pattern>
+        </defs>
+        <g font-family="JetBrains Mono, monospace" font-size="13">
+          <!-- transitions -->
+          <g stroke="#0E0E0E" stroke-width="1.5" fill="none">
+            <line x1="31" y1="168" x2="68" y2="168" marker-end="url(#ah)"/>
+            <line x1="220" y1="168" x2="348" y2="168" marker-end="url(#ah)" stroke-dasharray="5 4"/>
+            <line x1="145" y1="196" x2="145" y2="278" marker-end="url(#ah)" stroke-dasharray="5 4"/>
+            <line x1="220" y1="190" x2="348" y2="290" marker-end="url(#ah)" stroke-dasharray="5 4"/>
+            <line x1="425" y1="196" x2="425" y2="278" marker-end="url(#ah)" stroke-dasharray="5 4"/>
+            <line x1="500" y1="168" x2="628" y2="168" marker-end="url(#ah)" stroke-dasharray="5 4"/>
+            <line x1="780" y1="168" x2="908" y2="168" marker-end="url(#ah)" stroke-dasharray="5 4"/>
+            <line x1="985" y1="196" x2="985" y2="278" marker-end="url(#ah)" stroke-dasharray="5 4"/>
+            <line x1="145" y1="140" x2="145" y2="82" marker-end="url(#ah)" stroke-dasharray="2 4" stroke="#6F6F6F"/>
+          </g>
+          <circle cx="24" cy="168" r="7" fill="#0E0E0E"/>
+          <!-- states -->
+          <g>
+            <rect x="70" y="140" width="150" height="56" rx="9" fill="#FFF1EC" stroke="#FF6A3D" stroke-width="2"/>
+            <text x="145" y="164" text-anchor="middle" font-weight="500">REQUESTED</text>
+            <text x="145" y="182" text-anchor="middle" font-size="10.5" fill="#E2532A">blocks dates</text>
+            <rect x="350" y="140" width="150" height="56" rx="9" fill="#FFF1EC" stroke="#FF6A3D" stroke-width="2"/>
+            <text x="425" y="164" text-anchor="middle" font-weight="500">APPROVED</text>
+            <text x="425" y="182" text-anchor="middle" font-size="10.5" fill="#E2532A">blocks dates</text>
+            <rect x="630" y="140" width="150" height="56" rx="9" fill="#FFF1EC" stroke="#FF6A3D" stroke-width="2"/>
+            <text x="705" y="164" text-anchor="middle" font-weight="500">PICKED_UP</text>
+            <text x="705" y="182" text-anchor="middle" font-size="10.5" fill="#E2532A">blocks dates</text>
+            <rect x="910" y="140" width="150" height="56" rx="9" fill="#fff" stroke="#0E0E0E" stroke-width="1.5"/>
+            <text x="985" y="172" text-anchor="middle" font-weight="500">RETURNED</text>
+            <rect x="70" y="280" width="150" height="56" rx="9" fill="#fff" stroke="#0E0E0E" stroke-width="1.5"/>
+            <text x="145" y="312" text-anchor="middle" font-weight="500">REJECTED</text>
+            <rect x="350" y="280" width="150" height="56" rx="9" fill="#fff" stroke="#0E0E0E" stroke-width="1.5"/>
+            <text x="425" y="312" text-anchor="middle" font-weight="500">CANCELLED</text>
+            <rect x="910" y="280" width="150" height="56" rx="9" fill="url(#hatch)" stroke="#6F6F6F" stroke-dasharray="5 4"/>
+            <text x="985" y="304" text-anchor="middle" fill="#0E0E0E">Review</text>
+            <text x="985" y="322" text-anchor="middle" font-size="10.5" fill="#6F6F6F">one per booking</text>
+            <rect x="70" y="24" width="150" height="56" rx="9" fill="url(#hatch)" stroke="#6F6F6F" stroke-dasharray="5 4"/>
+            <text x="145" y="48" text-anchor="middle" fill="#6F6F6F">EXPIRED?</text>
+            <text x="145" y="66" text-anchor="middle" font-size="10.5" fill="#6F6F6F">not in model</text>
+          </g>
+          <!-- step numbers -->
+          <g font-size="11" text-anchor="middle">
+            <g><circle cx="48" cy="146" r="10" fill="#0E0E0E"/><text x="48" y="150" fill="#fff">1</text></g>
+            <g><circle cx="284" cy="168" r="10" fill="#fff" stroke="#0E0E0E"/><text x="284" y="172">2</text></g>
+            <g><circle cx="145" cy="238" r="10" fill="#fff" stroke="#0E0E0E"/><text x="145" y="242">3</text></g>
+            <g><circle cx="284" cy="240" r="10" fill="#fff" stroke="#0E0E0E"/><text x="284" y="244">4</text></g>
+            <g><circle cx="425" cy="238" r="10" fill="#fff" stroke="#0E0E0E"/><text x="425" y="242">4</text></g>
+            <g><circle cx="564" cy="168" r="10" fill="#fff" stroke="#0E0E0E"/><text x="564" y="172">5</text></g>
+            <g><circle cx="844" cy="168" r="10" fill="#fff" stroke="#0E0E0E"/><text x="844" y="172">6</text></g>
+            <g><circle cx="985" cy="238" r="10" fill="#fff" stroke="#0E0E0E"/><text x="985" y="242">7</text></g>
+            <g><circle cx="145" cy="111" r="10" fill="#fff" stroke="#6F6F6F"/><text x="145" y="115" fill="#6F6F6F">8</text></g>
+          </g>
+        </g>
+      </svg>
+      <ol>
+        <li class="ok"><span class="n">1</span><div><b>Customer sends a request.</b><small><code>POST /api/v1/bookings</code> · vehicle.md · price stored at this moment (VEH-15)</small></div></li>
+        <li><span class="n">2</span><div><b>Company approves.</b><small>No endpoint yet: company bookings page</small></div></li>
+        <li><span class="n">3</span><div><b>Company rejects.</b><small>No endpoint yet</small></div></li>
+        <li><span class="n">4</span><div><b>Customer cancels.</b><small>Free until 24 h before pick-up, then 50% of totalPrice (VEH-22, VEH-23). No endpoint yet: My bookings</small></div></li>
+        <li><span class="n">5</span><div><b>Company records pick-up.</b><small>Deposit held. No endpoint yet (§2.5)</small></div></li>
+        <li><span class="n">6</span><div><b>Company records return.</b><small>Condition, odometer, late fee (VEH-24, VEH-25). Booking has no condition field yet</small></div></li>
+        <li><span class="n">7</span><div><b>Customer writes a review.</b><small>One per RETURNED booking. No endpoint yet</small></div></li>
+        <li><span class="n">8</span><div><b>Unanswered request expires?</b><small>Not in the model. Decision 1</small></div></li>
+      </ol>
+    </div>
+
+    <div class="clash">
+      <p class="label">Decision 3 · SR-7, VEH-7</p>
+      <h3>Does a booking's return day block the next pick-up?</h3>
+      <p>The Tesla Model 3 is booked 11–12 Dec. Each row is a new request. Flip the switch to see which requests change if the return day becomes free.</p>
+      <label class="switch" style="margin-bottom:14px"><input type="checkbox" id="tReturn"> Return day is free for the next pick-up (current default: off)</label>
+      <div class="table-scroll"><div class="days" id="days"></div></div>
+    </div>
+  </section>
+
+  <!-- (04) Fee rules -->
+  <section class="block" id="fees">
+    <div class="block-head">
+      <div><p class="label">(04) Fee rules · SRS §2.8</p><h2>What a rental costs.</h2></div>
+      <p>The fee, cancellation and late-return rules from vehicle.md, worked on the mockup's Toyota Corolla Hybrid: A$68 a day, premium cover A$14 a day, A$300 deposit. Move the sliders to test whether the rules give sensible numbers.</p>
+    </div>
+    <div class="calc">
+      <div class="calc-grid">
+        <div>
+          <div class="field"><label for="cDays">Rental length · <output id="oDays">3 days</output></label><input type="range" id="cDays" min="1" max="14" value="3"></div>
+          <div class="field"><label>Cover</label><div class="seg" id="cCover"><button type="button" data-v="BASIC" aria-pressed="true">Basic · included</button><button type="button" data-v="PREMIUM" aria-pressed="false">Premium · A$14/day</button></div></div>
+          <div class="field"><label for="cLate">Returned late by · <output id="oLate">0 h</output></label><input type="range" id="cLate" min="0" max="30" value="0" step="1"></div>
+          <p class="label" style="line-height:1.6">VEH-10 to VEH-15 fee · VEH-22, VEH-23 cancel · VEH-24, VEH-25 late</p>
+        </div>
+        <div class="receipt" id="receipt"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- (05) Decisions -->
+  <section class="block" id="decisions">
+    <div class="block-head">
+      <div><p class="label">(05) Decisions for the team</p><h2>Defaults to confirm.</h2></div>
+      <p>The four files agree on each default below. Keep it, or mark it for change and say what to do instead. Changing one means changing every rule it lists. Decisions 2, 6 and 7 were settled on 6 Nov.</p>
+    </div>
+    <div class="decs" id="decs"></div>
+  </section>
+
+  <!-- (06) Open questions -->
+  <section class="block" id="questions">
+    <div class="block-head">
+      <div><p class="label">(06) Open questions</p><h2>What each page still asks.</h2></div>
+      <p>From the end of each page file. Crossed-out ones were resolved when the files were made consistent. An arrow points to the team decision that answers it. Flag a question to put it on your change list.</p>
+    </div>
+    <div class="qs" id="qs"></div>
+  </section>
+
+  <!-- (07) Change list -->
+  <section class="block" id="changes">
+    <div class="block-head">
+      <div><p class="label">(07) Your change list</p><h2>What to modify.</h2></div>
+      <p>Everything you flagged or marked for change, with your notes. Copy it as Markdown for the files in <code>decisions/</code>, or send it back to me to update the schema files.</p>
+    </div>
+    <div class="changes">
+      <div id="cl"></div>
+      <div class="md-box">
+        <div class="btns"><button class="btn" type="button" id="copy">Copy as Markdown</button><button class="btn ghost" type="button" id="reset">Clear everything</button></div>
+        <pre id="md"></pre>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer><div class="wrap">RentXe · COSC2101 team project · generated from docs/Milestone1/api on 6 Nov 2026. If a schema file changes, regenerate this page.</div></footer>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const FLAG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg>';
+
+/* ── Data: from README.md and the four page files ──
+   Field: [name, type, tags, note, source]. Tags: pk fk new chg pend der srv */
+const MODELS = [
+  { id: 'PasswordResetToken', area: 'prt', kind: 'table · server only', isNew: 'login.md', blurb: 'One row per reset link. Never returned.', fields: [
+    ['id', 'long', 'pk'],
+    ['userId', 'long', 'fk', '→ User'],
+    ['tokenHash', 'string', 'srv', 'Only the hash of the 32-byte token is stored (LOGIN-21).'],
+    ['expiresAt', 'timestamp', 'srv', '30 minutes after it is issued.'],
+    ['usedAt', 'timestamp?', 'srv', 'A token works once. A newer link cancels older ones.'],
+    ['createdAt', 'timestamp', 'srv'],
+  ]},
+  { id: 'User', area: 'user', kind: 'table', fields: [
+    ['id', 'long', 'pk'],
+    ['fullName', 'string', 'chg', 'For a COMPANY account, the company name given at sign-up.', 'login.md'],
+    ['email', 'string', '', 'Unique, stored in lower case.'],
+    ['role', 'enum', '', 'CUSTOMER · COMPANY · ADMIN'],
+    ['status', 'enum', '', 'ACTIVE · SUSPENDED. Admins can suspend accounts.'],
+    ['companyId', 'long?', 'fk', '→ Company. Set when role is COMPANY.'],
+    ['createdAt', 'timestamp', ''],
+    ['passwordHash', 'string', 'srv', 'Never returned.'],
+    ['termsAcceptedAt', 'timestamp?', 'new srv', 'Set at sign-up. null for seeded admins.', 'login.md'],
+    ['dateOfBirth, licence', '—', 'pend', 'Without them the server cannot check minimumAge or the licence at request time; today the company checks at pick-up.', 'vehicle.md Q10'],
+  ]},
+  { id: 'Company', area: 'company', kind: 'table', fields: [
+    ['id', 'long', 'pk'],
+    ['name', 'string', ''],
+    ['verified', 'boolean', 'chg', 'false at sign-up; an admin sets it. Unverified companies stay out of search (decision 5).', 'login.md'],
+    ['rating', 'decimal?', 'der', 'Average review rating, 1 decimal place. null with no reviews.'],
+    ['reviewCount', 'int', 'der'],
+    ['createdAt', 'timestamp', 'new', '"On RentXe since 2021" on the vehicle page.', 'vehicle.md'],
+    ['openingHours', 'object[]', 'new', 'Display text for now. Needs real times if closed days should block pick-ups.', 'vehicle.md'],
+    ['status', 'enum', 'pend', 'ACTIVE · SUSPENDED, so a suspended company leaves search.', 'decision 5'],
+    ['ABN, phone, address', '—', 'pend', 'What an admin checks before verifying a company.', 'login.md Q1'],
+  ]},
+  { id: 'Place', area: 'place', kind: 'table · seeded', isNew: 'search.md', blurb: 'A point customers search from: a city, an area or an airport.', fields: [
+    ['id', 'long', 'pk'],
+    ['name', 'string', '', 'Short name for headings: Melbourne CBD.'],
+    ['label', 'string', '', 'Full name for suggestions: Melbourne CBD, VIC.'],
+    ['kind', 'enum', '', 'CITY · AREA · AIRPORT'],
+    ['city', 'string', '', 'Same spelling as Location.city, so search can match it.'],
+    ['lat, lng', 'decimal', '', 'The point distances are measured from.'],
+    ['timeZone', 'string', '', 'IANA zone. Decides "today" for a search.'],
+    ['otherNames', 'string[]', 'srv', 'Saigon, HCMC: matched by suggestions, never returned.'],
+  ]},
+  { id: 'Review', area: 'review', kind: 'table', fields: [
+    ['id', 'long', 'pk'],
+    ['bookingId', 'long', 'fk', '→ Booking. One review per RETURNED booking.'],
+    ['authorId', 'long', 'fk', '→ User, the customer.'],
+    ['vehicleId, companyId', 'long', 'der', 'Copied from the booking.'],
+    ['rating', 'int', 'chg', '1 to 5. One score for the vehicle and the service together; counts toward both averages.', 'decision 6'],
+    ['comment', 'string', ''],
+    ['createdAt', 'timestamp', ''],
+    ['featured', 'boolean', 'pend', 'Only if the featured-reviews API is built later and an admin picks them.', 'landing.md Q2'],
+  ]},
+  { id: 'Booking', area: 'booking', kind: 'table', fields: [
+    ['id', 'long', 'pk'],
+    ['vehicleId', 'long', 'fk', '→ Vehicle'],
+    ['customerId', 'long', 'fk', '→ User'],
+    ['companyId', 'long', 'der', 'Copied from the vehicle.'],
+    ['startDate, endDate', 'date', '', 'Pick-up and return days. Both block the vehicle (decision 3).'],
+    ['status', 'enum', '', 'REQUESTED · APPROVED · REJECTED · CANCELLED · PICKED_UP · RETURNED'],
+    ['insurance', 'enum', 'new', 'BASIC (default) · PREMIUM', 'vehicle.md'],
+    ['pricePerDay', 'decimal', 'new', 'The daily rate when the request was saved.', 'vehicle.md'],
+    ['insurancePerDay', 'decimal', 'new', '0.00 for BASIC.', 'vehicle.md'],
+    ['excess', 'decimal', 'new', 'The chosen cover\'s excess then.', 'vehicle.md'],
+    ['deposit', 'decimal', 'new', 'The vehicle\'s deposit then.', 'vehicle.md'],
+    ['totalPrice', 'decimal', 'der chg', 'Worked out once when the request is saved, then stored. A later price change does not touch it (VEH-15).', 'vehicle.md'],
+    ['createdAt', 'timestamp', ''],
+    ['respondedAt', 'timestamp?', 'new', 'When the company approved or rejected. Feeds the company\'s reply time.', 'vehicle.md'],
+    ['pick-up and return condition', '—', 'pend', 'SRS §2.5 needs condition notes; Booking has no field for them yet.', 'landing.md LP-16'],
+  ]},
+  { id: 'Vehicle', area: 'vehicle', kind: 'table', fields: [
+    ['id', 'long', 'pk'],
+    ['companyId', 'long', 'fk', '→ Company, the owner.'],
+    ['type', 'enum', '', 'CAR · MOTORBIKE'],
+    ['brand', 'string', ''],
+    ['model', 'string', ''],
+    ['year', 'int', ''],
+    ['bodyStyle', 'enum', '', 'SEDAN · HATCHBACK · SUV · PEOPLE_MOVER · SCOOTER · MANUAL_BIKE'],
+    ['transmission', 'enum', '', 'AUTOMATIC · MANUAL'],
+    ['seats', 'int', ''],
+    ['engineCc', 'int?', '', 'Motorbikes only.'],
+    ['fuel', 'enum?', '', 'PETROL · DIESEL · HYBRID · ELECTRIC'],
+    ['fuelDetail', 'string?', 'new', '4.4 L / 100 km, 510 km range.', 'vehicle.md'],
+    ['bags', 'int?', 'new', 'Cars: large bags that fit. Used to be a features entry.', 'vehicle.md'],
+    ['helmets', 'int?', 'new', 'Motorbikes: helmets supplied. Used to be a features entry.', 'vehicle.md'],
+    ['features', 'string[]', 'chg', 'Other extras only: Top box, Raincoats.', 'vehicle.md'],
+    ['plateNumber', 'string', 'new', '1XR·4KD, 59-X1 234.56', 'vehicle.md'],
+    ['plateRegion', 'string', 'new', 'VIC, VN', 'vehicle.md'],
+    ['odometerKm', 'int', 'new', 'Reading at the last return, updated by §2.5.', 'vehicle.md'],
+    ['minimumAge', 'int', 'new', 'Youngest allowed driver or rider.', 'vehicle.md'],
+    ['pricePerDay', 'decimal', '', 'AUD.'],
+    ['deposit', 'decimal', 'new', 'Held at pick-up, refunded at return. Not part of totalPrice.', 'vehicle.md'],
+    ['insuranceOptions', 'InsuranceOption[]', 'new', 'Exactly one BASIC and one PREMIUM.', 'vehicle.md'],
+    ['location', 'Location', '', 'Embedded pick-up and return point.'],
+    ['imageUrls', 'string[]', '', 'Empty: the page draws a silhouette.'],
+    ['listed', 'boolean', '', 'false hides it from customers without deleting it.'],
+    ['units', 'int', 'pend', 'Identical vehicles in one listing, so "Only 2 left" can count something.', 'decision 4'],
+  ]},
+  { id: 'Location', area: 'side', kind: 'embedded in Vehicle', fields: [
+    ['area', 'string', '', 'Suburb or district: Carlton, District 1.'],
+    ['city', 'string', 'chg', 'Chosen from the CITY places, never typed, so search can match it.', 'search.md'],
+    ['address', 'string', ''],
+    ['directions', 'string?', 'new', 'Front desk, ground floor.', 'vehicle.md'],
+    ['lat, lng', 'decimal', '', 'For distance and the map.'],
+    ['timeZone', 'string', 'new', 'Decides "today" and the 10:00 pick-up time.', 'vehicle.md'],
+  ]},
+  { id: 'InsuranceOption', area: 'side', kind: 'embedded list', isNew: 'vehicle.md', fields: [
+    ['cover', 'enum', '', 'BASIC · PREMIUM'],
+    ['pricePerDay', 'decimal', '', '0.00 for BASIC.'],
+    ['excess', 'decimal', '', 'The most the customer pays towards damage: 3000 basic, 500 premium in the mockup.'],
+  ]},
+];
+
+// Routes: h = side by side, v = stacked, c = curve from a's bottom to b's top.
+const RELS = [
+  { a: 'PasswordResetToken', b: 'User', t: 'h', ca: 'n', cb: '1', label: 'userId' },
+  { a: 'User', b: 'Company', t: 'h', ca: '1', cb: '0..1', label: 'companyId' },
+  { a: 'Company', b: 'Vehicle', t: 'v', ca: '1', cb: 'n', label: 'companyId' },
+  { a: 'User', b: 'Booking', t: 'v', ca: '1', cb: 'n', label: 'customerId' },
+  { a: 'Booking', b: 'Vehicle', t: 'h', ca: 'n', cb: '1', label: 'vehicleId' },
+  { a: 'Review', b: 'Booking', t: 'h', ca: '0..1', cb: '1', label: 'bookingId' },
+  { a: 'User', b: 'Review', t: 'c', ca: '1', cb: 'n', label: 'authorId' },
+  { a: 'Vehicle', b: 'Location', t: 'h', ca: '1', cb: '1', label: 'embedded' },
+  { a: 'Vehicle', b: 'InsuranceOption', t: 'h', ca: '1', cb: '2', label: 'embedded' },
+  { a: 'Place', b: 'Location', t: 'v', ca: '', cb: '', label: 'matches city', dashed: true },
+];
+const REL_TEXT = [
+  ['User', '1 → 0..1', 'Company', 'a company account runs one company'],
+  ['Company', '1 → many', 'Vehicle', 'owner'],
+  ['User', '1 → many', 'Booking', 'as the customer'],
+  ['Vehicle', '1 → many', 'Booking', ''],
+  ['Booking', '1 → 0..1', 'Review', 'only once RETURNED'],
+  ['User', '1 → many', 'Review', 'as the author'],
+  ['User', '1 → many', 'PasswordResetToken', ''],
+  ['Vehicle', 'embeds', 'Location, 2 × InsuranceOption', ''],
+  ['Place', 'matches', 'Location.city', 'by name, not a key'],
+];
+
+const PAGES = ['landing', 'login', 'search', 'vehicle'];
+const GROUPS = [
+  ['2.1', 'Accounts and profiles'], ['2.2', 'Vehicle management'], ['2.3', 'Search and comparison'],
+  ['2.4', 'Bookings'], ['2.5', 'Pick-up and return'], ['2.6', 'Reviews and ratings'],
+];
+const ENDPOINTS = [
+  ['2.1', 'POST', '/auth/register/customer', 'Sign up as a renter', 'Public', 'login', ['login']],
+  ['2.1', 'POST', '/auth/register/company', 'Sign up as a company; creates an unverified Company', 'Public', 'login', ['login']],
+  ['2.1', 'POST', '/auth/login', 'Log in; the page redirects by role', 'Public', 'login', ['login']],
+  ['2.1', 'POST', '/auth/logout', 'Log out from the account menu', 'Public', 'login', ['search', 'vehicle']],
+  ['2.1', 'GET', '/auth/me', 'The logged-in user, for every nav', 'Any role', 'login', ['landing', 'search', 'vehicle']],
+  ['2.1', 'POST', '/auth/forgot-password', 'Email a reset link (no screen yet)', 'Public', 'login', []],
+  ['2.1', 'POST', '/auth/reset-password', 'Set a new password (no screen yet)', 'Public', 'login', []],
+  ['2.2', 'GET', '/vehicles/{id}', 'One vehicle, with its company and review summary', 'Public', 'vehicle', ['vehicle']],
+  ['2.2', 'GET', '/vehicles/{id}/availability', 'Booked days for the calendar', 'Public', 'vehicle', ['vehicle']],
+  ['2.3', 'GET', '/places', 'Place suggestions for "Where"', 'Public', 'search', ['landing', 'search']],
+  ['2.3', 'GET', '/places/{id}', 'One place, from placeId', 'Public', 'search', ['search', 'vehicle']],
+  ['2.3', 'GET', '/vehicles/search', 'Results for a place and dates, with filters and sort', 'Public', 'search', ['search']],
+  ['2.3', 'GET', '/vehicles/search/facets', 'Filter counts, price range, empty-state suggestions', 'Public', 'search', ['search']],
+  ['2.3', 'GET', '/vehicles/compare', 'Up to 3 vehicles side by side', 'Public', 'search', ['search', 'vehicle']],
+  ['2.3', 'GET', '/vehicles/{id}/similar', 'Up to 3 similar vehicles', 'Public', 'vehicle', ['vehicle']],
+  ['2.4', 'GET', '/vehicles/{id}/quote', 'Price for chosen dates and cover', 'Public', 'vehicle', ['vehicle']],
+  ['2.4', 'POST', '/bookings', 'Send a booking request (starts REQUESTED)', 'CUSTOMER', 'vehicle', ['vehicle']],
+  ['2.4', 'GET', '/bookings/summary', 'Active booking count for the nav', 'CUSTOMER', 'search', ['search', 'vehicle']],
+  ['2.6', 'GET', '/vehicles/{id}/reviews', 'Reviews of one vehicle', 'Public', 'vehicle', ['vehicle']],
+];
+const MISSING = {
+  '2.1': 'Still to mock up: customer profile, company profile, admin user and company management',
+  '2.2': 'Still to mock up: company dashboard to add, edit and remove listings',
+  '2.4': 'Still to mock up: My bookings (list, cancel); company approve or reject',
+  '2.5': 'No endpoints yet. Still to mock up: record pick-up, return, condition and final fee',
+  '2.6': 'Still to mock up: write a review; company page with its reviews. Landing reviews are static (LP-21); /reviews/featured is an option for later',
+};
+
+const DECISIONS = [
+  { q: 'Does a REQUESTED booking hold its dates?', now: 'Yes. REQUESTED, APPROVED and PICKED_UP block. No expiry and no EXPIRED status yet.', alt: 'Only APPROVED blocks. Several customers can request the same days; approving one rejects the rest.', rules: 'SR-6 · VEH-6 · search Q2 · vehicle Q1, Q2' },
+  { q: 'Can a rental start today?', done: true, now: 'Decided 6 Nov: no. The earliest pick-up is tomorrow. The landing review now says "picked it up the next morning".', alt: 'The vehicle calendar still lets you click today (vehicle Q4).', rules: 'LP-3 · SR-4 · VEH-3 · vehicle Q4' },
+  { q: 'Is the return day free for the next pick-up?', now: 'No. A booking blocks both its start and end days, as the vehicle calendar shows.', alt: 'Yes. Return and the next pick-up are both at 10:00, so they could share a day. Try it in (03).', rules: 'SR-7 · VEH-6 · VEH-7 · vehicle Q3' },
+  { q: '"Only 2 left": is one Vehicle row one physical vehicle?', now: 'Yes, so the label has nothing to count.', alt: 'A: add Vehicle.units (what search.md shows). B: drop the label and list each vehicle separately.', rules: 'SR-8 · search Q1 · vehicle Q12' },
+  { q: 'Which companies appear in search?', now: 'Only verified ones. Company has no suspended status.', alt: 'Add Company.status so suspended companies leave search too, or show unverified ones with a tag.', rules: 'SR-2 · login Q2 · search Q5' },
+  { q: 'One rating per review, or two?', done: true, now: 'Decided 6 Nov: one rating for the vehicle and the service together. It counts toward the vehicle\'s and the company\'s average.', alt: 'The landing copy was reworded to match.', rules: 'landing Q3' },
+  { q: 'One cancellation rule, or one per company?', done: true, now: 'Decided 6 Nov: one rule for everyone. Free until 24 h before pick-up, then 50% of totalPrice.', alt: 'The landing copy was reworded to match.', rules: 'VEH-22 · VEH-23 · landing Q4' },
+  { q: 'Can logged-out visitors use search and vehicle pages?', now: 'The read endpoints are Public. Sending a request needs a CUSTOMER login. No logged-out nav is mocked up.', alt: 'Require a login for the pages as well.', rules: 'search Q6 · vehicle Q16' },
+  { q: 'Is payment in scope?', now: 'No. RentXe records amounts. The page says "You won\'t be charged until the company approves".', alt: 'Take payment. Needs a payment provider, which goes in SRS §7.', rules: 'vehicle Q8' },
+];
+
+// [number, text, status: '' | 'done', decision number or 0]
+const QUESTIONS = {
+  landing: { file: 'landing.md', items: [
+    [1, 'The company owner\'s review quote: the reviews are static now, so it stays.', 'done', 0],
+    [2, 'Only if the featured-reviews API is built later: picked automatically (LP-7) or by an admin?', '', 0],
+    [3, 'One rating for the vehicle and the service together.', 'done', 6],
+    [4, 'One cancellation rule for everyone.', 'done', 7],
+    [5, 'Logged-in visitors see the same page with the account menu, no redirect (LP-24).', 'done', 0],
+    [6, 'Suggestion path and search hand-off parameters.', 'done', 0],
+    [7, 'Earliest pick-up stays tomorrow; the review quote was changed.', 'done', 2],
+    [8, '/for-companies, /terms and /privacy static pages; Contact us is an email link (LP-25).', 'done', 0],
+    [9, 'Scene time from the clock; light and dark theme with a toggle next to Log in (LP-19, LP-22, LP-23).', 'done', 0],
+    [10, 'Mockup updated to match LP-17 to LP-25.', 'done', 0],
+  ]},
+  login: { file: 'login.md', items: [
+    [1, 'What must a company give so an admin can verify it: ABN or tax code, phone, address, contact name?', '', 0],
+    [2, 'What can an unverified company do? Proposal: log in and add vehicles, hidden from search.', '', 5],
+    [3, 'New renters land on an empty My bookings. Send them to Search instead?', '', 0],
+    [4, 'No forgot or reset password screens in the mockup. Also choose how emails are sent.', '', 0],
+    [5, 'CSRF: token cookie and header (recommended), or off with SameSite cookies?', '', 0],
+    [6, 'Where the nav booking count comes from.', 'done', 0],
+    [7, 'After log in, send users back to where they were (?next=)?', '', 0],
+    [8, 'Do the throttling rules LOGIN-23 and LOGIN-24 go in SRS §3.2, and are the numbers right?', '', 0],
+    [9, 'Confirm the email before the account works? Proposal: no, for the MVP.', '', 0],
+  ]},
+  search: { file: 'search.md', items: [
+    [1, '"Only N left" when one Vehicle row is one vehicle.', '', 4],
+    [2, 'Do REQUESTED bookings block? Can a vehicle be picked up on a return day?', '', 1],
+    [3, 'Booked vehicles in results: show them flagged (mockup), hide them, or add a filter?', '', 0],
+    [4, 'Accept the Recommended sort formula (SR-18), or pick something simpler?', '', 0],
+    [5, 'Only verified companies in search? What about suspended companies?', '', 5],
+    [6, 'Can logged-out visitors open the search page?', '', 8],
+    [7, 'Places: a seeded table (proposal) or an external geocoder with its licence and key?', '', 0],
+    [8, 'Motorbikes over 160 cc match neither engine-size option.', '', 0],
+    [9, 'Which map library and tiles (for example Leaflet and OpenStreetMap)? Goes in SRS §7.', '', 0],
+    [10, '"Show more" or numbered pages?', '', 0],
+    [11, 'Server "today" and the visitor\'s time zone can differ near midnight. And which place is the default?', '', 0],
+  ]},
+  vehicle: { file: 'vehicle.md', items: [
+    [1, 'Do pending requests hold dates?', '', 1],
+    [2, 'Unanswered requests: reject them automatically after some hours? There is no EXPIRED status.', '', 1],
+    [3, 'Same-day turnaround on a return day.', '', 3],
+    [4, 'Pick-up today: the date fields say no, the calendar says yes.', '', 2],
+    [5, 'No maximum rental length and no booking horizon.', '', 0],
+    [6, 'Is 10:00 fixed? Should closed days (Southbank Rentals is closed Sundays) block pick-up?', '', 0],
+    [7, 'Who sets the premium price and excess, and who is the insurer?', '', 0],
+    [8, 'Is payment in scope?', '', 9],
+    [9, 'Late return over 24 hours: does the one-day cap still hold?', '', 0],
+    [10, 'Age and licence cannot be checked: User has no date of birth.', '', 0],
+    [11, 'If the price changes between quote and request: charge the new price (now) or return 409?', '', 0],
+    [12, '"Only 2 left".', '', 4],
+    [13, 'Similar card and search card shapes.', 'done', 0],
+    [14, 'Is there a confirm step before the request is sent?', '', 0],
+    [15, 'How the searched place reaches this page.', 'done', 0],
+    [16, 'Do the pages need a login, or only the Request to book button?', '', 8],
+  ]},
+};
+
+/* ── State, saved in this browser ── */
+const KEY = 'rentxe-api-schema-review-v1';
+let S = { flags: {}, dec: {} };
+try { const saved = JSON.parse(localStorage.getItem(KEY)); if (saved) S = { flags: saved.flags || {}, dec: saved.dec || {} }; } catch (e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+
+const flagBtn = (id, label, kind) => `<button class="flag" type="button" data-flag="${esc(id)}" data-label="${esc(label)}" data-kind="${kind}" aria-pressed="${!!S.flags[id]}" title="Flag for change" aria-label="Flag ${esc(label)} for change">${FLAG}</button>`;
+
+/* ── (00) Stats ── */
+function renderStats() {
+  const all = MODELS.flatMap(m => m.fields.map(f => ({ m, f })));
+  const isNew = ({ m, f }) => m.isNew || / new/.test(' ' + f[2]);
+  const newCount = all.filter(x => isNew(x) && !/pend/.test(x.f[2])).length;
+  const pend = all.filter(x => /pend/.test(x.f[2])).length;
+  const openQ = Object.values(QUESTIONS).flatMap(p => p.items).filter(q => q[2] !== 'done').length;
+  const stats = [['Pages', 4], ['Endpoints', ENDPOINTS.length], ['Tables', MODELS.length], ['New fields', newCount, 1], ['Pending fields', pend], ['Open decisions', DECISIONS.filter(d => !d.done).length, 1], ['Open questions', openQ]];
+  $('#stats').innerHTML = stats.map(([k, v, hot]) => `<div><dt>${k}</dt><dd${hot ? ' class="hot"' : ''}>${v}</dd></div>`).join('');
+}
+
+/* ── (01) ER diagram ── */
+function renderER() {
+  const card = m => {
+    const rows = m.fields.map(([name, type, tags = '', note = '', src = '']) => {
+      const t = ' ' + tags + ' ';
+      const cls = ['f', t.includes(' new ') || m.isNew ? 'is-new' : '', t.includes(' pend ') ? 'pend' : '', t.includes(' chg ') ? 'chg' : ''].filter(Boolean).join(' ');
+      const badges = [
+        t.includes(' pk ') ? '<span class="b b-key">PK</span>' : '',
+        t.includes(' fk ') ? '<span class="b b-key">FK</span>' : '',
+        t.includes(' new ') ? '<span class="b b-new">new</span>' : '',
+        t.includes(' chg ') ? '<span class="b b-chg">rule</span>' : '',
+        t.includes(' pend ') ? '<span class="b b-pend">pending</span>' : '',
+        t.includes(' der ') ? '<span class="b b-der">derived</span>' : '',
+        t.includes(' srv ') && !m.kind.includes('server') ? '<span class="b b-srv">server</span>' : '',
+      ].join('');
+      const id = `field:${m.id}.${name}`;
+      const srcTxt = src ? ` <span class="src">${esc(src)}</span>` : '';
+      return `<li class="${cls}${S.flags[id] ? ' flagged' : ''}" data-row="${esc(id)}" title="${esc(note)}"><span class="nm">${esc(name)} <i>${esc(type)}</i></span><span class="rt">${badges}${flagBtn(id, `${m.id}.${name}`, 'Field')}</span><span class="note">${esc(note || '—')}${srcTxt}</span></li>`;
+    }).join('');
+    const kind = m.kind + (m.isNew ? `</span><span class="nb"><span class="b b-new">new · ${m.isNew}</span>` : '');
+    return `<article class="card${m.isNew ? ' is-new' : ''}" id="m-${m.id}" data-m="${m.id}" ${m.area !== 'side' ? `style="grid-area:${m.area}"` : ''}><header><h3>${m.id}</h3><span class="kind">${kind}</span></header>${m.blurb ? `<p class="blurb">${esc(m.blurb)}</p>` : ''}<ul class="fields">${rows}</ul></article>`;
+  };
+  const main = MODELS.filter(m => m.area !== 'side').map(card).join('');
+  const side = `<div class="side">${MODELS.filter(m => m.area === 'side').map(card).join('')}</div>`;
+  $('#er').insertAdjacentHTML('beforeend', main + side);
+  $('#rels').innerHTML = REL_TEXT.map(([a, r, b, n]) => `<div><code>${a}</code><span class="card-n">${r}</span><code>${b}</code>${n ? `<span>· ${n}</span>` : ''}</div>`).join('');
+
+  document.querySelectorAll('.card').forEach(c => {
+    c.addEventListener('mouseenter', () => hot(c.dataset.m, true));
+    c.addEventListener('mouseleave', () => hot(c.dataset.m, false));
+  });
+}
+function hot(id, on) {
+  document.querySelectorAll(`#erLines [data-m~="${id}"]`).forEach(el => el.classList.toggle('hot', on));
+  RELS.filter(r => r.a === id || r.b === id).forEach(r => {
+    document.getElementById('m-' + (r.a === id ? r.b : r.a)).classList.toggle('hot', on);
+  });
+}
+function drawER() {
+  const er = $('#er'), svg = $('#erLines');
+  const o = er.getBoundingClientRect();
+  svg.setAttribute('width', er.offsetWidth); svg.setAttribute('height', er.offsetHeight);
+  svg.setAttribute('viewBox', `0 0 ${er.offsetWidth} ${er.offsetHeight}`);
+  const R = id => {
+    const r = document.getElementById('m-' + id).getBoundingClientRect();
+    return { l: r.left - o.left, r: r.right - o.left, t: r.top - o.top, b: r.bottom - o.top, cx: r.left - o.left + r.width / 2 };
+  };
+  const txt = (x, y, s, anchor = 'start', cls = 'card-t') => s ? `<text x="${x}" y="${y}" text-anchor="${anchor}" class="${cls}">${esc(s)}</text>` : '';
+  let out = `<style>
+    #erLines path { fill: none; stroke: var(--ink); stroke-width: 1.3; }
+    #erLines path.dash { stroke-dasharray: 5 4; stroke: var(--muted); }
+    #erLines g.hot path { stroke: var(--brand); stroke-width: 2.6; }
+    #erLines text { font: 500 11px 'JetBrains Mono', monospace; fill: var(--muted); paint-order: stroke; stroke: var(--paper); stroke-width: 4px; stroke-linejoin: round; }
+    #erLines text.lbl { fill: var(--ink); }
+    #erLines g.hot text.lbl { fill: var(--brand-dark); }
+    #erLines circle { fill: var(--ink); }
+    #erLines g.hot circle { fill: var(--brand); }
+  </style>`;
+  RELS.forEach(rel => {
+    const a = R(rel.a), b = R(rel.b);
+    let d, ends = '', mid = '';
+    if (rel.t === 'h') {
+      const [L, Rt, cl, cr] = a.r <= b.l ? [a, b, rel.ca, rel.cb] : [b, a, rel.cb, rel.ca];
+      const y = Math.max(a.t, b.t) + 22;
+      d = `M${L.r} ${y} H${Rt.l}`;
+      ends = txt(L.r + 6, y - 6, cl) + txt(Rt.l - 6, y - 6, cr, 'end');
+      mid = txt((L.r + Rt.l) / 2, y + 15, rel.label, 'middle', 'lbl');
+      ends += `<circle cx="${L.r}" cy="${y}" r="2.5"/><circle cx="${Rt.l}" cy="${y}" r="2.5"/>`;
+    } else if (rel.t === 'v') {
+      const x = (Math.max(a.l, b.l) + Math.min(a.r, b.r)) / 2;
+      d = `M${x} ${a.b} V${b.t}`;
+      ends = txt(x + 7, a.b + 15, rel.ca) + txt(x + 7, b.t - 7, rel.cb);
+      mid = txt(x - 8, (a.b + b.t) / 2 + 4, rel.label, 'end', 'lbl');
+      ends += `<circle cx="${x}" cy="${a.b}" r="2.5"/><circle cx="${x}" cy="${b.t}" r="2.5"/>`;
+    } else {
+      const x1 = a.l + 30, y1 = a.b, x2 = b.cx + 40, y2 = b.t;
+      const k = Math.max(40, (y2 - y1) / 2);
+      d = `M${x1} ${y1} C${x1} ${y1 + k} ${x2} ${y2 - k} ${x2} ${y2}`;
+      ends = txt(x1 - 7, y1 + 15, rel.ca, 'end') + txt(x2 + 7, y2 - 7, rel.cb);
+      mid = txt((x1 + x2) / 2 + 8, (y1 + y2) / 2 + 4, rel.label, 'start', 'lbl');
+      ends += `<circle cx="${x1}" cy="${y1}" r="2.5"/><circle cx="${x2}" cy="${y2}" r="2.5"/>`;
+    }
+    out += `<g data-m="${rel.a} ${rel.b}"><path d="${d}"${rel.dashed ? ' class="dash"' : ''}/>${ends}${mid}</g>`;
+  });
+  svg.innerHTML = out;
+}
+
+/* ── (02) Matrix ── */
+function renderMatrix() {
+  let html = '';
+  GROUPS.forEach(([n, name]) => {
+    const rows = ENDPOINTS.filter(e => e[0] === n);
+    html += `<tr class="grp"><td colspan="9">${n} ${name}<span class="label">${rows.length} endpoint${rows.length === 1 ? '' : 's'}</span></td></tr>`;
+    rows.forEach(([, m, p, what, acc, def, calls]) => {
+      const id = `ep:${m} /api/v1${p}`;
+      const cells = PAGES.map(pg => {
+        const c = pg === def ? (calls.includes(pg) ? 'own' : 'own-only') : (calls.includes(pg) ? 'use' : '');
+        const t = { own: 'defined and called here', 'own-only': 'defined here, no screen yet', use: `called here, defined in ${def}.md` }[c];
+        return `<td class="pg">${c ? `<span class="dot ${c}" title="${t}"></span>` : ''}</td>`;
+      }).join('');
+      html += `<tr data-row="${esc(id)}"${S.flags[id] ? ' class="flagged"' : ''}><td><span class="method ${m}">${m}</span></td><td><code>${esc(p)}</code></td><td>${esc(what)}</td><td><span class="acc${acc === 'Public' ? '' : ' lock'}">${acc}</span></td>${cells}<td>${flagBtn(id, `${m} /api/v1${p}`, 'Endpoint')}</td></tr>`;
+    });
+    if (MISSING[n]) html += `<tr class="empty"><td colspan="9">${MISSING[n]}</td></tr>`;
+  });
+  $('#mx tbody').innerHTML = html;
+}
+
+/* ── (03) Clash checker ── */
+const DAYS = [9, 10, 11, 12, 13, 14, 15, 16];
+const BOOKING = [11, 12];
+const REQUESTS = [[10, 11], [11, 14], [12, 15], [13, 16]];
+function renderDays() {
+  const returnFree = $('#tReturn').checked;
+  // Default: every day from start to end is taken (both ends). Return-day-free: the end day is not taken.
+  const taken = ([s, e], d) => d >= s && (returnFree ? d < e : d <= e);
+  let h = `<span class="rl"></span>${DAYS.map(d => `<span class="hd">${d} Dec</span>`).join('')}<span></span>`;
+  h += `<span class="rl">Booked 11–12</span>${DAYS.map(d => `<span class="c${taken(BOOKING, d) ? ' bk' : d === BOOKING[1] ? ' ret' : ''}" title="${taken(BOOKING, d) ? 'Blocked' : d === BOOKING[1] ? 'Return day, free' : ''}"></span>`).join('')}<span></span>`;
+  REQUESTS.forEach(r => {
+    const clash = DAYS.some(d => taken(BOOKING, d) && taken(r, d));
+    h += `<span class="rl">Request ${r[0]}–${r[1]}</span>${DAYS.map(d => `<span class="c${taken(r, d) ? ' rq' + (taken(BOOKING, d) ? ' hit' : '') : ''}"></span>`).join('')}<span class="v${clash ? ' no' : ''}">${clash ? 'Clash · 409' : 'Free'}</span>`;
+  });
+  $('#days').innerHTML = h;
+}
+
+/* ── (04) Fee calculator ── */
+const CAR = { rate: 68, premium: 14, deposit: 300, excess: { BASIC: 3000, PREMIUM: 500 } };
+let cover = 'BASIC';
+const cents = n => Math.round((n + Number.EPSILON) * 100) / 100;
+const aud = n => 'A$' + n.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function renderCalc() {
+  const days = +$('#cDays').value, late = +$('#cLate').value;
+  $('#oDays').textContent = `${days} day${days > 1 ? 's' : ''}`;
+  $('#oLate').textContent = late ? `${late} h` : '0 h';
+  const rental = cents(CAR.rate * days);
+  const ins = cover === 'PREMIUM' ? cents(CAR.premium * days) : 0;
+  const total = cents(rental + ins);
+  const cancelFee = cents(total * 0.5);
+  const hourly = cents(CAR.rate / 6);
+  const lateRaw = cents(hourly * late);
+  const lateFee = Math.min(lateRaw, CAR.rate);
+  const row = (k, sub, v, cls = '') => `<div class="${cls}"><span>${k}${sub ? `<small>${sub}</small>` : ''}</span><span>${v}</span></div>`;
+  $('#receipt').innerHTML =
+    row('Rental', `A$68.00 × ${days} · VEH-10`, aud(rental)) +
+    row(cover === 'PREMIUM' ? 'Premium cover' : 'Basic cover', cover === 'PREMIUM' ? `A$14.00 × ${days} · excess A$500 · VEH-11` : 'included · excess A$3,000 · VEH-11', aud(ins)) +
+    row('Total price', 'stored on the booking at request time · VEH-12, VEH-15', aud(total), 'tot') +
+    row('Deposit', 'held at pick-up, refunded at return · not in the total · VEH-13', aud(CAR.deposit), 'aside') +
+    row('Cancel more than 24 h before pick-up', 'VEH-22', 'free') +
+    row('Cancel later', '50% of the total · VEH-23', aud(cancelFee)) +
+    row(`Late return, ${late} h`, late ? `${late} started h × ${aud(hourly)}${lateRaw > CAR.rate ? `, capped at one day (${aud(lateRaw)} uncapped)` : ''} · VEH-24, VEH-25${late > 24 ? ' · over 24 h: vehicle Q9' : ''}` : 'A$11.33 per started hour, capped at A$68.00 · VEH-24, VEH-25', aud(lateFee));
+}
+
+/* ── (05) Decisions ── */
+function renderDecisions() {
+  $('#decs').innerHTML = DECISIONS.map((d, i) => {
+    const n = i + 1, st = S.dec[n] || {};
+    return `<article class="dec${st.choice === 'change' ? ' changed' : ''}" data-dec="${n}">
+      <div class="top-line"><span class="label">Decision ${n}</span>${d.done ? '<span class="b b-new">decided</span>' : `<div class="seg"><button type="button" data-choice="keep" aria-pressed="${st.choice === 'keep'}">Keep</button><button type="button" class="chg" data-choice="change" aria-pressed="${st.choice === 'change'}">Change</button></div>`}</div>
+      <h3>${esc(d.q)}</h3>
+      <dl><dt>${d.done ? 'Decision' : 'Default now'}</dt><dd>${esc(d.now)}</dd><dt>${d.done ? 'Note' : 'The other way'}</dt><dd>${esc(d.alt)}</dd></dl>
+      <div class="rules">${esc(d.rules)}</div>
+      <textarea rows="1" placeholder="Your note (optional)" data-dnote="${n}">${esc(st.note || '')}</textarea>
+    </article>`;
+  }).join('');
+}
+
+/* ── (06) Questions ── */
+function renderQuestions() {
+  $('#qs').innerHTML = Object.entries(QUESTIONS).map(([page, { file, items }]) => {
+    const open = items.filter(q => q[2] !== 'done').length;
+    return `<section><h3>${file}<span class="label">${open} open</span></h3>${items.map(([n, text, st, dec]) => {
+      const id = `q:${file} Q${n}`;
+      return `<div class="q${st === 'done' ? ' done' : ''}${S.flags[id] ? ' flagged' : ''}" data-row="${esc(id)}"><span class="n">Q${n}</span><div><p>${st === 'done' ? 'Resolved: ' : ''}${esc(text)}</p>${dec ? `<a class="to label" href="#decisions" style="color:var(--brand-dark)">→ decision ${dec}</a>` : ''}</div>${st === 'done' ? '<span></span>' : flagBtn(id, `${file} Q${n}: ${text}`, 'Question')}</div>`;
+    }).join('')}</section>`;
+  }).join('');
+}
+
+/* ── (07) Change list and Markdown ── */
+function renderChanges() {
+  const flags = Object.entries(S.flags);
+  const decs = Object.entries(S.dec).filter(([, v]) => v.choice === 'change' || (v.note && v.note.trim()));
+  const count = flags.length + Object.values(S.dec).filter(v => v.choice === 'change').length;
+  $('#pillCount').textContent = count;
+  let h = '';
+  decs.forEach(([n, v]) => {
+    h += `<div class="cl-item"><div class="row"><span class="what"><span class="label">Decision ${n}</span>${esc(DECISIONS[n - 1].q)}</span><span class="b ${v.choice === 'change' ? 'b-new' : 'b-der'}">${v.choice === 'change' ? 'change' : v.choice === 'keep' ? 'keep' : 'undecided'}</span></div>${v.note ? `<div style="font-size:13.5px;margin-top:6px">${esc(v.note)}</div>` : ''}</div>`;
+  });
+  flags.forEach(([id, v]) => {
+    h += `<div class="cl-item"><div class="row"><span class="what"><span class="label">${v.kind}</span>${esc(v.label)}</span><button class="x" type="button" data-unflag="${esc(id)}">Remove</button></div><textarea rows="2" placeholder="What should change?" data-fnote="${esc(id)}">${esc(v.note || '')}</textarea></div>`;
+  });
+  $('#cl').innerHTML = h || '<div class="cl-empty">Nothing yet. Flag a field, endpoint or question with the flag icon, or mark a decision as Change.</div>';
+  renderMarkdown();
+}
+function renderMarkdown() {
+  const cell = s => String(s || '').replace(/\|/g, '\\|').replace(/\n+/g, ' ');
+  const today = new Date().toISOString().slice(0, 10);
+  let md = `## API schema review, ${today}\n\nSource: docs/Milestone1/api (README, landing, login, search, vehicle).\n\n### Team decisions\n\n| # | Question | Choice | Note |\n|---|---|---|---|\n`;
+  DECISIONS.forEach((d, i) => {
+    const st = S.dec[i + 1] || {};
+    const choice = d.done ? 'Decided' : st.choice === 'change' ? '**Change**' : st.choice === 'keep' ? 'Keep default' : 'Not decided';
+    md += `| ${i + 1} | ${cell(d.q)} | ${choice} | ${cell(st.note)} |\n`;
+  });
+  const flags = Object.values(S.flags);
+  md += `\n### Flagged for change\n\n`;
+  if (!flags.length) md += '_Nothing flagged._\n';
+  else {
+    md += '| Type | Item | What should change |\n|---|---|---|\n';
+    flags.forEach(v => { md += `| ${v.kind} | \`${cell(v.label)}\` | ${cell(v.note) || '_to discuss_'} |\n`; });
+  }
+  $('#md').textContent = md;
+}
+
+/* ── Events ── */
+function setFlag(id, label, kind, on) {
+  if (on) S.flags[id] = { label, kind, note: (S.flags[id] || {}).note || '' }; else delete S.flags[id];
+  document.querySelectorAll(`[data-flag="${CSS.escape(id)}"]`).forEach(b => b.setAttribute('aria-pressed', on));
+  document.querySelectorAll(`[data-row="${CSS.escape(id)}"]`).forEach(r => r.classList.toggle('flagged', on));
+  save(); renderChanges();
+}
+document.addEventListener('click', e => {
+  const f = e.target.closest('[data-flag]');
+  if (f) { setFlag(f.dataset.flag, f.dataset.label, f.dataset.kind, f.getAttribute('aria-pressed') !== 'true'); toast(f.getAttribute('aria-pressed') === 'true' ? 'Added to the change list' : 'Removed from the change list'); return; }
+  const u = e.target.closest('[data-unflag]');
+  if (u) { setFlag(u.dataset.unflag, '', '', false); return; }
+  const c = e.target.closest('[data-choice]');
+  if (c) {
+    const card = c.closest('[data-dec]'), n = card.dataset.dec, st = S.dec[n] || (S.dec[n] = {});
+    st.choice = st.choice === c.dataset.choice ? undefined : c.dataset.choice;
+    card.querySelectorAll('[data-choice]').forEach(b => b.setAttribute('aria-pressed', b.dataset.choice === st.choice));
+    card.classList.toggle('changed', st.choice === 'change');
+    save(); renderChanges(); return;
+  }
+  const cv = e.target.closest('#cCover button');
+  if (cv) { cover = cv.dataset.v; document.querySelectorAll('#cCover button').forEach(b => b.setAttribute('aria-pressed', b === cv)); renderCalc(); }
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset.dnote) { (S.dec[t.dataset.dnote] ||= {}).note = t.value; save(); renderMarkdown(); }
+  if (t.dataset.fnote && S.flags[t.dataset.fnote]) { S.flags[t.dataset.fnote].note = t.value; save(); renderMarkdown(); }
+  if (t.id === 'cDays' || t.id === 'cLate') renderCalc();
+});
+document.addEventListener('change', e => {
+  if (e.target.dataset.dnote) renderChanges();
+});
+$('#tNotes').addEventListener('change', e => $('#er').classList.toggle('notes', e.target.checked));
+$('#tOnly').addEventListener('change', e => $('#er').classList.toggle('only-new', e.target.checked));
+$('#tReturn').addEventListener('change', renderDays);
+$('#copy').addEventListener('click', async () => {
+  const text = $('#md').textContent;
+  try { await navigator.clipboard.writeText(text); toast('Copied as Markdown'); }
+  catch (err) {
+    const r = document.createRange(); r.selectNodeContents($('#md'));
+    const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    toast('Selected. Press Ctrl+C to copy');
+  }
+});
+$('#reset').addEventListener('click', () => {
+  if (!confirm('Clear every flag, decision and note?')) return;
+  S = { flags: {}, dec: {} }; save();
+  document.querySelectorAll('[data-flag]').forEach(b => b.setAttribute('aria-pressed', 'false'));
+  document.querySelectorAll('.flagged').forEach(r => r.classList.remove('flagged'));
+  renderDecisions(); renderChanges();
+});
+let toastTimer;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('on'), 1600); }
+
+/* ── Boot ── */
+renderStats(); renderER(); renderMatrix(); renderDays(); renderCalc(); renderDecisions(); renderQuestions(); renderChanges();
+drawER();
+new ResizeObserver(drawER).observe($('#er'));
+if (document.fonts) document.fonts.ready.then(drawER);
+</script>
+</body>
+</html>

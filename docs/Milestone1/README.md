@@ -10,11 +10,12 @@
 |---|---|
 | `SRS.md` | Software Requirements Specification, 8 sections |
 | `architecture/` | Architecture diagram and `tech-decisions.md` |
+| `api/` | API schema per mockup page: endpoints, shared models, business rules for the SRS |
 | `wireframes/` | One wireframe per UI screen |
 | `meeting-minutes/` | Minutes for every meeting; copy `_template.md` |
 | `definition-of-done.md` | The team's Definition of Done |
 | `user-story-guide.md` | Story format, acceptance criteria, INVEST |
-| `decision-log.md` | Every decision and revision this milestone |
+| `decisions/` | Every decision and revision this milestone, one file each; `decisions/README.md` indexes them |
 
 ## Checklist
 
