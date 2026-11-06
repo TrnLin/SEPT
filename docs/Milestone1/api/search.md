@@ -145,7 +145,7 @@ A shared model now: see [README.md](README.md#place).
 | `minRating` | decimal | no | 1.0 to 5.0. The page sends 4.0, 4.5 or 4.8 | Any |
 | `sort` | string | no | `recommended`, `price,asc`, `price,desc`, `rating,desc`, `distance,asc` (SR-18) | `recommended` |
 | `page` | int | no | 0 or more | 0 |
-| `size` | int | no | 1 to 100 | 20 |
+| `size` | int | no | 1 to 100 | 10 |
 
 Example: Melbourne CBD, 11–14 Dec, cars only, most expensive first, 3 a page.
 
@@ -255,7 +255,7 @@ Errors:
 
 Notes:
 
-- The list view asks for `size=20` and adds the next page with a "Show more" button (SR-22). The map view asks once with `size=100` so every result gets a pin.
+- The list view asks for `size=10` and adds the next page with a "Show more" button (SR-22). The map view asks once with `size=100` so every result gets a pin.
 - The `sort` keys are worked out, not entity fields: the rating comes from the company and the distance from the place. Bind `sort` as a plain string, not through Spring's `Pageable` sort.
 - Dates change totals and availability only, never which vehicles match. So a date change reloads search but not facets.
 - Besides the standard `page`, the response has `availableCount` (int): how many of all `page.totalElements` results, across every page, are `AVAILABLE` for the dates (SR-9). In the example, 4 of the 5 cars are free; the Model 3 is booked.
@@ -645,7 +645,7 @@ Recommended in Melbourne CBD, no filters, 11–14 Dec: Corolla Hybrid (4.72), PC
 
 ### Paging
 
-**SR-22.** The list view loads 20 rows a page. Page: below the rows, a button "Show 20 more · 28 of 48" (fewer when fewer are left) adds the next page under the current rows; ticks and the compare tray stay. When every row is shown, the "End of results" line replaces it. Changing the filters, sort, place or dates starts again at page 0. A reload shows the first 20 again; `page` is not kept in the URL ([decision](../decisions/show-more-paging.md), Q10). The map view loads up to 100 in one call. A `size` above 100 is rejected with `400`.
+**SR-22.** The list view loads 10 rows a page. Page: below the rows, a button "Show 10 more · 20 of 48" (fewer when fewer are left) adds the next page under the current rows; ticks and the compare tray stay. When every row is shown, the "End of results" line replaces it. Changing the filters, sort, place or dates starts again at page 0. A reload shows the first 10 again; `page` is not kept in the URL ([decision](../decisions/show-more-paging.md), Q10). The map view loads up to 100 in one call. A `size` above 100 is rejected with `400`.
 
 ### Nav
 
@@ -683,7 +683,7 @@ Done 2026-11-06 in `assets/mockups/search/index.html`, except the compare page, 
 | Remove the "Only 2 left" badge; those rows show "Free for your dates" | SR-8, Q1 | Done |
 | Headline adds "· 7 free for your dates" when some results are booked | SR-9, Q3 | Done |
 | Ho Chi Minh City prices in ₫ with a small "≈ A$", and the "Rates By Exchange Rate API" link in the footer (`?city=hcm`) | SR-28, Q14 | Done. Pins and the price legend use a short form, "149k₫" |
-| "Show 20 more · 28 of 48" button under the list (`?paging=demo` uses 3 rows a page so it shows with 8 listings) | SR-22, Q10 | Done |
+| "Show 10 more · 20 of 48" button under the list (`?paging=demo` uses 3 rows a page so it shows with 8 listings) | SR-22, Q10 | Done |
 | Engine size: add "Over 160 cc" | SR-11, Q8 | Done |
 | "Couldn't load results." with **Try again** in the results area; no errors in the toast (`?view=error`) | SR-29, Q16 | Done |
 | Theme toggle in the nav next to the account menu, and dark styles | README Theme | Done |
@@ -704,7 +704,7 @@ Done 2026-11-06 in `assets/mockups/search/index.html`, except the compare page, 
 7. **Where places come from.** Resolved 2026-11-06 ([decision](../decisions/fixed-place-list.md)): a fixed list in a seeded `Place` table, with hidden other names. No outside service, no API key, and every suggestion has vehicles nearby. Noted as a later option: open search through a geocoder such as Mapbox Search or Google Places, sending `lat` and `lng` instead of `placeId` (its account, key and limits would go in SRS §7). "Near me" from the browser's location would use the same `lat` and `lng` parameters.
 8. **Engine sizes over 160 cc.** Resolved 2026-11-06 ([decision](../decisions/engine-size-over-160.md)): add a fixed "Over 160 cc" option that sends `minEngineCc=161` (SR-11). Every motorbike now fits exactly one option. No API change.
 9. **Real map.** Resolved 2026-11-06 ([decision](../decisions/leaflet-openstreetmap-map.md)): Leaflet with OpenStreetMap-based tiles, a light and a dark set that follow the theme toggle (SR-21). No account or key. Leaflet, OpenStreetMap and the tile provider go in SRS §7. Mapbox GL JS was the alternative, for a more polished map with an account and token.
-10. **List paging.** Resolved 2026-11-06 ([decision](../decisions/show-more-paging.md)): a "Show more" button that adds 20 rows at a time (SR-22). No numbered pages, no infinite scroll.
+10. **List paging.** Resolved 2026-11-06 ([decision](../decisions/show-more-paging.md)): a "Show more" button that adds 10 rows at a time (SR-22). No numbered pages, no infinite scroll.
 11. **Dates and defaults.** Resolved 2026-11-06 ([decision](../decisions/search-date-and-place-defaults.md)): once a place is known, the page works out default dates in the place's time zone and moves a pick-up that is already "today" there, so the server's `400` never comes from dates the visitor didn't pick. The default place is the last one searched in this browser, or else Melbourne CBD (SR-27).
 12. **Companies and admins on search.** Resolved 2026-11-06 ([decision](../decisions/company-and-admin-on-search.md)): they see the same page with their own account menu. A company gets an **Edit** button on its own vehicles that opens its vehicle form and comes back to the search afterwards (SR-26). On the vehicle page, the owner sees **Edit vehicle** instead of **Request to book**; other companies and admins see "Only customer accounts can book" (vehicle.md VEH-40).
 13. **What "near" covers.** Resolved 2026-11-06 ([decision](../decisions/whole-city-search-scope.md)): the whole city of the searched place (SR-2), not a radius or the area alone. The Where list keeps cities, areas and airports, because the place sets where distances, the Distance sort, the km filter and the map centre start from. Later open search (Q7) fits this: the server finds the city of the typed address and measures from that address.

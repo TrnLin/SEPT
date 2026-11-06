@@ -370,7 +370,9 @@
 
   /* ── Map view ─────────────────────────────────────── */
   /* One fixed-height panel that fits the screen: the map stays put and only the short list scrolls. */
-  .mapview { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 0; height: clamp(480px, calc(100vh - var(--nav-h) - 64px), 760px); }
+  .mapview { position: sticky; top: calc(var(--nav-h) + 16px); display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 0;
+             height: clamp(480px, calc(100vh - var(--nav-h) - 116px), 1000px); }   /* 116px: gaps and the footer, so it never slides under the nav */
+  html[data-view="map"] .results { padding-bottom: 24px; }
   .mlist { margin: 0; padding: 0; list-style: none; border-right: 1px solid var(--theme-line); overflow-y: auto; overscroll-behavior: contain;
            scrollbar-width: thin; scrollbar-color: var(--theme-line) transparent; }
   .mrow { display: grid; grid-template-columns: 82px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 14px 18px 14px 0;
@@ -491,7 +493,7 @@
     .mapview { grid-template-columns: 300px minmax(0, 1fr); }
   }
   @media (max-width: 1100px) {
-    .mapview { grid-template-columns: 1fr; height: auto; }
+    .mapview { position: static; grid-template-columns: 1fr; height: auto; }
     .mlist { display: none; }
     .map { height: min(70vh, 640px); min-height: 440px; margin-left: 0; margin-top: 20px; }
     .trip { display: none; }
@@ -954,8 +956,8 @@ const state = {
   sort: 'best', compare: [], picked: null, zoom: 1,
   error: params.get('view') === 'error',     // ?view=error: search or facets failed (SR-29)
 };
-// The list loads 20 rows at a time (SR-22). ?paging=demo uses 3, so "Show more" appears with the 8 sample listings.
-const PAGE = params.get('paging') === 'demo' ? 3 : 20;
+// The list loads 10 rows at a time (SR-22). ?paging=demo uses 3, so "Show more" appears with the 8 sample listings.
+const PAGE_SIZE = 10, PAGE = params.get('paging') === 'demo' ? 3 : PAGE_SIZE;
 state.limit = PAGE;
 const cityList = () => LISTINGS.filter(l => l.city === state.city);
 const bounds = () => {
@@ -1292,7 +1294,7 @@ function render({ animate = false, rowsIn = animate } = {}) {
   if (state.error) url.searchParams.set('view', 'error');
   if (state.city === 'hcm') url.searchParams.set('city', 'hcm');
   history.replaceState(null, '', url);
-  const proto = { list: shown === 'list' && PAGE === 20, map: shown === 'map', empty: shown === 'empty', error: shown === 'error', paging: shown === 'list' && PAGE !== 20 };
+  const proto = { list: shown === 'list' && PAGE === PAGE_SIZE, map: shown === 'map', empty: shown === 'empty', error: shown === 'error', paging: shown === 'list' && PAGE !== PAGE_SIZE };
   document.querySelectorAll('[data-proto]').forEach(a => a.setAttribute('aria-current', String(
     a.dataset.proto === 'hcm' ? state.city === 'hcm' : state.city === 'mel' && !!proto[a.dataset.proto])));
   document.querySelectorAll('[data-user-proto]').forEach(a => a.setAttribute('aria-current', String(a.dataset.userProto === NAV.role)));
@@ -1311,7 +1313,7 @@ function render({ animate = false, rowsIn = animate } = {}) {
 }
 
 /* ── Events ────────────────────────────────────────── */
-// Any new search starts again at the first 20 rows (SR-22) and retries a failed load.
+// Any new search starts again at the first 10 rows (SR-22) and retries a failed load.
 const update = () => { if (state.view === 'empty') state.view = 'list'; state.limit = PAGE; state.error = false; render({ animate: true }); };
 
 document.querySelectorAll('.seg[data-key]').forEach(seg => seg.addEventListener('click', e => {
