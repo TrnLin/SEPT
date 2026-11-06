@@ -87,7 +87,7 @@
 <!-- GSAP for the reveals and the filter, tray and drawer transitions (free "standard" licence). The page works without it. -->
 <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
 <style>
-  :root { --nav-h: 72px; --side-w: 288px; --pick-tint: var(--brand-tint);
+  :root { --nav-h: 72px; --side-w: 328px; --pick-tint: var(--brand-tint);
           --content-max: 1680px; }   /* wider than the shared 1320px: a results page uses big screens */
   :root[data-theme="dark"] { --pick-tint: color-mix(in srgb, var(--brand) 18%, var(--theme-bg)); }
   * { box-sizing: border-box; }
@@ -253,7 +253,6 @@
   .seg button:hover { color: var(--theme-text); }
   .seg button[aria-pressed="true"] { background: var(--theme-text); color: var(--theme-bg); }
   .seg button:disabled { opacity: .35; cursor: default; }
-  #ccSeg button { padding: 8px 2px; font-size: 12px; }   /* four engine-size options in the filter column */
 
   .opts { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
   .opt { display: flex; align-items: center; gap: 12px; padding: 6px 0; font-size: 14px; font-weight: 500; cursor: pointer; }
