@@ -1,16 +1,16 @@
 ---
-status: Open # options written down, nobody has chosen yet
+status: Proposed # Linh to explain to the team
 date: 2026-11-06
-decided-by: [] # the team, at stand-up
+decided-by: [Linh Tran]
 areas: [auth, security, architecture, supabase]
 repos: [rentxe]
 ---
 
-# ADR — How login works: Spring Security sessions or Supabase Auth (open)
+# ADR — Login uses Spring Security sessions, not Supabase Auth
 
-Context: The team plans to use Supabase Postgres as the database. Supabase also offers an Auth service, so we have to choose who checks passwords and what the browser holds after log in. The diagram is in [architecture/auth-flows.html](../architecture/auth-flows.html), with a PNG in [auth-flows-a-vs-b.png](../architecture/auth-flows-a-vs-b.png) to share. Kept open on 2026-11-06 for the team to decide.
+Context: The team plans to use Supabase Postgres as the database. Supabase also offers an Auth service, so we have to choose who checks passwords and what the browser holds after log in. The diagram is in [architecture/auth-flows.html](../architecture/auth-flows.html), with a PNG in [auth-flows-a-vs-b.png](../architecture/auth-flows-a-vs-b.png) to share. Kept open earlier on 2026-11-06, then decided the same day.
 
-Option A, Spring Security sessions (recommended; the API docs are written for it):
+Option A, Spring Security sessions (chosen):
 - Spring checks the password against a BCrypt hash in our `users` table and keeps a server session. Supabase is only the database; its Auth feature stays off.
 - The browser holds an `HttpOnly` `JSESSIONID` cookie that scripts can't read, plus a 14-day remember-me cookie when "Keep me logged in" is ticked.
 - Log out and suspension take effect at once, because the session lives on the server.
@@ -18,7 +18,7 @@ Option A, Spring Security sessions (recommended; the API docs are written for it
 - Needs CSRF protection (Spring's token cookie and header). Reset emails are ours to build with Spring Mail.
 - Tests run fully offline against H2, and all the security code is in our Spring app to show in SRS §3.2.
 
-Option B, Supabase Auth on the page:
+Option B, Supabase Auth on the page (rejected):
 - The page signs users up and logs them in with Supabase's JavaScript library (supabase-js). Spring checks the Supabase JWT on each request against Supabase's public keys (JWKS).
 - The browser holds a JWT and a refresh token in `localStorage`, which any script on the page can read. The library renews the JWT about every hour.
 - A JWT keeps working for up to 1 hour after log out or suspension, unless Spring also checks `ACTIVE` on each request.
@@ -28,6 +28,7 @@ Option B, Supabase Auth on the page:
 
 Not an option: Spring forwarding log in to the Supabase Auth API (it would combine the downsides of both). Convex instead of Supabase: its logic runs in TypeScript and it has no Java driver, which conflicts with Spring Boot.
 
-Waiting on this choice: [api/login.md](../api/login.md) Q4 (reset emails), Q5 (CSRF), Q8 (throttling), Q9 (email confirmation) and the session length (LOGIN-17).
-Decision: not made yet.
-Links: [api/login.md](../api/login.md) Q16, LOGIN-12, LOGIN-15 to LOGIN-24 · [api/README.md](../api/README.md) Auth, team decision 10 · SRS §3.2, §4
+Decided after it (all 2026-11-06): [api/login.md](../api/login.md) Q4 (reset emails), Q5 (CSRF), Q8 (throttling), Q9 (email confirmation) and the session length (LOGIN-17).
+Decision: Option A. Supabase is only the Postgres database; its Auth feature stays off.
+Why: Tokens never sit where scripts can read them, log out and suspension work at once, sign-up is one transaction, and every security rule lives in our Spring app, where we can test it offline in GitHub Actions and show it in SRS §3.2. The cost, CSRF protection and our own reset emails, is standard Spring work.
+Links: [api/login.md](../api/login.md) Q16, LOGIN-12, LOGIN-15 to LOGIN-23 · [api/README.md](../api/README.md) Auth, team decision 10 · SRS §3.2, §4

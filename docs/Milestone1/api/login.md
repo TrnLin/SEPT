@@ -7,7 +7,7 @@ One page to log in, sign up as a renter or a rental company, and ask for a passw
 | Mockup | `assets/mockups/login/index.html` |
 | SRS area | 2.1 User and Profile Management |
 | Owns | Every endpoint under `/api/v1/auth/*` |
-| Auth approach | **Not decided** (Q16). This file is written for option A, Spring Security sessions. Option B, Supabase Auth on the page, would change the cookies, log out, reset password and CSRF parts. |
+| Auth approach | Option A, Spring Security sessions (decided 2026-11-06, Q16). Supabase is only the Postgres database; its Auth feature is not used. |
 
 ## Page states
 
@@ -17,8 +17,11 @@ One page to log in, sign up as a renter or a rental company, and ask for a passw
 | `login/?as=company` | Log in | Rental company | Back to your fleet. | Log in |
 | `login/?view=signup` | Sign up | Renter | Start riding. | Create account |
 | `login/?view=signup&as=company` | Sign up | Rental company | List your fleet. | Register company |
+| `login/?view=forgot` | Forgot password (decided 2026-11-06, not in the mockup) | Hidden | Reset your password. | Send reset link |
+| `login/?view=reset&token=…` | Reset password (decided 2026-11-06, not in the mockup) | Hidden | Choose a new password. | Save password |
 
 - Any other `view` value means log in. Any other `as` value means renter.
+- Forgot and reset (LOGIN-33): the Renter / Rental company toggle is hidden, because a reset works the same for every role. Each view has a "Back to log in" link. `?view=reset` without a `token` shows the log in view.
 - Any state can also carry `next`, the page to return to after success, for example `login/?next=%2Fvehicles%2F68%3Fstart%3D2026-12-11%26end%3D2026-12-14` (LOGIN-29). Switching the view or account type keeps it.
 - Switching the view or account type rewrites the URL without a reload.
 - The landing page links to all four states. The customer nav's "Log out" link ends here too.
@@ -37,13 +40,15 @@ One page to log in, sign up as a renter or a rental company, and ask for a passw
 | Password, Show / Hide | Both | `password`. Show / Hide is client-only. |
 | "At least 8 characters." | Sign up | Static hint for LOGIN-5 |
 | Keep me logged in (ticked by default) | Log in | `rememberMe` on `POST /api/v1/auth/login` |
-| Forgot password? | Log in | `POST /api/v1/auth/forgot-password` with the Email field's value |
+| Forgot password? | Log in | Opens `?view=forgot` with the Email field's value filled in (LOGIN-33) |
+| Email, Send reset link | Forgot | `email` on `POST /api/v1/auth/forgot-password` |
+| New password, Show / Hide, Save password | Reset | `token` from the URL and `newPassword` on `POST /api/v1/auth/reset-password` |
 | I agree to the Terms and Privacy policy | Sign up | `acceptTerms` on both register endpoints |
 | Terms, Privacy, Help links | Both | Static pages, no API. Terms and Privacy go to `/terms` and `/privacy` (landing LP-25); Help goes to `/help` (LOGIN-31). |
 | "Admins log in here too." | Both | Static |
 | Theme toggle (decided 2026-11-06, not in the mockup) | Both | Icon button at the right end of the top row, after the Sign up / Log in switch. It cycles System, Light and Dark and is saved in `localStorage` (README, Theme). No API. |
 | After success | Both | Redirect by `role` in the response (table below) |
-| Page load (decided 2026-11-06, not in the mockup) | Both | `GET /api/v1/auth/me`. `200`: already logged in, so the user is sent on as after a log in (LOGIN-30). `401`: show the form. |
+| Page load (decided 2026-11-06, not in the mockup) | Both | `GET /api/v1/auth/me`. `200`: already logged in, so the user is sent on as after a log in (LOGIN-30). `401`: show the form. At the same time `GET /api/v1/auth/csrf`, so the first `POST` has a token (LOGIN-36). |
 
 Where server errors appear (decided 2026-11-06, LOGIN-32). Errors about one field go under that field; everything else goes in an error banner at the top of the form, under the heading. The mockup has the field slots but no banner yet:
 
@@ -68,8 +73,6 @@ None of these pages has a mockup yet.
 
 ## Endpoints
 
-Written for option A (Spring Security sessions). The auth approach is still open (Q16).
-
 | Method | Path | Access | Success |
 |---|---|---|---|
 | `POST` | `/api/v1/auth/register/customer` | Public | `201` + CurrentUser |
@@ -79,6 +82,7 @@ Written for option A (Spring Security sessions). The auth approach is still open
 | `GET` | `/api/v1/auth/me` | `CUSTOMER`, `COMPANY`, `ADMIN` | `200` + CurrentUser |
 | `POST` | `/api/v1/auth/forgot-password` | Public | `204` |
 | `POST` | `/api/v1/auth/reset-password` | Public | `204` |
+| `GET` | `/api/v1/auth/csrf` | Public | `204` + `XSRF-TOKEN` cookie |
 
 All are in SRS 2.1. CurrentUser is defined under [`GET /api/v1/auth/me`](#get-apiv1authme).
 
@@ -267,7 +271,7 @@ Content-Type: application/json
 | `400` | Email is blank or malformed, or password is blank |
 | `401` | Wrong password, or no account has this email. The body is the same for both (LOGIN-14). |
 | `403` | Correct password, but the account is `SUSPENDED` (LOGIN-15) |
-| `429` | Proposal: too many failed attempts (LOGIN-23) |
+| `429` | Too many failed attempts (LOGIN-23) |
 
 ```json
 {
@@ -309,6 +313,7 @@ Notes for Spring Security:
   2. Change the session ID. Spring's own login filters do this, but a custom controller must do it itself.
   3. Save the context with `HttpSessionSecurityContextRepository`.
   4. When `rememberMe` is `true`, call `RememberMeServices.loginSuccess(...)`. The service normally looks for a `remember-me` request parameter, so set `alwaysRemember(true)` on it and only call it when the box is ticked.
+  5. Replace the CSRF token (LOGIN-36). Spring's login filters do this with `CsrfAuthenticationStrategy`; a custom controller must call it. The same applies to both sign-ups, which log the user in.
 - `DaoAuthenticationProvider` checks account status before the password by default. A wrong password on a suspended account would then return "suspended", which reveals that the email exists. Run the status check after the password check instead, for example in `postAuthenticationChecks`.
 - `DaoAuthenticationProvider` already hashes a dummy password for unknown emails, so both `401` cases take about the same time.
 
@@ -416,9 +421,9 @@ Content-Type: application/json
 | `400` | Email is blank or malformed |
 
 Notes:
-- The mockup sends at once on click ("this would email you a reset link") and has no separate step to enter an email. Assumption: the page sends the Email field's value. If that field is empty or malformed, the page shows the email error and does not call the API.
-- After `204`, the page shows a toast that does not confirm the account exists, for example "If an account exists for minh.tran@example.com, we've sent a reset link."
-- The email links to the log in page with `?view=reset&token=…`. That view is not in the mockup (see Open questions).
+- Sent from the forgot view (`?view=forgot`, LOGIN-33). "Forgot password?" opens it with the log in form's email filled in, so the user can check it first. The mockup still sends at once on click; that is a mockup to-do.
+- After `204`, the forgot view is replaced on the page (not a toast) by a message that does not confirm the account exists: "If an account exists for minh.tran@example.com, we've sent a reset link. It works for 30 minutes." with "Back to log in" and "Send again".
+- The email links to `/login?view=reset&token=…` (LOGIN-33). It is sent with Spring Mail over SMTP (LOGIN-34).
 - Email is sent only to `ACTIVE` accounts. Sending happens after the response or off the request thread, so the response time doesn't show whether an email was sent.
 
 ### POST /api/v1/auth/reset-password
@@ -463,7 +468,29 @@ Content-Type: application/json
 
 Notes:
 - Unknown, used and expired tokens get the same message.
-- Spring's hash-based remember-me (`TokenBasedRememberMeServices`) signs the cookie with the password hash, so a new password breaks old cookies automatically. With `PersistentTokenBasedRememberMeServices`, delete the user's rows in `persistent_logins` instead.
+- We use Spring's hash-based remember-me (`TokenBasedRememberMeServices`, LOGIN-17). It signs the cookie with the password hash, so a new password breaks old cookies automatically. Its signing key comes from an environment variable (`RENTXE_REMEMBER_ME_KEY`), never the repository.
+
+### GET /api/v1/auth/csrf
+
+Gives the page a CSRF token before its first `POST` (LOGIN-36).
+
+**SRS:** 3.2 · **Access:** Public
+
+No parameters.
+
+```http
+GET /api/v1/auth/csrf
+```
+
+`204 No Content`.
+
+**Cookies:** sets `XSRF-TOKEN` (not `HttpOnly`, so the page's script can read it; `SameSite=Lax`, `Secure` over HTTPS, browser-session lifetime).
+
+Notes:
+- Every `POST`, `PATCH`, `PUT` and `DELETE` under `/api/**` must send the cookie's value in the `X-XSRF-TOKEN` header, log in and both sign-ups included. Without it, or with a wrong value, the response is `403` and the page shows "Something went wrong. Try again." in the error banner (LOGIN-32).
+- The pages use one shared `api()` wrapper around `fetch` that reads the cookie on every request and adds the header, so page code never handles the token.
+- Spring: `.csrf(c -> c.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()).csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()))`. The plain handler, not Spring 6's default XOR handler, because the page sends back the raw cookie value. The controller reads the `CsrfToken` request attribute so the cookie is actually written (Spring 6 loads tokens lazily).
+- Tests: MockMvc adds a valid token with `.with(csrf())`.
 
 ## Endpoints used from other pages
 
@@ -497,14 +524,14 @@ The mockup gives only "required", the email format and "at least 8 characters". 
 | LOGIN-14 | A wrong password and an unknown email return the same `401` status and body. | 3.2 |
 | LOGIN-15 | A `SUSPENDED` account cannot log in. With the correct password the response is `403` "suspended". With a wrong password it is the plain `401` from LOGIN-14. No session is created in either case. | 2.1, 2.8 |
 | LOGIN-16 | Once an account is suspended, its open sessions and remember-me cookies stop working. Its next request that needs a session gets `401`. | 2.1, 2.8 |
-| LOGIN-17 | With "Keep me logged in" ticked, the user stays logged in for 14 days, even after closing the browser. Unticked, the login lasts until the browser closes or 30 minutes pass without a request (Spring Boot's default session timeout). | 2.1 |
+| LOGIN-17 | With "Keep me logged in" ticked, the user stays logged in for 14 days, even after closing the browser. Unticked, the login lasts until the browser closes or 30 minutes pass without a request (Spring Boot's default session timeout). Sessions are kept in the app's memory, so a restart or redeploy ends them: remember-me logs ticked users back in silently, and unticked users log in again. Remember-me uses Spring's signed cookie (`TokenBasedRememberMeServices`), with no table (decided 2026-11-06). | 2.1 |
 | LOGIN-18 | The session ID changes at every log in and sign-up. The `JSESSIONID` before log in differs from the one after. | 3.2 |
 | LOGIN-19 | Log out ends the session and clears both cookies. Afterwards, `GET /api/v1/auth/me` returns `401`. Log out accepts `POST` only. | 2.1 |
 | LOGIN-20 | Forgot password returns `204` for any well-formed email, whether or not an account has it. A reset email is sent only when an `ACTIVE` account has that email. | 2.1, 3.2 |
 | LOGIN-21 | A reset token is 32 random bytes in base64url, and only its hash is stored. It works once and expires 30 minutes after it is issued. Asking for a new link makes the older ones stop working. | 2.1, 3.2 |
 | LOGIN-22 | After a reset, the old password fails and the new one works. The token cannot be used again, remember-me cookies issued before the reset stop working, and the reset does not log the user in. | 2.1, 3.2 |
-| LOGIN-23 | Proposal: after 5 failed log ins for one email from one IP address within 15 minutes, log in for that email and IP returns `429` with `Retry-After` for 15 minutes, even with the correct password. The same applies to emails that have no account. | 3.2 |
-| LOGIN-24 | Proposal: at most 3 reset emails per address per hour. Further requests still return `204` but send nothing. | 3.2 |
+| LOGIN-23 | After 5 failed log ins for one email from one IP address within 15 minutes, log in for that email and IP returns `429` with `Retry-After` for 15 minutes, even with the correct password. The same applies to emails that have no account, so a `429` never shows whether an account exists. Counters live in the app's memory and clear after 15 minutes; a restart clears them too (decided 2026-11-06). | 3.2 |
+| LOGIN-24 | Dropped 2026-11-06: no limit on reset emails in the MVP; LOGIN-23 is the only throttle. Kept as a number so later rules keep theirs. If reset emails are abused, add a limit per address and per IP (Q8). | 3.2 |
 | LOGIN-25 | Company sign-up needs `phone`. It may contain digits, spaces, brackets, dashes and a leading `+`. With those removed it must have 8 to 15 digits, otherwise `400` on `phone`. It is stored without spaces, brackets or dashes: `0412 345 678` is stored as `0412345678`. | 2.1 |
 | LOGIN-26 | A company is **live** when its Company is `verified` and its account is `ACTIVE`. Only an admin can set `verified`. Before that, the company can log in, edit its profile and add vehicles, but its vehicles are not live: they are left out of search, return `404` from public vehicle endpoints (the company itself and admins can still read them) and cannot be requested. While `verified` is `false`, its dashboard says "Waiting for verification. Your vehicles go live once an admin approves you." Once an admin verifies it, all its listed vehicles go live with no further step. | 2.1, 2.8 |
 | LOGIN-27 | There is no "rejected" state. To reject a company, an admin suspends its account. LOGIN-15 and LOGIN-16 then apply, and its vehicles leave search because the company is no longer live. The same happens when an admin suspends a company that is already verified. | 2.1, 2.8 |
@@ -513,6 +540,10 @@ The mockup gives only "required", the email format and "at least 8 characters". 
 | LOGIN-30 | When the login page loads, it calls `GET /api/v1/auth/me` before showing the form. On `200` the user is already logged in: the page sends them where a fresh log in would (LOGIN-13, LOGIN-28, LOGIN-29) and never shows the form. On `401`, or if the call fails, it shows the form. Example: a logged-in customer with an approved booking who opens `/login` lands on My bookings; with `?next=/vehicles/68` they land on that vehicle. To switch accounts, a user logs out first from the account menu. | 2.1 |
 | LOGIN-31 | Help links to `/help`, a static FAQ page with no API, for every visitor rather than for companies. Sections: **Your account** (signing up, forgot password, Keep me logged in, one role per email, so renting and running a company need two emails); **Renting** (request, the company approves, pick-up, return, review; the earliest pick-up is tomorrow; free cancellation until 24 h before pick-up, then 50%; RentXe takes no payment; bring your licence, the company checks it at pick-up); **Contact** (the support email from Contact us). Company questions get one line only: "Run a rental company? See how it works" linking to `/for-companies`. The answers must match the rules they describe, so update them when a rule changes. Needs a simple wireframe (decided 2026-11-06). | 5 |
 | LOGIN-32 | Errors about one field (`400`, `409`) show under that field. Errors that aren't about one field (`401`, `403`, `429`, network errors and `5xx`) show in a single error banner at the top of the form, under the heading, with `role="alert"` so screen readers announce it. The banner stays until the user edits a field or submits again, and a new error replaces the old one. A `401` keeps the email, clears the password and moves the focus to it. Errors never use the toast; the toast is only for notices (decided 2026-11-06). | 3.3 |
+| LOGIN-33 | Password reset has two views on the login page. **Forgot** (`?view=forgot`): an Email field, filled in from the log in form when the user came from there, and **Send reset link**. After `204` the form is replaced by a message that never says whether the account exists (LOGIN-20). **Reset** (`?view=reset&token=…`, opened from the email): New password with Show / Hide, the LOGIN-5 hint and **Save password**. On `204` it switches to log in with "Password changed. Log in with your new password."; on a bad token it shows "This link has expired or was already used" in the error banner (LOGIN-32) with a link to `?view=forgot`. Neither view shows the Renter / Rental company toggle (decided 2026-11-06). | 2.1 |
+| LOGIN-34 | Emails are sent with Spring Mail (`spring-boot-starter-mail`) over SMTP. Every SMTP setting (`SPRING_MAIL_HOST`, `SPRING_MAIL_PORT`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD`) and the sender address (`RENTXE_MAIL_FROM`) come from environment variables, never the repository. Dev: Mailpit in Docker catches every email at `localhost:8025`. Tests: a fake mail sender, so CI needs no network or key. Deployed: Brevo's free SMTP relay with a verified sender address. Changing provider, for example to Resend once we own a domain, changes only these settings (decided 2026-11-06). | 2.1, 3.2 |
+| LOGIN-35 | Accounts work as soon as sign-up succeeds. There is no email confirmation step in the MVP, and no `emailVerifiedAt` field. A mistyped email is only noticed when a reset link doesn't arrive (decided 2026-11-06). | 2.1 |
+| LOGIN-36 | CSRF protection stays on for `/api/**`. Every `POST`, `PATCH`, `PUT` and `DELETE`, log in and both sign-ups included, must send the `XSRF-TOKEN` cookie's value in the `X-XSRF-TOKEN` header, or it gets `403` and changes nothing. The token is replaced at log in, sign-up and log out. `GET` requests need no token. Assumes the pages and the API share one origin: Spring serves the pages, or a dev server proxies `/api` to Spring (decided 2026-11-06). | 3.2 |
 
 ## Changes to shared models
 
@@ -531,7 +562,7 @@ Changes to the README conventions:
 
 | Topic | Change |
 |---|---|
-| Status codes | Add `429` too many requests, with a `Retry-After` header, if LOGIN-23 is accepted |
+| Status codes | Add `429` too many requests, with a `Retry-After` header (LOGIN-23). Done. |
 | Status codes | `403` also means "account suspended" on log in (LOGIN-15). The list now says only "wrong role". |
 | Errors | A `409` may also carry `errors`, so the page can show the message under a field |
 | Error example | Its `instance` is `/api/v1/auth/register`, which this file splits in two. Change it to `/api/v1/auth/register/customer`. |
@@ -541,16 +572,17 @@ Changes to the README conventions:
 1. **Company sign-up details.** Resolved 2026-11-06 ([decision](../decisions/company-signup-contact-person.md)): company sign-up also asks for the name of the person registering (`fullName`, on the User) and a phone number (`phone`, on the Company). The admin can phone them before verifying. ABN and business address are left out of sign-up; the company profile page can ask for them later. Mockup to-do: add "Your name" and "Phone" to the company sign-up form.
 2. **Unverified companies.** Resolved 2026-11-06 ([decision](../decisions/unverified-company-setup-hidden.md)): an unverified company can log in, edit its profile and add vehicles, but nothing is public until an admin verifies it (LOGIN-26). An admin rejects a company by suspending its account; there is no "rejected" state (LOGIN-27). The admin page still needs a list of companies waiting for approval and a verify endpoint, and seed data should start the demo companies as verified.
 3. **Where new customers land.** Resolved 2026-11-06 ([decision](../decisions/customer-landing-after-login.md)): sign-up goes to Search. Log in goes to My bookings only when the customer has an active booking, otherwise to Search (LOGIN-28). Mockup to-do: the toast after sign-up should say Search.
-4. **Forgot and reset views.** The mockup has no screen to type an email for a reset, or to set a new password. Add `?view=forgot` and `?view=reset&token=…` to the log in mockup and wireframes. Also choose how email is sent: Spring Mail with SMTP is the simplest. In development, log the link instead of sending it.
-5. **CSRF.** The README doesn't cover it, and Spring Security turns it on for session logins. Either (a) use `CookieCsrfTokenRepository.withHttpOnlyFalse()`, have the page send the `X-XSRF-TOKEN` header, and add `GET /api/v1/auth/csrf` (Public, `204`, sets `XSRF-TOKEN`) so the page can get a token before its first `POST`; or (b) turn CSRF off for `/api/**` and rely on `SameSite=Lax` cookies. Option (a) is safer.
+4. **Forgot and reset views, and sending email.** Resolved 2026-11-06 ([decision](../decisions/password-reset-views-and-email.md)): a forgot view (`?view=forgot`) and a reset view (`?view=reset&token=…`) on the login page (LOGIN-33). Email goes through Spring Mail over SMTP: Mailpit in dev, a fake sender in tests, Brevo when deployed; Resend later if we buy a domain (LOGIN-34). Mockup to-do: add both views, and stop sending the reset email straight from "Forgot password?".
+5. **CSRF.** Resolved 2026-11-06 ([decision](../decisions/csrf-token-cookie.md)): keep Spring's CSRF protection with a readable `XSRF-TOKEN` cookie and the `X-XSRF-TOKEN` header, sent by a shared `api()` wrapper; new `GET /api/v1/auth/csrf` (LOGIN-36). Turning CSRF off and relying on `SameSite=Lax` was rejected. Frontend to-do: if the team picks React with its own dev server, proxy `/api` to Spring so pages and API share one origin.
 6. **Nav booking count.** Resolved: the count stays out of `/me`. The nav reads `activeCount` from `GET /api/v1/bookings/summary` (search.md).
 7. **Return to the previous page.** Resolved 2026-11-06 ([decision](../decisions/return-to-page-after-login.md)): yes, with `?next=` (LOGIN-29). Customers only, after log in and sign-up, and only to a page on our own site.
-8. **Throttling.** Do LOGIN-23 and LOGIN-24 go in the SRS (§3.2), and are the numbers right?
-9. **Email verification.** New accounts can use the site straight away. Should they confirm their email first? It isn't in the mockup, so the proposal is no, at least for the MVP.
+8. **Throttling.** Resolved 2026-11-06 ([decision](../decisions/login-throttle-only.md)): keep it simple, with one rule in SRS §3.2. After 5 failed log ins for one email from one IP within 15 minutes, that pair is blocked for 15 minutes (LOGIN-23). No limit on reset emails (LOGIN-24 dropped). Known risk: someone could use up Brevo's 300 emails a day by requesting resets; add a limit if that happens.
+9. **Email verification.** Resolved 2026-11-06 ([decision](../decisions/no-email-confirmation-mvp.md)): no confirmation in the MVP; accounts work as soon as they are created (LOGIN-35). Later option: a soft check, where the account works but sending a booking request needs a confirmed email, reusing the reset email and token pattern (LOGIN-33, LOGIN-34).
 10. **Admin accounts.** Resolved 2026-11-06 ([decision](../decisions/one-seeded-admin.md)): one admin, seeded at start-up from settings (LOGIN-9). Later, not in the MVP: the seeded admin can make other accounts admins. That feature has its own questions, listed in the decision file.
 11. **Several roles on one account.** Resolved 2026-11-06 ([decision](../decisions/one-role-per-account.md)): no, one role per account (LOGIN-4). A customer who also runs a company uses two accounts. Customer and company on one account, with a view switcher, is a possible later feature; admin always stays a separate account.
 12. **Unique company names.** Resolved 2026-11-06 ([decision](../decisions/unique-company-names.md)): yes, ignoring case and extra spaces, including suspended companies and later renames (LOGIN-11).
 13. **Theme toggle and dark styles.** Resolved 2026-11-06 ([decision](../decisions/light-dark-theme.md)): the toggle goes at the right end of the top row, the same top-right spot as on other pages; on small screens it stays there after the logo and Back to home. Mockup to-do, dark styles: the side panel uses `--theme-band` with a `--theme-line` edge; the form, inputs and muted text use the `--theme-*` colours; the selected Renter / Company button turns white with black text; the orange submit button and the logo don't change.
 14. **Help link.** Resolved 2026-11-06 ([decision](../decisions/static-help-page.md)): a static `/help` FAQ page for every visitor, about accounts and renting, with one line pointing companies to `/for-companies` (LOGIN-31). Mockup to-do: point Help at `/help` and add a wireframe for the page.
 15. **Where server errors show.** Resolved 2026-11-06 ([decision](../decisions/form-error-banner.md)): field errors under the field; `401`, `403`, `429`, network errors and `5xx` in an error banner at the top of the form (LOGIN-32). Mockup to-do: add the banner, and stop using the toast for errors.
-16. **Auth approach: open, not decided.** Kept open on 2026-11-06 for the team to choose ([options](../decisions/login-auth-approach.md), [diagram](../architecture/auth-flows.html), [PNG](../architecture/auth-flows-a-vs-b.png)). Both options keep Supabase as the Postgres database. **A, Spring Security sessions (recommended):** Spring checks the password (BCrypt, our `users` table) and keeps a server session; the browser holds only an `HttpOnly` `JSESSIONID` cookie, plus remember-me. This file is written for A. **B, Supabase Auth on the page:** the page signs up and logs in with Supabase's JavaScript library; Spring checks the Supabase JWT on each request against Supabase's public keys. Q4 (reset emails), Q5 (CSRF), Q8 (throttling), Q9 (email confirmation) and session length (LOGIN-17) wait on this choice.
+16. **Auth approach.** Resolved 2026-11-06 ([decision](../decisions/login-auth-approach.md), [diagram](../architecture/auth-flows.html)): option A, Spring Security sessions. Spring checks the password (BCrypt, our `users` table) and keeps a server session; the browser holds only an `HttpOnly` `JSESSIONID` cookie, plus remember-me. Supabase is only the Postgres database. Rejected: B, the page logging in with Supabase Auth (tokens readable by scripts, up to 1 hour of access after log out or suspension, two-call sign-up, log in not testable offline). Next: Q4 (reset emails), Q5 (CSRF), Q8 (throttling), Q9 (email confirmation) and the session length (LOGIN-17).
+17. **How long a login lasts.** Resolved 2026-11-06 ([decision](../decisions/session-defaults.md)): keep LOGIN-17. 30 minutes idle, 14-day remember-me (ticked by default), sessions in memory, Spring's signed remember-me cookie. No Spring Session JDBC and no `persistent_logins` table.

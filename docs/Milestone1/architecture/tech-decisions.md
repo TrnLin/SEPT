@@ -9,7 +9,8 @@ The rubric asks for the reason behind every choice. Fill in "Why" and "Alternati
 | Build | Maven | | |
 | Frontend | HTML/CSS/JavaScript or React (pick one) | | |
 | Database | H2 (dev/test) or MySQL (pick one) | | |
-| Login / auth | Not decided: A Spring Security sessions (recommended) or B Supabase Auth on the page | See [login-auth-approach](../decisions/login-auth-approach.md) and [auth-flows.html](auth-flows.html) | |
+| Login / auth | Spring Security sessions (option A) | Password checks and sessions stay in our Spring app, testable offline; logout and suspension work at once. See [login-auth-approach](../decisions/login-auth-approach.md) and [auth-flows.html](auth-flows.html) | |
+| Email | Spring Mail over SMTP: Mailpit (dev), fake sender (tests), Brevo free SMTP (deployed) | Settings only, so the provider can change without code; Brevo needs no domain | Resend (needs a domain we own; switch later if we buy one), Gmail app password, logging the link only |
 | Unit tests | JUnit 5 | | |
 | CI/CD | GitHub Actions | | |
 | Containers | Docker | | |

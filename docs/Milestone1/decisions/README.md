@@ -15,7 +15,7 @@ Every decision and every revision made during the milestone, one file per decisi
 
 | Decision | Status | Areas | Summary |
 |---|---|---|---|
-| [login-auth-approach](login-auth-approach.md) | **Open** | auth, security, architecture | Not decided: Spring Security sessions (A, recommended) or Supabase Auth on the page (B) |
+| [login-auth-approach](login-auth-approach.md) | Proposed | auth, security, architecture | Spring Security sessions with an HttpOnly cookie; Supabase is only the database, its Auth is not used |
 | [api-schema-per-page](api-schema-per-page.md) | Proposed | api, srs | One API file per mockup page in `api/`, with numbered rules for the SRS |
 | [static-landing-reviews](static-landing-reviews.md) | Proposed | landing, reviews, api | Landing reviews are fixed sample text, so there is no featured-reviews endpoint |
 | [one-rating-per-review](one-rating-per-review.md) | Proposed | reviews, data-model | One rating covers the vehicle and the service, and counts toward both averages |
@@ -33,6 +33,11 @@ Every decision and every revision made during the milestone, one file per decisi
 | [one-seeded-admin](one-seeded-admin.md) | Proposed | auth, admin, security | One admin seeded at start-up from settings; promoting other accounts to admin comes later |
 | [password-length-only](password-length-only.md) | Proposed | auth, security | Passwords are 8 to 72 characters with no other rules |
 | [one-role-per-account](one-role-per-account.md) | Proposed | auth, data-model, security | Each account is a customer, a company or an admin, never more than one |
+| [password-reset-views-and-email](password-reset-views-and-email.md) | Proposed | auth, email, ui | Forgot and reset views on the login page; Spring Mail with Mailpit in dev and Brevo when deployed |
+| [no-email-confirmation-mvp](no-email-confirmation-mvp.md) | Proposed | auth, email, signup | New accounts work straight away; no email confirmation in the MVP |
+| [csrf-token-cookie](csrf-token-cookie.md) | Proposed | auth, security, api | Spring's CSRF protection stays on, with a readable token cookie and a header sent by a shared fetch wrapper |
+| [login-throttle-only](login-throttle-only.md) | Proposed | auth, security | One throttle: 5 failed log ins per email and IP in 15 minutes blocks for 15 minutes; no reset email limit |
+| [session-defaults](session-defaults.md) | Proposed | auth, security, config | 30 minutes idle or 14 days with remember-me; sessions in memory; signed remember-me cookie |
 | [form-error-banner](form-error-banner.md) | Proposed | ui, auth, accessibility | Field errors under the field; other errors in a banner at the top of the form, never a toast |
 | [static-help-page](static-help-page.md) | Proposed | ui, static-pages, auth | Help opens a static `/help` FAQ about accounts and renting, for every visitor |
 | [unique-company-names](unique-company-names.md) | Proposed | company, signup, data-model | Company names are unique, ignoring case and extra spaces, so look-alikes can't borrow reviews |

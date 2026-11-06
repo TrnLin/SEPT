@@ -11,7 +11,7 @@ Use these files to write SRS §2 (functional requirements), §2.8 (business rule
 | Page | Mockup | Schema | Rules |
 |---|---|---|---|
 | Landing | `assets/mockups/landing-3d/` | [landing.md](landing.md) | LP-1 to LP-25 |
-| Log in and sign up | `assets/mockups/login/` | [login.md](login.md) | LOGIN-1 to LOGIN-32 |
+| Log in and sign up | `assets/mockups/login/` | [login.md](login.md) | LOGIN-1 to LOGIN-36 |
 | Search (customer) | `assets/mockups/search/` | [search.md](search.md) | SR-1 to SR-24 |
 | Vehicle detail (customer) | `assets/mockups/vehicle/` (not committed yet) | [vehicle.md](vehicle.md) | VEH-1 to VEH-35 |
 
@@ -30,6 +30,7 @@ Static pages with no API: `/for-companies`, `/terms` and `/privacy`, linked from
 | `GET /api/v1/auth/me` | The logged-in user, for every nav | 2.1 | Any role | [login.md](login.md) |
 | `POST /api/v1/auth/forgot-password` | Email a reset link | 2.1 | Public | [login.md](login.md) |
 | `POST /api/v1/auth/reset-password` | Set a new password from the link | 2.1 | Public | [login.md](login.md) |
+| `GET /api/v1/auth/csrf` | Get a CSRF token cookie before the first `POST` | 3.2 | Public | [login.md](login.md) |
 | `GET /api/v1/places` | Place suggestions for "Where" | 2.3 | Public | [search.md](search.md) |
 | `GET /api/v1/places/{id}` | One place, from `placeId` | 2.3 | Public | [search.md](search.md) |
 | `GET /api/v1/vehicles/search` | Search results for a place and dates | 2.3 | Public | [search.md](search.md) |
@@ -69,8 +70,9 @@ These parts of the brief have no mockup, so they have no endpoints here. Add a p
 | "Today" | The date in the pick-up place's time zone (`Location.timeZone`), or the searched place's (`Place.timeZone`) when there is no single vehicle. |
 | Searched place | Travels between pages and to the API as `placeId`. The server works out distances from it. |
 | Money | Amounts are decimals with 2 places (`BigDecimal` in Java), for example `68.00`. Every price is in AUD. A response that holds prices also has `"currency": "AUD"`. |
-| Auth | Not decided yet: see team decision 10. The docs are written for option A, a Spring Security session. Log in sets an `HttpOnly` session cookie. "Keep me logged in" adds a remember-me cookie. Endpoints marked **Public** need no session. For `/api/**`, an unauthenticated call gets `401`, not a redirect to a login form. |
-| CSRF | Proposal: keep Spring's CSRF protection with a readable `XSRF-TOKEN` cookie; the page sends it back in the `X-XSRF-TOKEN` header. See [login.md](login.md) open question 5. |
+| Auth | Spring Security session (team decision 10). Supabase is only the database. Log in sets an `HttpOnly` session cookie. "Keep me logged in" adds a remember-me cookie. Endpoints marked **Public** need no session. For `/api/**`, an unauthenticated call gets `401`, not a redirect to a login form. |
+| CSRF | Spring's CSRF protection stays on. A readable `XSRF-TOKEN` cookie; the shared `api()` wrapper sends it back in the `X-XSRF-TOKEN` header on every `POST`, `PATCH`, `PUT` and `DELETE`. Missing or wrong: `403` ([login.md](login.md) LOGIN-36). |
+| Origin | The pages and the API share one origin, so cookies work without CORS: Spring serves the pages, or a frontend dev server proxies `/api` to Spring. |
 | Roles | `CUSTOMER`, `COMPANY`, `ADMIN`. An endpoint lists the roles allowed to call it. |
 | Lists | Spring Data paging: `?page=0&size=20&sort=price,asc`. The response is `{ "content": [...], "page": { "size", "number", "totalElements", "totalPages" } }`. |
 | Errors | RFC 7807 problem details (Spring's `ProblemDetail`), content type `application/problem+json`. Validation errors, and a `409` tied to a field, add an `errors` array of `{ "field", "message" }`. |
@@ -100,7 +102,7 @@ Status codes used:
 | `403` | Wrong role, or the account is suspended (log in) |
 | `404` | Not found, or hidden from this caller (for example an unlisted vehicle) |
 | `409` | Conflict: the email is taken, or the dates clash with a booking |
-| `429` | Too many attempts, with a `Retry-After` header. Proposal: [login.md](login.md) LOGIN-23. |
+| `429` | Too many failed log ins, with a `Retry-After` header ([login.md](login.md) LOGIN-23) |
 
 ## Theme: light and dark mode
 
@@ -274,4 +276,4 @@ The four files agree on each default below. Change one, and change every rule it
 | 7 | One cancellation rule for everyone, or one per company? | Decided: one rule for everyone. Free until 24 hours before pick-up, then 50% of `totalPrice`. The landing copy will be reworded. | VEH-22, VEH-23, landing.md Q4 |
 | 8 | Can logged-out visitors use search and vehicle pages? | The read endpoints are Public; sending a booking needs a `CUSTOMER` login. No logged-out nav is mocked up. | search.md Q6, vehicle.md Q16 |
 | 9 | Is payment in scope? | No. RentXe records amounts; the page says "You won't be charged until the company approves". | vehicle.md Q8 |
-| 10 | How does login work? | Open, not decided. Both options keep Supabase as the database. A: Spring Security sessions with an `HttpOnly` cookie (recommended; the docs are written for it). B: the page logs in with Supabase Auth and Spring checks the JWT. See [the options](../decisions/login-auth-approach.md) and [the diagram](../architecture/auth-flows.html). | Every `/auth/*` endpoint, LOGIN-12 and LOGIN-15 to LOGIN-24, login.md Q4, Q5, Q8, Q9, Q16 |
+| 10 | How does login work? | Decided: option A, Spring Security sessions with an `HttpOnly` cookie and remember-me. Supabase is only the Postgres database; its Auth feature is not used. See [the decision](../decisions/login-auth-approach.md) and [the diagram](../architecture/auth-flows.html). | Every `/auth/*` endpoint, LOGIN-12 and LOGIN-15 to LOGIN-24, login.md Q4, Q5, Q8, Q9, Q16 |
