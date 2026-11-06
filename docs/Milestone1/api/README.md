@@ -117,7 +117,7 @@ Every page supports a light and a dark theme. It needs no API.
 | Saved | In the browser's `localStorage`, key `rentxe-theme`, value `system`, `light` or `dark`. It holds on every page and after a reload, but not across browsers or devices. No User field, no endpoint. |
 | First paint | A small script in `<head>` reads the saved value before the page draws, so the page never flashes the wrong theme. |
 | Not themed | The landing page's 3D hero scene. Its sky follows the visitor's clock ([landing.md](landing.md) LP-19, LP-22). |
-| Design | `assets/mockups/shared/tokens.css` has the theme colours (`--theme-bg`, `--theme-text`, `--theme-muted`, `--theme-line`, `--theme-fill`, `--theme-card`, `--theme-band`), light by default and dark under `data-theme="dark"`. Same palette: black background, white text, the same orange. The landing mockup uses them; login, search and vehicle still use fixed light colours and need the same pass. |
+| Design | `assets/mockups/shared/tokens.css` has the theme colours (`--theme-bg`, `--theme-text`, `--theme-muted`, `--theme-line`, `--theme-fill`, `--theme-card`, `--theme-band`), light by default and dark under `data-theme="dark"`. Same palette: black background, white text, the same orange. The landing and search mockups use them; login and vehicle still use fixed light colours and need the same pass. The search page's APP NAV block (theme toggle, roles) is the header later pages copy. |
 | SRS | Usability requirement for §3.3, for example: every page is readable in both themes, with text contrast of at least 4.5:1. |
 
 ## Shared models

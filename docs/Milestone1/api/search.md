@@ -676,22 +676,22 @@ Merged into the README on 2026-11-06. Kept here as the reason for each change.
 
 ## Mockup to-do
 
-Decided on 2026-11-06 but not yet in `assets/mockups/search/index.html`. Change the mockup only when the team asks.
+Done 2026-11-06 in `assets/mockups/search/index.html`, except the compare page, which is a new mockup. Prototype links in the page footer show each state.
 
-| Change | Rule or question |
-|---|---|
-| Remove the "Only 2 left" badge (`avail: 'low'`); those rows show "Free for your dates" | SR-8, Q1 |
-| Headline adds "· 7 free for your dates" when some results are booked | SR-9, Q3 |
-| "Show 20 more · 28 of 48" button under the list when more rows are left | SR-22, Q10 |
-| Engine size: add "Over 160 cc" | SR-11, Q8 |
-| "Couldn't load results." with **Try again** in the results area; no errors in the toast | SR-29, Q16 |
-| New mockup: the compare page, one column per vehicle (photo, price and total, company and rating, specs, distance, availability, View) | SR-20, Q15 |
-| Ho Chi Minh City prices in ₫ with a small "≈ A$", and the "Rates By Exchange Rate API" link in the footer | SR-28, Q14 |
-| Theme toggle in the nav next to the account menu, and dark styles | README Theme |
-| Help in the nav links to `/help` | login.md LOGIN-31 |
-| Log out sends `POST /api/v1/auth/logout` with the CSRF header, then opens the login page | login.md LOGIN-36 |
-| A `?user=guest` preview with the logged-out nav: Help, theme toggle, Log in, Sign up | SR-25, Q6 |
-| A `?user=company` preview: the company menu (Dashboard, Log out), no My bookings, and **Edit** on that company's rows | SR-26, Q12 |
+| Change | Rule or question | Status |
+|---|---|---|
+| Remove the "Only 2 left" badge; those rows show "Free for your dates" | SR-8, Q1 | Done |
+| Headline adds "· 7 free for your dates" when some results are booked | SR-9, Q3 | Done |
+| Ho Chi Minh City prices in ₫ with a small "≈ A$", and the "Rates By Exchange Rate API" link in the footer (`?city=hcm`) | SR-28, Q14 | Done. Pins and the price legend use a short form, "149k₫" |
+| "Show 20 more · 28 of 48" button under the list (`?paging=demo` uses 3 rows a page so it shows with 8 listings) | SR-22, Q10 | Done |
+| Engine size: add "Over 160 cc" | SR-11, Q8 | Done |
+| "Couldn't load results." with **Try again** in the results area; no errors in the toast (`?view=error`) | SR-29, Q16 | Done |
+| Theme toggle in the nav next to the account menu, and dark styles | README Theme | Done |
+| Help in the nav links to `/help` (shows the "comes later" toast) | login.md LOGIN-31 | Done |
+| Log out sends `POST /api/v1/auth/logout` with the CSRF header, then opens the login page (shown as a toast) | login.md LOGIN-36 | Done |
+| `?user=guest`: Help, theme toggle, Log in and Sign up, both with `next` back to this search | SR-25, Q6 | Done |
+| `?user=company`: Search and Dashboard, the company menu, "Your vehicle" and **Edit** on that company's rows, map card and compare tray. Melbourne previews Laneway Motors (Sam Carter), Ho Chi Minh City Saigon Wheels Co. (Lan Nguyen). `?user=admin` previews the admin menu | SR-26, Q12 | Done |
+| New mockup: the compare page, one column per vehicle (photo, price and total, company and rating, specs, distance, availability, View) | SR-20, Q15 | To do |
 
 ## Open questions
 
