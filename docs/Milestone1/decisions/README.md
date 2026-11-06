@@ -41,6 +41,12 @@ Every decision and every revision made during the milestone, one file per decisi
 | [form-error-banner](form-error-banner.md) | Proposed | ui, auth, accessibility | Field errors under the field; other errors in a banner at the top of the form, never a toast |
 | [static-help-page](static-help-page.md) | Proposed | ui, static-pages, auth | Help opens a static `/help` FAQ about accounts and renting, for every visitor |
 | [unique-company-names](unique-company-names.md) | Proposed | company, signup, data-model | Company names are unique, ignoring case and extra spaces, so look-alikes can't borrow reviews |
+| [one-listing-one-vehicle](one-listing-one-vehicle.md) | Proposed | search, vehicle, booking, data-model | One listing is one physical vehicle; no `units`, and the "Only N left" label is dropped |
+| [requests-hold-dates-and-expire](requests-hold-dates-and-expire.md) | Proposed | booking, search, vehicle, data-model | Requests block their dates; unanswered after 24 h (or by the pick-up day) they become `EXPIRED` |
+| [return-day-stays-blocked](return-day-stays-blocked.md) | Proposed | booking, search, vehicle | A booking blocks its return day too; the next pick-up is the day after at the earliest |
+| [booked-vehicles-shown-flagged](booked-vehicles-shown-flagged.md) | Proposed | search, ui | Booked vehicles stay in search results, flagged; the headline says how many are free for the dates |
+| [rental-length-and-horizon](rental-length-and-horizon.md) | Proposed | booking, search, vehicle | A booking is at most 30 days and starts at most 12 months ahead |
+| [extend-rental-by-30-days](extend-rental-by-30-days.md) | Proposed | booking, data-model | From the last week of a rental, the customer can ask for up to 30 more days; the company approves |
 
 ## Template
 

@@ -42,7 +42,7 @@ IDs in the examples: mockup listings `mel-01` to `mel-08` are vehicles 1 to 8, a
 | Account menu: Profile, My reviews, Settings; nav: Help | none | Later pages |
 | Where field and its suggestions | `GET /api/v1/places` | `content[].label`. The picked `id` is sent as `placeId` |
 | Pick-up and Return dates | none (page state) | Sent as `startDate` and `endDate` |
-| Headline "8 vehicles near Melbourne CBD." | search; facets | `page.totalElements`; `place.name` |
+| Headline "8 vehicles near Melbourne CBD · 7 free for your dates." | search; facets | `page.totalElements`, `availableCount` (SR-9); `place.name` |
 | Trip line "Fri 11 Dec → Mon 14 Dec · 3 days · 8 listed in total" | facets | Dates from page state; days per SR-5; `nearbyCount` |
 | Filter 01 Type: All, Cars, Motorbikes | search, facets | `type` parameter. No counts |
 | Filter 02 Price per day: histogram, two-thumb slider, "A$35 … A$140+" | facets | `price.min`, `price.max`, `price.histogram` |
@@ -64,7 +64,7 @@ IDs in the examples: mockup listings `mel-01` to `mel-08` are vehicles 1 to 8, a
 | Row: "Melbourne CBD · 0.8 km away" | search | `location.area`, `distanceKm` |
 | Row: "A$68 / day" | search | `pricePerDay` |
 | Row: "A$204 est. for 3 days" | search | `totalPrice`, `rentalDays` |
-| Row: "Free for your dates", "Only 2 left", "Booked 11–12 Dec" | search | `availability.status`, `availability.unitsLeft`, `availability.bookedRanges` |
+| Row: "Free for your dates", "Booked 11–12 Dec" | search | `availability.status`, `availability.bookedRanges`. The mockup's "Only 2 left" is dropped (Q1) |
 | Row: Compare checkbox | none (page state) | `id` |
 | Row: View button | Link to the vehicle page | `../vehicle/index.html?id={id}&from={from}&to={to}&placeId={placeId}`. `placeId` lets the vehicle page show the distance and the "Your search" marker |
 | List end: "End of results · 8 of 8 listings near Melbourne CBD", "3 hidden by your filters" | search; facets | `page.totalElements`; `nearbyCount` minus `page.totalElements` |
@@ -113,8 +113,7 @@ A read-only view of a Vehicle and its Company. It holds only what this page show
 
 | Field | Type | Notes |
 |---|---|---|
-| `status` | enum | `AVAILABLE`, `FEW_LEFT`, `BOOKED` |
-| `unitsLeft` | int \| null | Set only with `FEW_LEFT`. Needs open question 1, option A |
+| `status` | enum | `AVAILABLE`, `BOOKED` |
 | `bookedRanges` | `{ startDate, endDate }[]` | Set only with `BOOKED`, otherwise `[]` |
 
 #### Place
@@ -174,7 +173,7 @@ Example: Melbourne CBD, 11–14 Dec, cars only, most expensive first, 3 a page.
       "distanceKm": 19.5,
       "rentalDays": 3,
       "totalPrice": 417.00,
-      "availability": { "status": "AVAILABLE", "unitsLeft": null, "bookedRanges": [] }
+      "availability": { "status": "AVAILABLE", "bookedRanges": [] }
     },
     {
       "id": 4,
@@ -200,7 +199,6 @@ Example: Melbourne CBD, 11–14 Dec, cars only, most expensive first, 3 a page.
       "totalPrice": 387.00,
       "availability": {
         "status": "BOOKED",
-        "unitsLeft": null,
         "bookedRanges": [{ "startDate": "2026-12-11", "endDate": "2026-12-12" }]
       }
     },
@@ -226,10 +224,11 @@ Example: Melbourne CBD, 11–14 Dec, cars only, most expensive first, 3 a page.
       "distanceKm": 1.6,
       "rentalDays": 3,
       "totalPrice": 282.00,
-      "availability": { "status": "FEW_LEFT", "unitsLeft": 2, "bookedRanges": [] }
+      "availability": { "status": "AVAILABLE", "bookedRanges": [] }
     }
   ],
   "page": { "size": 3, "number": 0, "totalElements": 5, "totalPages": 2 },
+  "availableCount": 4,
   "currency": "AUD"
 }
 ```
@@ -238,7 +237,7 @@ Errors:
 
 | Status | When |
 |---|---|
-| `400` | `placeId`, `startDate` or `endDate` missing; unknown `placeId`; a date not in ISO form; `endDate` not after `startDate`; `startDate` not after today; an unknown enum value; `minPrice` above `maxPrice`; `minEngineCc` above `maxEngineCc`; `sort` not in the list; `size` above 100 |
+| `400` | `placeId`, `startDate` or `endDate` missing; unknown `placeId`; a date not in ISO form; `endDate` not after `startDate`; `startDate` not after today; a rental over 30 days or `startDate` more than 365 days after today (vehicle.md VEH-37); an unknown enum value; `minPrice` above `maxPrice`; `minEngineCc` above `maxEngineCc`; `sort` not in the list; `size` above 100 |
 
 ```json
 {
@@ -256,6 +255,7 @@ Notes:
 - The list view asks for `size=20` and adds the next page with a "Show more" button (assumption: the mockup has 8 rows and no paging control). The map view asks once with `size=100` so every result gets a pin.
 - The `sort` keys are worked out, not entity fields: the rating comes from the company and the distance from the place. Bind `sort` as a plain string, not through Spring's `Pageable` sort.
 - Dates change totals and availability only, never which vehicles match. So a date change reloads search but not facets.
+- Besides the standard `page`, the response has `availableCount` (int): how many of all `page.totalElements` results, across every page, are `AVAILABLE` for the dates (SR-9). In the example, 4 of the 5 cars are free; the Model 3 is booked.
 
 ### 2. Filter options and counts (facets)
 
@@ -406,7 +406,7 @@ The response holds the rows in the order of `ids`. It is not paged (3 at most).
       "distanceKm": 0.8,
       "rentalDays": 3,
       "totalPrice": 204.00,
-      "availability": { "status": "AVAILABLE", "unitsLeft": null, "bookedRanges": [] }
+      "availability": { "status": "AVAILABLE", "bookedRanges": [] }
     },
     {
       "id": 3,
@@ -430,7 +430,7 @@ The response holds the rows in the order of `ids`. It is not paged (3 at most).
       "distanceKm": 1.6,
       "rentalDays": 3,
       "totalPrice": 282.00,
-      "availability": { "status": "FEW_LEFT", "unitsLeft": 2, "bookedRanges": [] }
+      "availability": { "status": "AVAILABLE", "bookedRanges": [] }
     }
   ],
   "currency": "AUD"
@@ -499,7 +499,7 @@ Errors: `404` when no place has this `id`.
 
 `GET /api/v1/bookings/summary` · SRS 2.4 · `CUSTOMER`
 
-No parameters. Counts the logged-in customer's bookings whose status is `REQUESTED`, `APPROVED` or `PICKED_UP`.
+No parameters. Counts the logged-in customer's bookings whose status is `REQUESTED` (not past its `expiresAt`), `APPROVED` or `PICKED_UP`.
 
 ```json
 { "activeCount": 2 }
@@ -538,25 +538,24 @@ Numbered so the SRS can pick them up. "Page" marks a rule for the frontend only.
 
 ### Dates and price
 
-**SR-4.** `startDate` is after today, and `endDate` is after `startDate`. The earliest pick-up is tomorrow, because every booking waits for the company to approve it (README, cross-page decision 2). "Today" is the date in the searched place's `timeZone`. Page: the return picker cannot go before pick-up. If the customer picks a return date on or before the pick-up date, the page moves it to the day after pick-up.
+**SR-4.** `startDate` is after today, and `endDate` is after `startDate`. A search is at most 30 days long and starts at most 12 months ahead, as a booking (vehicle.md VEH-37). The earliest pick-up is tomorrow, because every booking waits for the company to approve it (README, cross-page decision 2). "Today" is the date in the searched place's `timeZone`. Page: the return picker cannot go before pick-up. If the customer picks a return date on or before the pick-up date, the page moves it to the day after pick-up.
 
 **SR-5.** `rentalDays` is the number of days from `startDate` to `endDate` (11 Dec to 14 Dec is 3). `totalPrice` = `pricePerDay` × `rentalDays`, to 2 decimal places. Example: 68.00 × 3 = 204.00. The page labels it "est.": it comes before any company fees. The amount the customer pays is the booking's `totalPrice` (fee rule, SRS 2.8; quote in vehicle.md).
 
 ### Availability
 
-**SR-6.** A booking blocks its vehicle when its status is `REQUESTED`, `APPROVED` or `PICKED_UP` (proposal, open question 2). `REJECTED`, `CANCELLED` and `RETURNED` never block.
+**SR-6.** A booking blocks its vehicle when its status is `APPROVED` or `PICKED_UP`, or `REQUESTED` and not past its `expiresAt` (vehicle.md VEH-36; Q2). `REJECTED`, `CANCELLED`, `EXPIRED` and `RETURNED` never block.
 
 **SR-7.** A blocking booking clashes with the searched dates when `booking.startDate <= endDate` and `booking.endDate >= startDate`. Both ends count, so the return day is not free for a new pick-up: a booking from 11 to 12 Dec clashes with a search from 12 to 14 Dec. This matches the vehicle page's calendar (VEH-6, VEH-7; README, cross-page decision 3).
 
-**SR-8.** `availability.status`:
+**SR-8.** `availability.status`. One listing is one physical vehicle (Q1), so a vehicle is either free or booked for the dates; there is no "Only N left".
 
 | Status | When | Page shows |
 |---|---|---|
-| `BOOKED` | At least one blocking booking clashes. With option A: every unit is taken on at least one day | "Booked 11–12 Dec" from `bookedRanges`: the clashing bookings' dates, sorted by `startDate`, with ranges that overlap or touch merged |
-| `FEW_LEFT` | Option A only. `unitsLeft` is 1 or 2 and less than `units`. `unitsLeft` = `units` minus the largest number of clashing blocking bookings on any one day | "Only 2 left" |
+| `BOOKED` | At least one blocking booking clashes | "Booked 11–12 Dec" from `bookedRanges`: the clashing bookings' dates, sorted by `startDate`, with ranges that overlap or touch merged |
 | `AVAILABLE` | Otherwise | "Free for your dates" |
 
-**SR-9.** Availability never removes a vehicle from the results. Booked vehicles still appear (muted row, outlined map pin) and count in every number on the page.
+**SR-9.** Availability never removes a vehicle from the results. Booked vehicles still appear (muted row, outlined map pin) and count in every number on the page, so customers can see them and try other dates. The search response also returns `availableCount`, the results that are `AVAILABLE` for the dates. Page: when it is less than `page.totalElements`, the headline adds "· N free for your dates" ("8 vehicles near Melbourne CBD · 7 free for your dates."); when every result is free, the headline stays as it is.
 
 ### Filters
 
@@ -628,19 +627,31 @@ Recommended in Melbourne CBD, no filters, 11–14 Dec: Corolla Hybrid (4.72), PC
 
 ## Changes to shared models
 
-Merged into the README on 2026-11-06, except `Vehicle.units`, which waits for README decision 4. Kept here as the reason for each change.
+Merged into the README on 2026-11-06. Kept here as the reason for each change.
 
 | Model | Change | Why |
 |---|---|---|
 | Place (new) | Add Place as a shared model. It also stores hidden other names (for example `Saigon`) that matching uses but responses leave out | Search and landing both use it. The vehicle form can use `CITY` places to fill `Location.city` |
 | Location | `city` must be the `city` of a `CITY` place, chosen from a list in the vehicle form, not typed | SR-2 matches the city as text. Typed values such as "HCMC" and "Ho Chi Minh City" would hide vehicles from search |
-| Vehicle | Add `units` (int, 1 or more, default 1): how many identical vehicles the listing has. Only if open question 1 picks option A | "Only N left" (SR-8) |
+| Vehicle | No `units` field: one Vehicle is one physical vehicle (Q1). A company with three identical cars lists three vehicles | Each has its own plate and odometer, and availability stays free or booked (SR-8) |
+
+## Mockup to-do
+
+Decided on 2026-11-06 but not yet in `assets/mockups/search/index.html`. Change the mockup only when the team asks.
+
+| Change | Rule or question |
+|---|---|
+| Remove the "Only 2 left" badge (`avail: 'low'`); those rows show "Free for your dates" | SR-8, Q1 |
+| Headline adds "· 7 free for your dates" when some results are booked | SR-9, Q3 |
+| Theme toggle in the nav next to the account menu, and dark styles | README Theme |
+| Help in the nav links to `/help` | login.md LOGIN-31 |
+| Log out sends `POST /api/v1/auth/logout` with the CSRF header, then opens the login page | login.md LOGIN-36 |
 
 ## Open questions
 
-1. **"Only N left" when one Vehicle row is one physical vehicle.** The README's Vehicle is one physical vehicle, so "Only 2 left" has no meaning yet. Option A: add `Vehicle.units`. A booking takes one unit, and availability counts free units for each day (SR-8). Option B: keep the README model and drop `FEW_LEFT` and `unitsLeft`. The label leaves the page, and a company adds each identical vehicle as its own row. This file shows A because the mockup does. B is simpler and is enough for the brief. The choice also changes vehicle.md's availability calendar and booking check.
-2. **Do `REQUESTED` bookings block dates (SR-6)?** Proposal: yes. Two customers cannot request the same vehicle for the same days, and an approval can never clash. The cost is that an unanswered request holds the vehicle, so requests may need to expire. Also: can a vehicle returned on a day be picked up the same day (SR-7)? This must match vehicle.md's calendar and its `409` on `POST /api/v1/bookings`.
-3. **Booked vehicles in results.** The mockup shows them, flagged (SR-9). Keep that, hide them, or add a "Free for my dates only" filter?
+1. **"Only N left".** Resolved 2026-11-06 ([decision](../decisions/one-listing-one-vehicle.md)): one Vehicle is one physical vehicle, as in the README. There is no `Vehicle.units`, and `FEW_LEFT` and `unitsLeft` are dropped, so availability is `AVAILABLE` or `BOOKED` (SR-8). A company with several identical vehicles lists each one. Mockup to-do: remove the "Only 2 left" badge.
+2. **Do `REQUESTED` bookings block dates (SR-6)?** Resolved 2026-11-06 ([decision](../decisions/requests-hold-dates-and-expire.md)): yes, until they expire 24 hours after they are sent, or at the start of the pick-up day if sooner (vehicle.md VEH-36). The return day is not free for a new pick-up (SR-7; [decision](../decisions/return-day-stays-blocked.md), README decision 3).
+3. **Booked vehicles in results.** Resolved 2026-11-06 ([decision](../decisions/booked-vehicles-shown-flagged.md)): keep showing them, flagged, as the mockup does (SR-9). The headline also says how many are free for the dates, from the new `availableCount`. A "Free for my dates only" filter can come later if testers ask for it.
 4. **Recommended sort.** Accept the formula in SR-18, or pick something simpler? It could later grow into the "Personalised recommendations" custom feature.
 5. **Search scope.** Resolved 2026-11-06: only vehicles of live companies, meaning verified with an `ACTIVE` account (SR-2). A suspended company's vehicles leave search through its account's status, so Company needs no status of its own (login.md LOGIN-26, LOGIN-27).
 6. **Logged-out visitors.** Can they open the search page? The API allows it. They would need a logged-out nav, which has no mockup.

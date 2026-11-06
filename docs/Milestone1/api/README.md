@@ -13,7 +13,7 @@ Use these files to write SRS §2 (functional requirements), §2.8 (business rule
 | Landing | `assets/mockups/landing-3d/` | [landing.md](landing.md) | LP-1 to LP-25 |
 | Log in and sign up | `assets/mockups/login/` | [login.md](login.md) | LOGIN-1 to LOGIN-36 |
 | Search (customer) | `assets/mockups/search/` | [search.md](search.md) | SR-1 to SR-24 |
-| Vehicle detail (customer) | `assets/mockups/vehicle/` (not committed yet) | [vehicle.md](vehicle.md) | VEH-1 to VEH-35 |
+| Vehicle detail (customer) | `assets/mockups/vehicle/` (not committed yet) | [vehicle.md](vehicle.md) | VEH-1 to VEH-38 |
 
 The logo concept sheet (`assets/mockups/logo/`) has no data, so it has no schema.
 
@@ -54,7 +54,7 @@ These parts of the brief have no mockup, so they have no endpoints here. Add a p
 |---|---|
 | 2.1 Accounts | Customer profile, company profile, admin user and company management |
 | 2.2 Vehicles | Company dashboard: add, edit and remove listings |
-| 2.4 Bookings | My bookings (list, detail, cancel); company: approve or reject requests |
+| 2.4 Bookings | My bookings (list, detail, cancel, extend: VEH-38); company: approve or reject requests and extensions |
 | 2.5 Pick-up and return | Company: record pick-up, return, condition and the final fee |
 | 2.6 Reviews | Write a review after a returned booking; company page with its reviews |
 
@@ -187,6 +187,8 @@ A vehicle's pick-up and return point.
 
 ### Vehicle
 
+One Vehicle is one physical vehicle, with one plate. A company with three identical cars lists three (team decision 4).
+
 | Field | Type | Notes |
 |---|---|---|
 | `id` | long | |
@@ -231,8 +233,8 @@ InsuranceOption:
 | `vehicleId` | long | |
 | `customerId` | long | |
 | `companyId` | long | _derived_ from the vehicle |
-| `startDate`, `endDate` | date | Pick-up and return dates |
-| `status` | enum | `REQUESTED`, `APPROVED`, `REJECTED`, `CANCELLED`, `PICKED_UP`, `RETURNED` |
+| `startDate`, `endDate` | date | Pick-up and return dates. At most 30 days apart when booked (VEH-37). `endDate` moves later when an extension is approved (VEH-38). |
+| `status` | enum | `REQUESTED`, `APPROVED`, `REJECTED`, `CANCELLED`, `EXPIRED`, `PICKED_UP`, `RETURNED`. `EXPIRED`: the company did not answer in time ([vehicle.md](vehicle.md) VEH-36). |
 | `insurance` | enum | `BASIC` (default), `PREMIUM` |
 | `pricePerDay` | decimal | The vehicle's daily rate when the request was saved |
 | `insurancePerDay` | decimal | The cover's daily price then. `0.00` for `BASIC`. |
@@ -240,6 +242,23 @@ InsuranceOption:
 | `deposit` | decimal | The vehicle's deposit then |
 | `totalPrice` | decimal | _derived_ once, when the request is saved, by the fee rule ([vehicle.md](vehicle.md) VEH-10 to VEH-15), then stored. A later price change does not change it. |
 | `createdAt` | timestamp | |
+| `respondedAt` | timestamp \| null | When the company approved or rejected |
+| `expiresAt` | timestamp | _derived_ when the request is saved: 24 hours after `createdAt`, or 00:00 on the pick-up day in the pick-up place's time zone if sooner (VEH-36) |
+
+### BookingExtension
+
+A customer's request to keep a `PICKED_UP` booking longer ([vehicle.md](vehicle.md) VEH-38). Its endpoints come with the My bookings page.
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | long | |
+| `bookingId` | long | |
+| `fromEndDate` | date | The booking's `endDate` when asked |
+| `toEndDate` | date | The new return date: 1 to 30 days after `fromEndDate` |
+| `status` | enum | `REQUESTED`, `APPROVED`, `REJECTED`, `CANCELLED` (withdrawn by the customer), `EXPIRED` |
+| `amount` | decimal | _derived_ when saved: extra days × the booking's `pricePerDay` + `insurancePerDay`. Added to the booking's `totalPrice` on approval. |
+| `createdAt` | timestamp | |
+| `expiresAt` | timestamp | _derived_: 24 hours after `createdAt`, or 00:00 on `fromEndDate` if sooner |
 | `respondedAt` | timestamp \| null | When the company approved or rejected |
 
 ### Review
@@ -267,13 +286,14 @@ The four files agree on each default below. Change one, and change every rule it
 
 | # | Question | Current default | Rules affected |
 |---|---|---|---|
-| 1 | Does a `REQUESTED` booking hold its dates, or only an `APPROVED` one? If requests hold dates, when does an unanswered one expire? | `REQUESTED`, `APPROVED` and `PICKED_UP` block. No expiry yet, and no `EXPIRED` status. | SR-6, VEH-6, vehicle.md Q1 and Q2 |
+| 1 | Does a `REQUESTED` booking hold its dates, or only an `APPROVED` one? If requests hold dates, when does an unanswered one expire? | Decided: `REQUESTED`, `APPROVED` and `PICKED_UP` block. A request the company has not answered within 24 hours, or by the start of the pick-up day if sooner, becomes `EXPIRED` and frees its dates. | SR-6, VEH-6, VEH-36, vehicle.md Q1 and Q2 |
 | 2 | Can a rental start today? | No. The earliest pick-up is tomorrow, because the company must approve first. The landing review ("picked it up the same afternoon") and the vehicle calendar (lets you click today) need changing to match. | LP-3, SR-4, VEH-3 |
-| 3 | Is the return day free for the next pick-up? | No. A booking blocks both its start and end days, as the vehicle mockup's calendar shows. | SR-7, VEH-6, VEH-7 |
-| 4 | "Only 2 left": is one Vehicle row one physical vehicle? | Yes, so the label has nothing to count. search.md shows option A (`Vehicle.units`) because the mockup does; option B drops the label. | SR-8, search.md Q1, vehicle.md Q12 |
+| 3 | Is the return day free for the next pick-up? | Decided: no. A booking blocks both its start and end days, as the vehicle mockup's calendar shows, leaving the return day for cleaning and late returns. | SR-7, VEH-6, VEH-7 |
+| 4 | "Only 2 left": is one Vehicle row one physical vehicle? | Decided: yes. No `Vehicle.units`; a company with several identical vehicles lists each one. The "Only N left" label is dropped, so a vehicle is free or booked for the dates. | SR-8, search.md Q1, vehicle.md Q12 |
 | 5 | Which companies appear in search? | Decided: only live companies, meaning `verified` by an admin with an `ACTIVE` account. Unverified companies can set up their profile and vehicles while hidden. An admin rejects or removes a company by suspending its account, so Company has no status of its own. | SR-2, VEH-35, LOGIN-26, LOGIN-27, login.md Q2, search.md Q5 |
 | 6 | One rating per review, or one for the vehicle and one for the company? | Decided: one `rating` for the vehicle and the service together. The landing copy will be reworded. | landing.md Q3 |
 | 7 | One cancellation rule for everyone, or one per company? | Decided: one rule for everyone. Free until 24 hours before pick-up, then 50% of `totalPrice`. The landing copy will be reworded. | VEH-22, VEH-23, landing.md Q4 |
 | 8 | Can logged-out visitors use search and vehicle pages? | The read endpoints are Public; sending a booking needs a `CUSTOMER` login. No logged-out nav is mocked up. | search.md Q6, vehicle.md Q16 |
 | 9 | Is payment in scope? | No. RentXe records amounts; the page says "You won't be charged until the company approves". | vehicle.md Q8 |
 | 10 | How does login work? | Decided: option A, Spring Security sessions with an `HttpOnly` cookie and remember-me. Supabase is only the Postgres database; its Auth feature is not used. See [the decision](../decisions/login-auth-approach.md) and [the diagram](../architecture/auth-flows.html). | Every `/auth/*` endpoint, LOGIN-12 and LOGIN-15 to LOGIN-24, login.md Q4, Q5, Q8, Q9, Q16 |
+| 11 | How long can a rental be, and how far ahead? | Decided: at most 30 days, starting at most 12 months ahead. A customer extends a running rental by up to 30 days at a time, from the last week before return, with the company's approval. | VEH-37, VEH-38, SR-4, vehicle.md Q5 |
