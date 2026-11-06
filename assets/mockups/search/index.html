@@ -1,0 +1,1264 @@
+<!doctype html>
+<html lang="en" data-view="list">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Search — RentXe</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%224%207%2037%2037%22%3E%3Cg%20transform%3D%22translate%2824%2024%29%20rotate%28-45%29%22%3E%3Cpath%20d%3D%22M-2-3h21.5l3%203-3%203H-2zM3%203h15v2.6h-2.4V4.4H13v2.4h-2.6V4.4H8v1.8H3z%22%20fill%3D%22%230E0E0E%22/%3E%3Crect%20x%3D%22-22%22%20y%3D%22-9%22%20width%3D%2222%22%20height%3D%2218%22%20rx%3D%226.5%22%20fill%3D%22%23FF6A3D%22/%3E%3Cpath%20d%3D%22M-15.8%200h9.6M-11-4.8v9.6%22%20stroke%3D%22%23fff%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- Shared design tokens: a copy of ../shared/tokens.css, kept in sync by ../shared/sync-tokens.py.
+     Edit tokens.css and run the script, not this block. -->
+<style id="tokens">
+/* RentXe design tokens, shared by every page (landing, login, ...).
+   Orange, black and white only: neutral greys, no blue tints, solid fills, no gradients.
+   Each page embeds a copy in its tokens style block: after editing, run sync-tokens.py.
+   Page-only variables stay in the page's own :root. */
+:root {
+  /* Colour */
+  --brand: #FF6A3D;               /* orange: buttons, accents, the logo */
+  --brand-dark: #E2532A;          /* hover, small orange text on white */
+  --brand-tint: #FFF1EC;          /* selected tab, soft orange fill */
+  --ink: #0E0E0E;                 /* black text and black bands */
+  --ink-deep: #0A0A0A;            /* page background behind dark sections */
+  --paper: #FFFFFF;
+  --muted: #6F6F6F;               /* secondary text on white */
+  --line: #E6E6E6;                /* hairline rules on white */
+  --line-dark: rgb(255 255 255 / .16);   /* hairline rules on black */
+  --fill: #F3F3F3;                /* input and hover fill on white */
+  --danger: #D4380D;              /* form errors: a deep orange-red, so it stays in the palette */
+
+  /* Type */
+  --sans: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --label: 500 12.5px/1.2 var(--mono);   /* "(01) About RentXe" style labels; add uppercase + .04em tracking */
+
+  /* Shape and space */
+  --radius-pill: 999px;
+  --radius-field: 12px;
+  --radius-card: 14px;
+  --gutter: clamp(20px, 4vw, 56px);      /* page side padding */
+  --content-max: 1320px;
+
+  /* Motion */
+  --ease-out: cubic-bezier(.2, .8, .2, 1);
+
+  font-family: var(--sans);
+}
+</style>
+<!-- GSAP for the reveals and the filter, tray and drawer transitions (free "standard" licence). The page works without it. -->
+<script defer src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+<style>
+  :root { --nav-h: 72px; --side-w: 288px; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--paper); color: var(--ink); -webkit-font-smoothing: antialiased; }
+  button, input, select { font-family: inherit; }
+  button { cursor: pointer; }
+  [hidden] { display: none !important; }
+  .wrap { max-width: calc(var(--content-max) + 2 * var(--gutter)); margin: 0 auto; padding: 0 var(--gutter); }
+  .label { font: var(--label); letter-spacing: .04em; text-transform: uppercase; }
+  .w { display: inline-block; }                     /* words, wrapped by the page script for the reveals */
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  .kicker { position: relative; display: flex; align-items: center; gap: 10px; margin: 0; padding-bottom: 14px;
+            font: var(--label); letter-spacing: .04em; text-transform: uppercase; }
+  .kicker::before { content: ''; width: 9px; height: 9px; background: var(--brand); }
+  .rule { position: relative; }
+  .rule::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--line);
+                 transform: scaleX(var(--rule, 1)); transform-origin: left; }
+
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: var(--radius-pill);
+         padding: 11px 20px; font-size: 15px; font-weight: 700; text-decoration: none; background: var(--brand); color: #fff;
+         transition: background .2s, color .2s; }
+  .btn:hover { background: var(--brand-dark); }
+  .btn.dark { background: var(--ink); }
+  .btn.dark:hover { background: var(--brand); }
+  .btn svg { width: 17px; height: 17px; transition: transform .3s var(--ease-out); }
+  .btn:hover svg { transform: translateX(3px); }
+  .link-btn { border: 0; padding: 0; background: none; color: var(--ink); font: var(--label); letter-spacing: .04em;
+              text-transform: uppercase; text-decoration: underline; text-decoration-color: var(--brand);
+              text-decoration-thickness: 1.5px; text-underline-offset: 4px; }
+  .link-btn:hover { color: var(--brand-dark); }
+  .link-btn:disabled { color: var(--muted); text-decoration-color: var(--line); cursor: default; }
+
+  /* Flat vehicle silhouettes. --cut is the colour behind them: it draws the ring between wheel and body. */
+  .art { display: block; width: 100%; height: auto; color: var(--ink); overflow: visible; }
+  .art .gap { fill: none; stroke: var(--cut, var(--paper)); stroke-width: 2.4; }
+  .art .hub { fill: var(--cut, var(--paper)); }
+
+  /* ════════════════════════════════════════════════════════════════════════════
+     CUSTOMER NAV: the header for every logged-in customer page.
+     Copy this CSS, the CUSTOMER NAV markup block and the "Customer nav" script together.
+     ════════════════════════════════════════════════════════════════════════════ */
+  .appnav { position: sticky; top: 0; z-index: 30; background: var(--paper); border-bottom: 1px solid var(--line); }
+  .appnav-in { display: flex; align-items: center; gap: 52px; height: var(--nav-h); }
+  .brand { display: inline-flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none;
+           font-weight: 800; font-size: 23px; letter-spacing: -.02em; }
+  .brand b { color: var(--brand); }
+  .brand svg { width: 34px; height: 34px; }
+  .appnav-links { display: flex; gap: 34px; align-self: stretch; }
+  .appnav-links a { position: relative; display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 15px;
+                    font-weight: 600; text-decoration: none; transition: color .2s; }
+  .appnav-links a:hover, .appnav-links a[aria-current="page"] { color: var(--ink); }
+  .appnav-links a::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--brand);
+                           transform: scaleX(0); transform-origin: left; transition: transform .35s var(--ease-out); }
+  .appnav-links a[aria-current="page"]::after { transform: scaleX(1); }
+  .count { font: 500 11px/1 var(--mono); color: var(--brand-dark); transform: translateY(-6px); }
+  .appnav-end { display: flex; align-items: center; gap: 26px; margin-left: auto; }
+  .appnav-help { color: var(--muted); font: var(--label); letter-spacing: .04em; text-transform: uppercase; text-decoration: none; }
+  .appnav-help:hover { color: var(--ink); }
+  .account { position: relative; }
+  .account-btn { display: flex; align-items: center; gap: 10px; border: 0; border-radius: var(--radius-pill); padding: 4px 12px 4px 4px;
+                 background: none; color: var(--ink); font-size: 14px; font-weight: 600; transition: background .2s; }
+  .account-btn:hover, .account-btn[aria-expanded="true"] { background: var(--fill); }
+  .avatar { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--ink); color: #fff;
+            font-size: 13px; font-weight: 700; letter-spacing: .02em; }
+  .account-btn svg { width: 16px; height: 16px; transition: transform .3s var(--ease-out); }
+  .account-btn[aria-expanded="true"] svg { transform: rotate(180deg); }
+  .account-menu { position: absolute; right: 0; top: calc(100% + 12px); width: 268px; padding: 6px; border: 1px solid var(--ink);
+                  border-radius: var(--radius-field); background: var(--paper); }
+  .account-who { display: grid; gap: 3px; padding: 12px 12px 14px; margin-bottom: 6px; border-bottom: 1px solid var(--line); }
+  .account-who b { font-size: 15px; }
+  .account-who span { color: var(--muted); font-size: 13px; }
+  .account-who .label { margin-top: 8px; color: var(--brand-dark); }
+  .account-menu a { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-radius: 8px;
+                    color: var(--ink); font-size: 14px; font-weight: 500; text-decoration: none; }
+  .account-menu a:hover, .account-menu a:focus-visible { background: var(--fill); outline: 0; }
+  .account-menu a .count { transform: none; }
+  .account-menu hr { margin: 6px 0; border: 0; border-top: 1px solid var(--line); }
+  .account-menu .m-only { display: none; }
+  @media (max-width: 720px) {
+    .appnav-links, .appnav-help, .account-name { display: none; }
+    .account-btn { padding-right: 8px; }
+    .account-menu .m-only { display: flex; }
+  }
+  /* ═══ end CUSTOMER NAV ═══ */
+
+  /* ── (01) Search head ─────────────────────────────── */
+  .head { padding-top: 36px; }
+  .meta { position: relative; display: flex; justify-content: space-between; gap: 16px; padding-bottom: 14px;
+          font: var(--label); letter-spacing: .04em; text-transform: uppercase; }
+  .meta span:last-child { color: var(--muted); }
+  .searchbar { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr) minmax(0, 1fr) auto; align-items: center;
+               margin-top: 22px; padding: 6px; border: 1.5px solid var(--ink); border-radius: var(--radius-pill); }
+  .sf { position: relative; display: flex; flex-direction: column; gap: 5px; min-width: 0; padding: 8px 28px; }
+  .sf + .sf { border-left: 1px solid var(--line); }
+  .sf > span:first-child { font: 500 11.5px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--muted);
+                            transition: color .2s; }
+  .sf:focus-within > span:first-child { color: var(--brand-dark); }
+  .sf input[type="text"] { width: 100%; border: 0; outline: 0; padding: 0; background: transparent; color: var(--ink);
+                           font: 600 18px/1.3 var(--sans); text-overflow: ellipsis; }
+  .sf .val { font-size: 18px; font-weight: 600; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sf input[type="date"] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+  .sf.bad > span:first-child { color: var(--danger); }
+  .go { height: 58px; justify-content: space-between; gap: 18px; padding: 0 6px 0 26px; font-size: 16px; }
+  .go i { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; background: var(--ink); }
+  .go i svg { width: 20px; height: 20px; }
+
+  .head-title { display: flex; justify-content: space-between; align-items: end; gap: 40px; padding: clamp(40px, 5.5vw, 76px) 0 30px; }
+  h1 { margin: 0; max-width: 1040px; font-size: clamp(40px, 5.8vw, 92px); font-weight: 600; line-height: .98; letter-spacing: -.045em;
+       text-wrap: balance; }
+  h1 em { font-style: normal; color: var(--brand); }
+  .num { font-variant-numeric: tabular-nums; }
+  .trip { flex: none; margin: 0 0 8px; text-align: right; font: 500 13px/1.7 var(--mono); color: var(--muted); }
+  .trip b { color: var(--ink); font-weight: 500; }
+
+  /* ── Layout: filters | results ────────────────────── */
+  .layout { display: grid; grid-template-columns: var(--side-w) minmax(0, 1fr); gap: 48px; border-top: 1px solid var(--ink); }
+  /* On desktop the filters stick under the nav and scroll on their own, so they can be used from anywhere in the results. */
+
+  /* ── (02) Filters ─────────────────────────────────── */
+  .filters { align-self: start; position: sticky; top: var(--nav-h); display: flex; flex-direction: column;
+             max-height: calc(100vh - var(--nav-h) - 80px); }  /* 80px: room for the footer at the very bottom */
+  .filters-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 14px 24px 0; margin-right: -14px;
+                  scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+  .filters-body::-webkit-scrollbar { width: 6px; }
+  .filters-body::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
+  .filters-head { position: sticky; top: 0; z-index: 1; display: flex; justify-content: space-between; align-items: center;
+                  padding: 24px 0 16px; background: var(--paper); }
+  .filters-head .kicker { padding-bottom: 0; }
+  .sheet-grip, .sheet-close, .sheet-foot { display: none; }
+  .fgroup { margin: 0; padding: 20px 0 22px; border: 0; border-bottom: 1px solid var(--line); min-width: 0; }
+  .fgroup:first-of-type { margin-top: 2px; border-top: 1px solid var(--line); }
+  .fgroup legend { float: left; width: 100%; display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+                   margin-bottom: 14px; padding: 0; font-size: 15px; font-weight: 700; }
+  .fgroup legend + * { clear: both; }
+  .fgroup legend span { font: 500 11.5px/1 var(--mono); color: var(--muted); }
+  .fgroup legend i { font-style: normal; font: 500 11.5px/1 var(--mono); color: var(--muted); margin-right: 8px; }
+  .fnote { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+
+  .seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 3px; padding: 3px; border-radius: var(--radius-pill);
+         background: var(--fill); }
+  .seg button { border: 0; border-radius: var(--radius-pill); padding: 8px 6px; background: transparent; color: var(--muted);
+                font-size: 13px; font-weight: 700; white-space: nowrap; transition: background .25s, color .25s; }
+  .seg button:hover { color: var(--ink); }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: #fff; }
+  .seg button:disabled { opacity: .35; cursor: default; }
+
+  .opts { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+  .opt { display: flex; align-items: center; gap: 12px; padding: 6px 0; font-size: 14px; font-weight: 500; cursor: pointer; }
+  .opt input { position: absolute; opacity: 0; pointer-events: none; }
+  .box { flex: none; display: grid; place-items: center; width: 17px; height: 17px; border: 1.5px solid var(--ink); border-radius: 4px;
+         color: #fff; transition: background .15s; }
+  .box svg { width: 12px; height: 12px; opacity: 0; }
+  .opt input[type="radio"] + .box { border-radius: 50%; }
+  .opt input:checked + .box { background: var(--ink); }
+  .opt input:checked + .box svg { opacity: 1; }
+  .opt input[type="radio"]:checked + .box { background: var(--paper); box-shadow: inset 0 0 0 3.5px var(--paper); background: var(--ink); }
+  .opt input:focus-visible + .box { outline: 2px solid var(--brand); outline-offset: 2px; }
+  .opt em { margin-left: auto; font: 500 12px/1 var(--mono); font-style: normal; color: var(--muted); }
+  .opt.off { color: var(--muted); cursor: default; }
+  .opt.off .box { border-color: var(--line); }
+  .opt .stars { color: var(--brand); letter-spacing: 1px; font-size: 13px; }
+  .opt .stars s { color: var(--line); text-decoration: none; }
+
+  .hist { display: flex; align-items: end; gap: 3px; height: 46px; }
+  .hist i { flex: 1; min-height: 3px; background: var(--line); transition: background .2s; }
+  .hist i.in { background: var(--ink); }
+  .range { position: relative; height: 22px; margin-top: 12px; }
+  .range::before, .range-fill { content: ''; position: absolute; top: 10px; height: 2px; }
+  .range::before { left: 0; right: 0; background: var(--line); }
+  .range-fill { background: var(--brand); }
+  .range input { position: absolute; inset: 0; width: 100%; margin: 0; background: none; pointer-events: none; -webkit-appearance: none; appearance: none; }
+  .range input::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border: 2px solid var(--ink); border-radius: 50%;
+                                       background: var(--paper); pointer-events: auto; cursor: grab; }
+  .range input::-moz-range-thumb { width: 16px; height: 16px; border: 2px solid var(--ink); border-radius: 50%; background: var(--paper);
+                                   pointer-events: auto; cursor: grab; }
+  .range input:focus-visible::-webkit-slider-thumb { border-color: var(--brand); }
+  .range-vals { display: flex; justify-content: space-between; margin-top: 8px; font: 500 13px/1 var(--mono); }
+
+  /* ── (03) Results ─────────────────────────────────── */
+  .results { min-width: 0; padding: 24px 0 120px; }
+  .toolbar { display: flex; align-items: center; gap: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+  .toolbar .kicker { padding-bottom: 0; margin-right: auto; }
+  .filters-btn { display: none; }
+  .sort { position: relative; display: flex; align-items: center; gap: 8px; }
+  .sort label { color: var(--muted); }
+  .sort select { appearance: none; border: 0; border-bottom: 1.5px solid var(--line); border-radius: 0; padding: 4px 22px 5px 0;
+                 background: transparent; color: var(--ink); font-size: 14px; font-weight: 700; cursor: pointer; }
+  .sort select:focus-visible { outline: 0; border-bottom-color: var(--brand); }
+  .sort svg { position: absolute; right: 0; width: 16px; height: 16px; pointer-events: none; }
+  .views { width: 168px; }
+  .views svg { width: 15px; height: 15px; vertical-align: -3px; margin-right: 6px; }
+
+  .tags { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+  .tag { display: inline-flex; align-items: center; gap: 6px; padding: 5px 5px 5px 14px; border: 1px solid var(--ink);
+         border-radius: var(--radius-pill); font-size: 13px; font-weight: 600; white-space: nowrap; }
+  .tag button { display: grid; place-items: center; width: 22px; height: 22px; border: 0; border-radius: 50%; padding: 0;
+                background: none; color: var(--ink); transition: background .2s, color .2s; }
+  .tag button:hover { background: var(--ink); color: #fff; }
+  .tag svg { width: 12px; height: 12px; }
+  .tags .link-btn { margin-left: 8px; }
+
+  .list { margin: 0; padding: 0; list-style: none; }
+  .row { display: grid; grid-template-columns: minmax(200px, 264px) minmax(0, 1fr) 236px; gap: 28px; padding: 24px 0;
+         border-bottom: 1px solid var(--line); }
+  .tile { --cut: var(--fill); position: relative; display: grid; place-items: center; aspect-ratio: 16 / 10; background: var(--fill);
+          overflow: hidden; }
+  .tile .art { width: 70%; transition: transform .6s var(--ease-out); }
+  .tile .art.bike { width: 52%; }
+  .row:hover .tile .art { transform: translateX(8px); }
+  .tile-idx, .tile-type { position: absolute; top: 12px; font: 500 11.5px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
+  .tile-idx { left: 14px; color: var(--muted); }
+  .tile-type { right: 14px; }
+  .row-main { display: flex; flex-direction: column; min-width: 0; padding-top: 2px; }
+  .row-kind { color: var(--muted); }
+  .row h3 { margin: 12px 0 10px; font-size: clamp(24px, 2.3vw, 32px); font-weight: 600; line-height: 1.04; letter-spacing: -.035em; }
+  .specs { display: flex; flex-wrap: wrap; margin: 0; padding: 0; list-style: none; font: 400 13px/1.6 var(--mono); }
+  .specs li:not(:last-child)::after { content: '/'; margin: 0 9px; color: var(--muted); opacity: .45; }
+  .row-co { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 18px; margin-top: auto; padding-top: 18px; font-size: 14px; }
+  .co b { font-weight: 700; }
+  .rating { margin-left: 8px; font: 500 13px/1 var(--mono); }
+  .rating::before { content: '★'; margin-right: 4px; color: var(--brand); font-family: var(--sans); }
+  .rating small { margin-left: 4px; color: var(--muted); font-size: 12px; }
+  .loc { color: var(--muted); }
+  .row-side { display: flex; flex-direction: column; align-items: flex-end; padding-left: 28px; border-left: 1px solid var(--line);
+              text-align: right; }
+  .price { font-size: 38px; font-weight: 600; line-height: 1; letter-spacing: -.045em; white-space: nowrap; }
+  .price sup { margin-right: 2px; font-size: .42em; font-weight: 600; letter-spacing: 0; vertical-align: .95em; }
+  .price small { margin-left: 4px; font: 500 12.5px/1 var(--mono); letter-spacing: 0; color: var(--muted); }
+  .total { margin: 8px 0 0; color: var(--muted); font-size: 13px; }
+  .total b { color: var(--ink); font-weight: 700; }
+  .avail { display: inline-flex; align-items: center; gap: 8px; margin-top: 14px; }
+  .avail::before { content: ''; width: 8px; height: 8px; background: var(--ink); }
+  .avail.low { color: var(--brand-dark); }
+  .avail.low::before { background: var(--brand); }
+  .avail.clash { color: var(--muted); }
+  .avail.clash::before { background: transparent; box-shadow: inset 0 0 0 1.5px var(--muted); }
+  .row-actions { display: flex; align-items: center; gap: 16px; margin-top: auto; padding-top: 20px; }
+  .row-actions .btn { padding: 10px 16px 10px 20px; font-size: 14px; }
+
+  .cmp { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
+  .cmp input { position: absolute; opacity: 0; pointer-events: none; }
+  .cmp .box { border-radius: 4px; }
+  .cmp input:checked + .box { border-color: var(--brand); background: var(--brand); }
+  .cmp input:checked + .box svg { opacity: 1; }
+  .cmp input:focus-visible + .box { outline: 2px solid var(--brand); outline-offset: 2px; }
+  .cmp input:checked ~ .label { color: var(--brand-dark); }
+  .cmp.off { opacity: .35; cursor: not-allowed; }
+
+  .list-end { display: flex; justify-content: space-between; gap: 16px; padding: 22px 0; font: 500 12.5px/1.5 var(--mono); color: var(--muted); }
+
+  /* ── Map view ─────────────────────────────────────── */
+  .mapview { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 0; }
+  .mlist { margin: 0; padding: 0; list-style: none; border-right: 1px solid var(--line); }
+  .mrow { display: grid; grid-template-columns: 82px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 14px 18px 14px 0;
+          border-bottom: 1px solid var(--line); cursor: pointer; transition: background .2s, padding .3s var(--ease-out); }
+  .mrow .tile { aspect-ratio: 4 / 3; }
+  .mrow .tile .art { width: 76%; }
+  .mrow .tile .art.bike { width: 60%; }
+  .mrow b { display: block; font-size: 15px; letter-spacing: -.01em; }
+  .mrow small { display: block; margin-top: 4px; color: var(--muted); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mrow .mprice { font-size: 18px; font-weight: 700; letter-spacing: -.02em; text-align: right; }
+  .mrow .mprice small { font: 500 11px/1 var(--mono); }
+  .mrow:hover, .mrow.on { background: var(--brand-tint); padding-left: 12px; }
+  .mrow.on .tile { --cut: var(--paper); background: var(--paper); }
+  .map { position: sticky; top: calc(var(--nav-h) + 20px); height: calc(100vh - var(--nav-h) - 40px); min-height: 520px; margin-left: 20px;
+         overflow: hidden; background: var(--fill); }
+  .map > svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .m-land { fill: var(--fill); }
+  .m-street { stroke: var(--paper); stroke-width: 2.4; fill: none; }
+  .m-road { stroke: var(--paper); stroke-width: 9; fill: none; stroke-linecap: round; }
+  .m-park { fill: var(--line); }
+  .m-water { fill: url(#hatch); }
+  .m-river { fill: none; stroke: url(#hatch); stroke-width: 26; stroke-linecap: round; }
+  .m-hatch-bg { fill: var(--paper); }
+  .m-hatch-line { stroke: var(--ink); stroke-opacity: .22; stroke-width: 1.4; }
+  .m-label { font: 500 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; fill: var(--muted); }
+  .m-label.big { font-size: 15px; letter-spacing: .14em; fill: var(--ink); }
+  .m-ring { fill: none; stroke: var(--ink); stroke-opacity: .28; stroke-width: 1.2; stroke-dasharray: 3 7; }
+  .m-ring-label { font: 500 11px/1 var(--mono); fill: var(--muted); }
+  .m-you circle:first-child { fill: none; stroke: var(--brand); stroke-width: 1.5; }
+  .m-you circle:last-child { fill: var(--brand); stroke: var(--paper); stroke-width: 3; }
+  .pin { cursor: pointer; }
+  .pin rect, .pin path { fill: var(--ink); transition: fill .2s; }
+  .pin text { font: 600 15px/1 var(--mono); fill: #fff; text-anchor: middle; }
+  .pin:hover rect, .pin:hover path, .pin.on rect, .pin.on path { fill: var(--brand); }
+  .pin.clash rect, .pin.clash path { fill: var(--paper); stroke: var(--ink); stroke-width: 1.5; }
+  .pin.clash text { fill: var(--ink); }
+  .pin.clash.on rect, .pin.clash.on path { fill: var(--brand); stroke: var(--brand); }
+  .pin.clash.on text { fill: #fff; }
+  .map-tag { position: absolute; top: 16px; left: 16px; padding: 9px 12px; background: var(--paper); }
+  .map-tag span { color: var(--muted); }
+  .zoom { position: absolute; top: 16px; right: 16px; display: grid; background: var(--paper); border: 1px solid var(--ink); }
+  .zoom button { width: 38px; height: 38px; border: 0; background: none; color: var(--ink); font: 500 18px/1 var(--mono); }
+  .zoom button + button { border-top: 1px solid var(--line); }
+  .zoom button:hover { background: var(--fill); }
+  .zoom button:disabled { color: var(--line); cursor: default; background: none; }
+  .map-card { --cut: var(--fill); position: absolute; left: 16px; right: 16px; bottom: 16px; display: grid;
+              grid-template-columns: 132px minmax(0, 1fr); gap: 4px 20px; align-items: center; padding: 10px 18px 10px 10px;
+              border: 1px solid var(--ink); border-radius: var(--radius-field); background: var(--paper); }
+  .map-card .tile { grid-row: span 2; aspect-ratio: 16 / 10; }
+  .map-card h3 { margin: 6px 0 6px; font-size: 22px; font-weight: 600; letter-spacing: -.03em; line-height: 1.05; }
+  .map-card .row-co { padding: 0; font-size: 13px; }
+  .map-card .mc-side { display: flex; justify-content: space-between; align-items: center; gap: 18px; padding-top: 10px; border-top: 1px solid var(--line); }
+  .map-card .price { font-size: 30px; }
+
+  /* ── Empty ────────────────────────────────────────── */
+  .empty { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(32px, 5vw, 72px); padding: 44px 0 40px; }
+  .ghost-art { width: min(100%, 360px); margin-bottom: 30px; }
+  .ghost-art path, .ghost-art circle { fill: none; stroke: var(--ink); stroke-width: .7; stroke-dasharray: 2.2 2.4; }
+  .empty h2 { margin: 0 0 18px; font-size: clamp(36px, 3.8vw, 58px); font-weight: 600; line-height: 1; letter-spacing: -.04em; }
+  .empty h2 em { font-style: normal; color: var(--brand); }
+  .empty p { margin: 0; max-width: 440px; color: var(--muted); font-size: 16px; line-height: 1.55; }
+  .loosen { margin: 18px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--ink); }
+  .loosen button { display: flex; justify-content: space-between; align-items: center; gap: 16px; width: 100%; padding: 20px 0;
+                   border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--ink); text-align: left;
+                   font-size: 19px; font-weight: 600; letter-spacing: -.01em; transition: padding .3s var(--ease-out), color .2s; }
+  .loosen button span { flex: none; font: 500 12.5px/1 var(--mono); color: var(--brand-dark); letter-spacing: .02em; }
+  .loosen button:hover { padding-left: 10px; color: var(--brand-dark); }
+  .tips { margin-top: 22px !important; font: 400 12.5px/1.7 var(--mono) !important; }
+
+  /* ── Compare tray ─────────────────────────────────── */
+  .tray { position: fixed; z-index: 25; left: 0; right: 0; bottom: 20px; width: min(calc(100% - 2 * var(--gutter)), 1120px);
+          margin: 0 auto; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 26px;
+          padding: 12px 12px 12px 26px; border-radius: var(--radius-card); background: var(--ink); color: #fff; visibility: hidden;
+          transform: translateY(calc(100% + 40px)); }
+  .tray.show { visibility: visible; transform: none; }
+  .tray-head b { display: block; margin-top: 6px; font-size: 22px; font-weight: 600; letter-spacing: -.03em; }
+  .tray-head .label { color: rgb(255 255 255 / .6); }
+  .slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
+  .slot { --cut: var(--ink); display: grid; grid-template-columns: 58px minmax(0, 1fr) auto; gap: 12px; align-items: center; min-height: 58px;
+          padding: 6px 6px 6px 12px; border: 1px solid var(--line-dark); border-radius: var(--radius-field); }
+  .slot .art { color: #fff; }
+  .slot b { display: block; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .slot small { display: block; margin-top: 3px; color: rgb(255 255 255 / .55); font-size: 12px; white-space: nowrap; overflow: hidden;
+                text-overflow: ellipsis; }
+  .slot button { display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 50%; padding: 0; background: none;
+                 color: rgb(255 255 255 / .7); }
+  .slot button:hover { background: rgb(255 255 255 / .12); color: #fff; }
+  .slot button svg { width: 13px; height: 13px; }
+  .slot.open { display: flex; justify-content: center; border-style: dashed; border-color: rgb(255 255 255 / .28);
+               font: var(--label); letter-spacing: .04em; text-transform: uppercase; color: rgb(255 255 255 / .5); }
+  .tray-acts { display: flex; align-items: center; gap: 18px; }
+  .tray-acts .link-btn { color: #fff; text-decoration-color: rgb(255 255 255 / .3); }
+  .tray-acts .btn { height: 52px; padding: 0 22px; }
+
+  .toast { position: fixed; left: 50%; bottom: 28px; z-index: 50; transform: translate(-50%, 16px); opacity: 0; max-width: calc(100% - 40px);
+           padding: 10px 18px; border-radius: var(--radius-pill); background: var(--brand); color: #fff; font-size: 14px;
+           font-weight: 600; transition: .3s; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .tray.show ~ .toast { bottom: 118px; }
+
+  .scrim { position: fixed; inset: 0; z-index: 39; background: rgb(10 10 10 / .5); opacity: 0; visibility: hidden;
+           transition: opacity .3s, visibility .3s; }
+  .scrim.show { opacity: 1; visibility: visible; }
+
+  .foot { border-top: 1px solid var(--line); }
+  .foot .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 24px; padding-top: 22px; padding-bottom: 28px;
+                font: 400 12px/1.5 var(--mono); color: var(--muted); }
+  .foot nav { display: flex; flex-wrap: wrap; gap: 6px 18px; }
+  .foot a { color: inherit; text-decoration: none; }
+  .foot a:hover, .foot a[aria-current="true"] { color: var(--ink); }
+  .foot a[aria-current="true"] { text-decoration: underline; text-decoration-color: var(--brand); text-underline-offset: 3px; }
+
+  /* ── Smaller screens ──────────────────────────────── */
+  @media (max-width: 1240px) {
+    .row { grid-template-columns: minmax(170px, 220px) minmax(0, 1fr) 210px; gap: 22px; }
+    .mapview { grid-template-columns: 300px minmax(0, 1fr); }
+  }
+  @media (max-width: 1100px) {
+    .mapview { grid-template-columns: 1fr; }
+    .mlist { display: none; }
+    .map { margin-left: 0; margin-top: 20px; }
+    .trip { display: none; }
+  }
+  /* Tablets and phones: the filters move into a bottom sheet. */
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: 1fr; }
+    .filters-btn { display: inline-flex; padding: 9px 16px; font-size: 14px; background: var(--paper); color: var(--ink);
+                   box-shadow: inset 0 0 0 1.5px var(--ink); }
+    .filters-btn:hover { background: var(--ink); color: #fff; }
+    .filters-btn .count { transform: none; color: inherit; }
+    .filters { position: fixed; z-index: 40; inset: auto 0 0; top: auto; max-height: 88vh; display: flex; flex-direction: column;
+               padding: 0; border-radius: 20px 20px 0 0; background: var(--paper); visibility: hidden; transform: translateY(100%);
+               overflow: hidden; }
+    .filters.open { visibility: visible; transform: none; }
+    .filters-body { flex: 1; overflow: auto; padding: 0 var(--gutter); margin-right: 0; overscroll-behavior: contain; }
+    .sheet-grip { display: block; width: 44px; height: 4px; margin: 10px auto 2px; border-radius: 4px; background: var(--line); }
+    .filters-head { position: sticky; top: 0; z-index: 1; padding: 12px 0; background: var(--paper); }
+    .filters-head .link-btn { display: none; }
+    .sheet-close { display: grid; place-items: center; width: 38px; height: 38px; border: 1px solid var(--line); border-radius: 50%;
+                   background: none; color: var(--ink); }
+    .sheet-close svg { width: 15px; height: 15px; }
+    .fgroup:first-of-type { margin-top: 6px; }
+    .fgroup:last-of-type { border-bottom: 0; }
+    .sheet-foot { display: flex; align-items: center; gap: 20px; padding: 14px var(--gutter) calc(14px + env(safe-area-inset-bottom));
+                  border-top: 1px solid var(--line); background: var(--paper); }
+    .sheet-foot .btn { flex: 1; height: 52px; }
+  }
+  @media (max-width: 760px) {
+    .searchbar { grid-template-columns: 1fr 1fr; gap: 0; padding: 0; border-radius: var(--radius-card); overflow: hidden; }
+    .sf { padding: 12px 16px; }
+    .sf:first-child { grid-column: 1 / -1; border-bottom: 1px solid var(--line); }
+    .sf + .sf { border-left: 0; }
+    .sf:nth-child(3) { border-left: 1px solid var(--line); }
+    .go { grid-column: 1 / -1; height: 54px; margin: 6px; border-radius: var(--radius-field); }
+    .go i { width: 40px; height: 40px; border-radius: 8px; }
+    .head-title { padding: 34px 0 22px; }
+    .meta span:last-child { display: none; }
+    .toolbar { flex-wrap: wrap; gap: 14px 16px; }
+    .toolbar .kicker { flex-basis: 100%; }
+    .sort label { display: none; }
+    .views { width: 88px; margin-left: auto; }
+    .views button { font-size: 0; }               /* icons only on phones; the buttons keep their names for screen readers */
+    .views svg { width: 17px; height: 17px; margin: 0; }
+    .row { grid-template-columns: 118px minmax(0, 1fr); gap: 4px 16px; padding: 20px 0; }
+    .tile-idx, .tile-type { display: none; }
+    .tile { aspect-ratio: 4 / 3; align-self: start; }
+    .row h3 { margin: 8px 0 8px; font-size: 22px; }
+    .specs { font-size: 12px; }
+    .row-co { flex-direction: column; gap: 4px; padding-top: 12px; font-size: 13px; }
+    .row-side { grid-column: 1 / -1; display: grid; grid-template-columns: auto 1fr; align-items: end; gap: 6px 12px; margin-top: 16px;
+                padding: 16px 0 0; border-left: 0; border-top: 1px solid var(--line); text-align: left; }
+    .price { font-size: 30px; }
+    .total { grid-column: 1; grid-row: 2; margin: 0; }
+    .avail { grid-column: 2; grid-row: 1; justify-self: end; margin: 0 0 4px; }
+    .row-actions { grid-column: 2; grid-row: 2; justify-self: end; padding: 0; gap: 12px; }
+    .list-end { flex-direction: column; }
+    .map { height: 68vh; min-height: 440px; }
+    .map-card { grid-template-columns: 84px minmax(0, 1fr); gap: 12px; left: 10px; right: 10px; bottom: 10px; }
+    .map-card .tile { grid-row: auto; }
+    .map-card .mc-side { grid-column: 1 / -1; }
+    .map-card h3 { font-size: 18px; }
+    .empty { grid-template-columns: 1fr; padding-top: 32px; }
+    .ghost-art { width: 220px; }
+    .tray { grid-template-columns: minmax(0, 1fr) auto; bottom: 12px; padding: 10px 10px 10px 20px; gap: 14px; }
+    .slots { display: none; }
+    .tray-head b { font-size: 18px; margin-top: 4px; }
+    .tray-acts .link-btn { display: none; }
+    .tray-acts .btn { height: 46px; padding: 0 18px; font-size: 14px; }
+    .tray.show ~ .toast { bottom: 96px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0s !important; animation-duration: 0s !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════════════════════════
+     CUSTOMER NAV: the header for every logged-in customer page. Copy this block as it is, then:
+     · set aria-current="page" on the link for the page you are on (desktop links and the phone menu links);
+     · keep the "Customer nav" CSS and script with it.
+     On phones (≤ 720px) the two links move into the avatar menu.
+     ════════════════════════════════════════════════════════════════════════════ -->
+<header class="appnav" data-nav="customer">
+  <div class="wrap appnav-in">
+    <a class="brand" href="../search/index.html" aria-label="RentXe: search">
+      <svg viewBox="4 7 37 37" aria-hidden="true">
+        <g transform="translate(24 24) rotate(-45)">
+          <path d="M-2-3h21.5l3 3-3 3H-2zM3 3h15v2.6h-2.4V4.4H13v2.4h-2.6V4.4H8v1.8H3z" fill="currentColor"/>
+          <rect x="-22" y="-9" width="22" height="18" rx="6.5" fill="#FF6A3D"/>
+          <path d="M-15.8 0h9.6M-11-4.8v9.6" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+        </g>
+      </svg>
+      <span>Rent<b>Xe</b></span>
+    </a>
+    <nav class="appnav-links" aria-label="Main">
+      <a href="../search/index.html" aria-current="page">Search</a>
+      <a href="#" data-soon="My bookings">My bookings <span class="count" aria-label="2 active">02</span></a>
+    </nav>
+    <div class="appnav-end">
+      <a class="appnav-help" href="#" data-soon="Help">Help</a>
+      <div class="account">
+        <button class="account-btn" type="button" id="accountBtn" aria-expanded="false" aria-controls="accountMenu" aria-haspopup="true">
+          <span class="avatar" aria-hidden="true">MT</span>
+          <span class="account-name">Minh</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+          <span class="sr">Account menu</span>
+        </button>
+        <div class="account-menu" id="accountMenu" hidden>
+          <div class="account-who"><b>Minh Tran</b><span>minh.tran@example.com</span><span class="label">Customer account</span></div>
+          <a class="m-only" href="../search/index.html" aria-current="page">Search</a>
+          <a class="m-only" href="#" data-soon="My bookings">My bookings <span class="count">02</span></a>
+          <a href="#" data-soon="Profile">Profile</a>
+          <a href="#" data-soon="My reviews">My reviews</a>
+          <a href="#" data-soon="Settings">Settings</a>
+          <hr>
+          <a href="../login/index.html">Log out</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+<!-- ═══ end CUSTOMER NAV ═══ -->
+
+<main>
+  <section class="head wrap" aria-labelledby="title">
+    <div class="meta rule"><span>(01) Search</span><span>Cars · Motorbikes · Prices in AUD</span></div>
+
+    <form class="searchbar" id="searchbar" role="search" novalidate>
+      <label class="sf">
+        <span>Where</span>
+        <input type="text" id="where" list="places" autocomplete="off" spellcheck="false">
+        <datalist id="places"><option value="Melbourne CBD, VIC"><option value="District 1, Ho Chi Minh City"></datalist>
+      </label>
+      <label class="sf">
+        <span>Pick-up</span>
+        <span class="val" id="fromText"></span>
+        <input type="date" id="from" aria-label="Pick-up date">
+      </label>
+      <label class="sf">
+        <span>Return</span>
+        <span class="val" id="toText"></span>
+        <input type="date" id="to" aria-label="Return date">
+      </label>
+      <button class="btn go" type="submit">Search
+        <i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></i>
+      </button>
+    </form>
+
+    <div class="head-title">
+      <h1 id="title"></h1>
+      <p class="trip" id="trip"></p>
+    </div>
+  </section>
+
+  <div class="wrap"><div class="layout">
+    <!-- (02) Filters. A sticky column with its own scroll on desktop, a bottom sheet under 960px. -->
+    <aside class="filters" id="filters" aria-label="Filters">
+      <div class="sheet-grip" aria-hidden="true"></div>
+      <div class="filters-body">
+        <div class="filters-head">
+          <p class="kicker">(02) Filters</p>
+          <button class="link-btn" type="button" data-clear>Clear all</button>
+          <button class="sheet-close" type="button" id="sheetClose" aria-label="Close filters">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+          </button>
+        </div>
+
+        <fieldset class="fgroup">
+          <legend><span class="lg"><i>01</i>Type</span><span id="typeVal"></span></legend>
+          <div class="seg" data-key="type">
+            <button type="button" data-v="all">All</button><button type="button" data-v="car">Cars</button><button type="button" data-v="bike">Motorbikes</button>
+          </div>
+        </fieldset>
+
+        <fieldset class="fgroup">
+          <legend><span><i>02</i>Price per day</span><span id="priceVal"></span></legend>
+          <div class="hist" id="hist" aria-hidden="true"></div>
+          <div class="range">
+            <div class="range-fill" id="rangeFill"></div>
+            <input type="range" id="pmin" aria-label="Lowest price per day">
+            <input type="range" id="pmax" aria-label="Highest price per day">
+          </div>
+          <div class="range-vals"><span id="pminText"></span><span id="pmaxText"></span></div>
+        </fieldset>
+
+        <fieldset class="fgroup">
+          <legend><span><i>03</i>Brand</span><span id="brandVal"></span></legend>
+          <ul class="opts" id="brands"></ul>
+        </fieldset>
+
+        <fieldset class="fgroup">
+          <legend><span><i>04</i>Location</span><span id="kmVal"></span></legend>
+          <div class="seg" data-key="km">
+            <button type="button" data-v="0">Any</button><button type="button" data-v="2">2 km</button><button type="button" data-v="5">5 km</button><button type="button" data-v="10">10 km</button>
+          </div>
+          <ul class="opts" id="areas" style="margin-top: 14px"></ul>
+        </fieldset>
+
+        <fieldset class="fgroup">
+          <legend><span><i>05</i>Transmission</span><span id="transVal"></span></legend>
+          <div class="seg" data-key="trans">
+            <button type="button" data-v="any">Any</button><button type="button" data-v="auto">Automatic</button><button type="button" data-v="manual">Manual</button>
+          </div>
+        </fieldset>
+
+        <fieldset class="fgroup">
+          <legend><span><i>06</i><span id="sizeTitle">Seats or engine</span></span><span id="sizeVal"></span></legend>
+          <p class="fnote" id="sizeNote">Choose cars or motorbikes first, then filter by seats or engine size.</p>
+          <div class="seg" data-key="seats" id="seatsSeg" hidden>
+            <button type="button" data-v="0">Any</button><button type="button" data-v="4">4+</button><button type="button" data-v="5">5+</button><button type="button" data-v="7">7+</button>
+          </div>
+          <div class="seg" data-key="cc" id="ccSeg" hidden>
+            <button type="button" data-v="any">Any</button><button type="button" data-v="small">≤ 125 cc</button><button type="button" data-v="mid">126–160 cc</button>
+          </div>
+        </fieldset>
+
+        <fieldset class="fgroup">
+          <legend><span><i>07</i>Company rating</span><span id="ratingVal"></span></legend>
+          <ul class="opts" id="ratings"></ul>
+        </fieldset>
+      </div>
+      <div class="sheet-foot">
+        <button class="link-btn" type="button" data-clear>Clear all</button>
+        <button class="btn" type="button" id="sheetDone">Show results</button>
+      </div>
+    </aside>
+
+    <!-- (03) Results: list, map or empty -->
+    <section class="results" aria-labelledby="resultsLabel">
+      <div class="toolbar">
+        <p class="kicker" id="resultsLabel">(03) Results</p>
+        <button class="btn filters-btn" type="button" id="filtersBtn" aria-controls="filters" aria-expanded="false">Filters <span class="count" id="filtersCount"></span></button>
+        <div class="sort">
+          <label class="label" for="sort">Sort</label>
+          <select id="sort">
+            <option value="best">Recommended</option>
+            <option value="price">Price: low to high</option>
+            <option value="price-desc">Price: high to low</option>
+            <option value="rating">Company rating</option>
+            <option value="distance">Distance</option>
+          </select>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </div>
+        <div class="seg views" role="group" aria-label="Show results as">
+          <button type="button" data-view="list" aria-label="List"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>List</button>
+          <button type="button" data-view="map" aria-label="Map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"/></svg>Map</button>
+        </div>
+      </div>
+      <div class="tags" id="tags" aria-label="Active filters"></div>
+
+      <div id="listView">
+        <ol class="list" id="list"></ol>
+        <div class="list-end" id="listEnd"></div>
+      </div>
+
+      <div class="mapview" id="mapView" hidden>
+        <ol class="mlist" id="mlist"></ol>
+        <div class="map" id="map">
+          <svg id="mapSvg" viewBox="0 0 1000 800" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Map of the results"></svg>
+          <p class="map-tag label" id="mapTag"></p>
+          <div class="zoom"><button type="button" id="zoomIn" aria-label="Zoom in">+</button><button type="button" id="zoomOut" aria-label="Zoom out">−</button></div>
+          <div class="map-card" id="mapCard"></div>
+        </div>
+      </div>
+
+      <div class="empty" id="emptyView" hidden>
+        <div>
+          <svg class="ghost-art" viewBox="0 0 120 48" aria-hidden="true">
+            <path d="M8 38C6.6 38 5.6 37 5.7 35.6L6.3 27C6.5 24.6 8 23 10.3 22.6L31 20.4 43 9.6C45 7.8 47.5 7 50.2 7H71.5C74.4 7 77 8.2 78.9 10.4L88 20.6 109.6 23.4C112.6 23.8 114.6 26.3 114.4 29.3L114 35C113.9 36.7 112.5 38 110.8 38ZM40.5 20.3 47.6 12.6C48.5 11.6 49.7 11 51 11H60.5V20.3ZM64.5 20.3V11H71.4C73.1 11 74.7 11.7 75.8 13L82.4 20.3Z"/>
+            <circle cx="29" cy="37.5" r="9.4"/><circle cx="93" cy="37.5" r="9.4"/>
+          </svg>
+          <h2>Nothing fits <em>all of that.</em></h2>
+          <p id="emptyText"></p>
+        </div>
+        <div>
+          <p class="kicker">(04) Loosen one filter</p>
+          <ul class="loosen" id="loosen"></ul>
+          <p class="tips">Weekends book out first. Moving pick-up a day earlier often frees up more vehicles.</p>
+        </div>
+      </div>
+    </section>
+  </div></div>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <span>© 2026 RentXe · COSC2101 team project prototype · placeholder listings</span>
+    <nav aria-label="Prototype views">
+      <span>Views:</span>
+      <a href="?view=list" data-proto="list">List</a><a href="?view=map" data-proto="map">Map</a><a href="?view=empty" data-proto="empty">Empty</a><a href="?city=hcm" data-proto="hcm">Ho Chi Minh City</a>
+    </nav>
+  </div>
+</footer>
+
+<!-- Compare tray: appears once two listings are ticked, holds up to three. -->
+<aside class="tray" id="tray" aria-label="Compare">
+  <div class="tray-head"><span class="label">(05) Compare</span><b id="trayCount"></b></div>
+  <ul class="slots" id="slots"></ul>
+  <div class="tray-acts">
+    <button class="link-btn" type="button" id="trayClear">Clear</button>
+    <a class="btn" href="#" id="trayGo">Compare <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+  </div>
+</aside>
+<div class="scrim" id="scrim"></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script type="module">
+/* ── Customer nav: the avatar menu. Copy with the CUSTOMER NAV block. ── */
+{
+  const btn = document.getElementById('accountBtn'), menu = document.getElementById('accountMenu');
+  const set = open => {
+    btn.setAttribute('aria-expanded', String(open)); menu.hidden = !open;
+    if (open && window.gsap) gsap.from(menu, { y: -8, opacity: 0, duration: .3, ease: 'power2.out' });
+  };
+  btn.addEventListener('click', e => { e.stopPropagation(); set(menu.hidden); });
+  document.addEventListener('click', e => { if (!menu.hidden && !menu.contains(e.target)) set(false); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !menu.hidden) { set(false); btn.focus(); } });
+}
+
+/* ── Fake data ─────────────────────────────────────── */
+const CITIES = {
+  mel: { place: 'Melbourne CBD, VIC', short: 'Melbourne CBD', step: 5 },
+  hcm: { place: 'District 1, Ho Chi Minh City', short: 'District 1, Saigon', step: 1 },
+};
+const COMPANIES = {
+  yarra:     { name: 'Yarra Car Co.',        rating: 4.8, reviews: 212 },
+  southbank: { name: 'Southbank Rentals',    rating: 4.6, reviews: 148 },
+  laneway:   { name: 'Laneway Motors',       rating: 4.4, reviews: 96 },
+  tulla:     { name: 'Tullamarine Drive',    rating: 4.2, reviews: 310 },
+  twowheels: { name: 'Two Wheels Melbourne', rating: 4.9, reviews: 87 },
+  saigon:    { name: 'Saigon Wheels Co.',    rating: 4.7, reviews: 402 },
+  benthanh:  { name: 'Ben Thanh Scooters',   rating: 4.5, reviews: 233 },
+  tsn:       { name: 'Tan Son Nhat Auto',    rating: 4.3, reviews: 75 },
+};
+// km is the distance from the searched place; deg is the bearing on the stylised map (0 = east, 90 = south).
+// avail: ok, low (only a few left) or clash (booked for part of the dates).
+const LISTINGS = [
+  { id: 'mel-01', city: 'mel', type: 'car',  shape: 'sedan', kind: 'Sedan · 2023',        brand: 'Toyota',  model: 'Corolla Hybrid', trans: 'auto',   seats: 5, specs: ['Automatic', '5 seats', 'Hybrid', '2 bags'],        price: 68,  co: 'yarra',     area: 'Melbourne CBD', km: 0.8,  deg: -20,  avail: 'ok' },
+  { id: 'mel-02', city: 'mel', type: 'bike', shape: 'scooter', kind: 'Scooter · 2024',    brand: 'Honda',   model: 'PCX 160',        trans: 'auto',   seats: 2, cc: 157, specs: ['157 cc', 'Automatic', '2 helmets'],     price: 39,  co: 'twowheels', area: 'Carlton',       km: 2.1,  deg: -115, avail: 'ok' },
+  { id: 'mel-03', city: 'mel', type: 'car',  shape: 'suv',   kind: 'SUV · 2022',          brand: 'Mazda',   model: 'CX-5',           trans: 'auto',   seats: 5, specs: ['Automatic', '5 seats', 'Petrol', '4 bags'],        price: 94,  co: 'southbank', area: 'Southbank',     km: 1.6,  deg: 115,  avail: 'low', left: 2 },
+  { id: 'mel-04', city: 'mel', type: 'car',  shape: 'sedan', kind: 'Sedan · Electric · 2024', brand: 'Tesla', model: 'Model 3',      trans: 'auto',   seats: 5, specs: ['Automatic', '5 seats', '510 km range'],            price: 129, co: 'laneway',   area: 'Richmond',      km: 3.4,  deg: 15,   avail: 'clash', note: 'Booked 11–12 Dec' },
+  { id: 'mel-05', city: 'mel', type: 'bike', shape: 'scooter', kind: 'Scooter · 2023',    brand: 'Vespa',   model: 'Primavera 150',  trans: 'auto',   seats: 2, cc: 155, specs: ['155 cc', 'Automatic', '2 helmets', 'Top box'], price: 45, co: 'twowheels', area: 'St Kilda', km: 6.2,  deg: 100,  avail: 'low', left: 1 },
+  { id: 'mel-06', city: 'mel', type: 'car',  shape: 'sedan', kind: 'Hatchback · 2020',    brand: 'Suzuki',  model: 'Swift',          trans: 'manual', seats: 5, specs: ['Manual', '5 seats', 'Petrol', '1 bag'],            price: 49,  co: 'laneway',   area: 'Fitzroy',       km: 2.9,  deg: -50,  avail: 'ok' },
+  { id: 'mel-07', city: 'mel', type: 'car',  shape: 'suv',   kind: 'People mover · 2023', brand: 'Kia',     model: 'Carnival',       trans: 'auto',   seats: 8, specs: ['Automatic', '8 seats', 'Diesel', '5 bags'],        price: 139, co: 'tulla',     area: 'Melbourne Airport', km: 19.5, deg: -130, avail: 'ok' },
+  { id: 'mel-08', city: 'mel', type: 'bike', shape: 'scooter', kind: 'Scooter · 2023',    brand: 'Yamaha',  model: 'NMAX 155',       trans: 'auto',   seats: 2, cc: 155, specs: ['155 cc', 'Automatic', '1 helmet'],      price: 42,  co: 'laneway',   area: 'Docklands',     km: 2.4,  deg: 180,  avail: 'ok' },
+  { id: 'hcm-01', city: 'hcm', type: 'bike', shape: 'scooter', kind: 'Scooter · 2023',    brand: 'Honda',   model: 'Vision 110',     trans: 'auto',   seats: 2, cc: 110, specs: ['110 cc', 'Automatic', '2 helmets', 'Raincoats'], price: 9, co: 'saigon', area: 'District 1', km: 0.6, deg: -30, avail: 'ok' },
+  { id: 'hcm-02', city: 'hcm', type: 'bike', shape: 'scooter', kind: 'Scooter · 2024',    brand: 'Yamaha',  model: 'NVX 155',        trans: 'auto',   seats: 2, cc: 155, specs: ['155 cc', 'Automatic', '2 helmets'],     price: 13,  co: 'benthanh',  area: 'District 3',    km: 2.2,  deg: -150, avail: 'low', left: 1 },
+  { id: 'hcm-03', city: 'hcm', type: 'bike', shape: 'scooter', kind: 'Scooter · 2023',    brand: 'Honda',   model: 'SH 160i',        trans: 'auto',   seats: 2, cc: 157, specs: ['157 cc', 'Automatic', '2 helmets'],     price: 16,  co: 'saigon',    area: 'Binh Thanh',    km: 3.5,  deg: -60,  avail: 'ok' },
+  { id: 'hcm-04', city: 'hcm', type: 'car',  shape: 'sedan', kind: 'Sedan · 2022',        brand: 'Toyota',  model: 'Vios',           trans: 'auto',   seats: 5, specs: ['Automatic', '5 seats', 'Petrol', '2 bags'],        price: 52,  co: 'tsn',       area: 'Tan Binh · airport', km: 6.8, deg: -120, avail: 'ok' },
+];
+const byId = Object.fromEntries(LISTINGS.map(l => [l.id, l]));
+
+/* ── Silhouettes (the same flat shapes as the landing page's About line) ── */
+const WHEEL = (x, y) => `<circle class="gap" cx="${x}" cy="${y}" r="10.2"/><circle fill="currentColor" cx="${x}" cy="${y}" r="9.4"/><circle class="hub" cx="${x}" cy="${y}" r="4.3"/>`;
+const BODY = {
+  sedan: '<path fill="currentColor" fill-rule="evenodd" d="M8 38C6.6 38 5.6 37 5.7 35.6L6.3 27C6.5 24.6 8 23 10.3 22.6L31 20.4 43 9.6C45 7.8 47.5 7 50.2 7H71.5C74.4 7 77 8.2 78.9 10.4L88 20.6 109.6 23.4C112.6 23.8 114.6 26.3 114.4 29.3L114 35C113.9 36.7 112.5 38 110.8 38ZM40.5 20.3 47.6 12.6C48.5 11.6 49.7 11 51 11H60.5V20.3ZM64.5 20.3V11H71.4C73.1 11 74.7 11.7 75.8 13L82.4 20.3Z"/>',
+  suv: '<path fill="currentColor" fill-rule="evenodd" d="M7 38C5.6 38 4.6 37 4.7 35.6L5.2 24.5C5.3 22.3 6.9 20.6 9.1 20.3L21 18.8 28.6 7.2C29.8 5.4 31.8 4.3 34 4.3H82.5C85 4.3 87.2 5.6 88.4 7.8L95 19.2 110 21.6C113 22.1 115 24.6 114.8 27.6L114.3 35C114.2 36.7 112.8 38 111.1 38ZM27.8 18.9 34.4 8.9C34.9 8.2 35.7 7.8 36.6 7.8H55.5V18.9ZM59.5 18.9V7.8H81.8C83 7.8 84 8.4 84.6 9.4L90 18.9Z"/>',
+  scooter: '<path fill="currentColor" d="M10 41C8.6 32.6 12.5 26.5 19.5 24.8L20.6 22H45.5C47.6 22 48.7 23.8 47.9 25.7L46.4 29.2C45.6 31.2 46.9 33.4 49.1 33.4H59.5L66.4 13.2C67 11.4 69 10.5 70.8 11.2L73.4 12.3 83.2 34.5C84.1 36.6 82.8 39 80.5 39.3L66 41.2Z"/><rect fill="currentColor" x="18.5" y="16.6" width="27.5" height="5.4" rx="2.7"/><path d="M63.5 9.6H75.5" stroke="currentColor" stroke-width="3.6" stroke-linecap="round"/><circle fill="currentColor" cx="77.2" cy="17" r="2.6"/>',
+};
+const art = l => l.type === 'bike'
+  ? `<svg class="art bike" viewBox="0 0 96 56" aria-hidden="true">${BODY.scooter}${WHEEL(23, 44)}${WHEEL(80, 44)}</svg>`
+  : `<svg class="art car" viewBox="0 0 120 48" aria-hidden="true">${BODY[l.shape]}${WHEEL(29, 37.5)}${WHEEL(93, 37.5)}</svg>`;
+const ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+const CROSS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+const TICK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
+
+/* ── State. The view and city come from the URL, like the login page: ?view=list|map|empty, ?city=mel|hcm ── */
+const $ = id => document.getElementById(id);
+const root = document.documentElement;
+const params = new URLSearchParams(location.search);
+const state = {
+  city: params.get('city') === 'hcm' ? 'hcm' : 'mel',
+  view: ['map', 'empty'].includes(params.get('view')) ? params.get('view') : 'list',
+  from: '2026-12-11', to: '2026-12-14',
+  sort: 'best', compare: [], picked: null, zoom: 1,
+};
+const cityList = () => LISTINGS.filter(l => l.city === state.city);
+const bounds = () => {
+  const p = cityList().map(l => l.price), s = 5;
+  return [Math.floor(Math.min(...p) / s) * s, Math.ceil(Math.max(...p) / s) * s];
+};
+const fresh = () => ({ type: 'all', price: bounds(), brands: new Set(), km: 0, areas: new Set(), trans: 'any', seats: 0, cc: 'any', rating: 0 });
+let f = fresh();
+// ?view=empty is a set of filters that leaves nothing, so the empty state and its suggestions are real.
+if (state.view === 'empty') Object.assign(f, { trans: 'manual', price: [bounds()[0], state.city === 'mel' ? 50 : 12], rating: 4.5 });
+
+const days = () => Math.max(1, Math.round((new Date(state.to) - new Date(state.from)) / 864e5));
+const money = n => `A$${n.toLocaleString('en-AU')}`;
+const fmtDate = (iso, opts = { weekday: 'short', day: 'numeric', month: 'short' }) =>
+  new Date(iso + 'T00:00').toLocaleDateString('en-AU', opts).replace(',', '');
+
+/* ── Filtering. skip leaves one group out, for the counts next to each option. ── */
+function passes(l, skip) {
+  const co = COMPANIES[l.co];
+  return (skip === 'type'   || f.type === 'all' || l.type === f.type)
+      && (skip === 'price'  || (l.price >= f.price[0] && l.price <= f.price[1]))
+      && (skip === 'brands' || !f.brands.size || f.brands.has(l.brand))
+      && (skip === 'km'     || !f.km || l.km <= f.km)
+      && (skip === 'areas'  || !f.areas.size || f.areas.has(l.area))
+      && (skip === 'trans'  || f.trans === 'any' || l.trans === f.trans)
+      && (skip === 'seats'  || !f.seats || l.type !== 'car' || l.seats >= f.seats)
+      && (skip === 'cc'     || f.cc === 'any' || l.type !== 'bike' || (f.cc === 'small' ? l.cc <= 125 : l.cc > 125 && l.cc <= 160))
+      && (skip === 'rating' || co.rating >= f.rating);
+}
+const SORTS = {
+  best: () => 0,
+  price: (a, b) => a.price - b.price,
+  'price-desc': (a, b) => b.price - a.price,
+  rating: (a, b) => COMPANIES[b.co].rating - COMPANIES[a.co].rating,
+  distance: (a, b) => a.km - b.km,
+};
+const results = () => cityList().filter(l => passes(l)).sort(SORTS[state.sort]);
+
+// One removable tag per active filter. Each knows how to undo itself, which the empty state reuses.
+function activeTags() {
+  const t = [], [lo, hi] = bounds();
+  if (f.type !== 'all') t.push({ label: f.type === 'car' ? 'Cars' : 'Motorbikes', undo: () => { f.type = 'all'; f.seats = 0; f.cc = 'any'; } });
+  if (f.price[0] > lo || f.price[1] < hi) t.push({ label: `${money(f.price[0])} – ${money(f.price[1])} / day`, undo: () => { f.price = [lo, hi]; } });
+  f.brands.forEach(b => t.push({ label: b, undo: () => f.brands.delete(b) }));
+  if (f.km) t.push({ label: `Within ${f.km} km`, undo: () => { f.km = 0; } });
+  f.areas.forEach(a => t.push({ label: a, undo: () => f.areas.delete(a) }));
+  if (f.trans !== 'any') t.push({ label: f.trans === 'auto' ? 'Automatic' : 'Manual', undo: () => { f.trans = 'any'; } });
+  if (f.seats) t.push({ label: `${f.seats}+ seats`, undo: () => { f.seats = 0; } });
+  if (f.cc !== 'any') t.push({ label: f.cc === 'small' ? '≤ 125 cc' : '126–160 cc', undo: () => { f.cc = 'any'; } });
+  if (f.rating) t.push({ label: `Rated ${f.rating.toFixed(1)}+`, undo: () => { f.rating = 0; } });
+  return t;
+}
+
+/* ── Motion helpers (GSAP). Skipped when GSAP didn't load or reduced motion is on. ── */
+const motion = !!window.gsap && matchMedia('(prefers-reduced-motion: no-preference)').matches;
+function splitWords(el) {
+  const out = [];
+  (function walk(node) {
+    for (const child of [...node.childNodes]) {
+      if (child.nodeType === Node.TEXT_NODE) {
+        const frag = document.createDocumentFragment();
+        for (const part of child.textContent.split(/(\s+)/)) {
+          if (!part) continue;
+          if (/^\s+$/.test(part)) { frag.append(' '); continue; }
+          const w = Object.assign(document.createElement('span'), { className: 'w', textContent: part });
+          frag.append(w); out.push(w);
+        }
+        child.replaceWith(frag);
+      } else if (child.nodeType === Node.ELEMENT_NODE) walk(child);
+    }
+  })(el);
+  return out;
+}
+
+/* ── Rendering ─────────────────────────────────────── */
+function rowHTML(l, i) {
+  const co = COMPANIES[l.co], on = state.compare.includes(l.id), full = state.compare.length >= 3 && !on;
+  const avail = { ok: ['ok', 'Free for your dates'], low: ['low', `Only ${l.left} left`], clash: ['clash', l.note] }[l.avail];
+  return `<li class="row" data-id="${l.id}">
+    <div class="tile">${art(l)}<span class="tile-idx">${String(i + 1).padStart(2, '0')}</span><span class="tile-type">${l.type === 'car' ? 'Car' : 'Motorbike'}</span></div>
+    <div class="row-main">
+      <span class="row-kind label">${l.kind}</span>
+      <h3>${l.brand} ${l.model}</h3>
+      <ul class="specs">${l.specs.map(s => `<li>${s}</li>`).join('')}</ul>
+      <div class="row-co"><span class="co"><b>${co.name}</b><span class="rating">${co.rating.toFixed(1)}<small>(${co.reviews})</small></span></span>
+        <span class="loc">${l.area} · ${l.km} km away</span></div>
+    </div>
+    <div class="row-side">
+      <div class="price"><sup>A$</sup>${l.price}<small>/ day</small></div>
+      <p class="total"><b>${money(l.price * days())}</b> est. for ${days()} day${days() > 1 ? 's' : ''}</p>
+      <span class="avail label ${avail[0]}">${avail[1]}</span>
+      <div class="row-actions">
+        ${cmpHTML(l, on, full)}
+        <a class="btn dark" href="${viewHref(l)}" data-view-id="${l.id}">View ${ARROW}</a>
+      </div>
+    </div>
+  </li>`;
+}
+const cmpHTML = (l, on, full) => `<label class="cmp${full ? ' off' : ''}" title="${full ? 'You can compare up to 3' : ''}">
+  <input type="checkbox" data-cmp="${l.id}"${on ? ' checked' : ''}${full ? ' disabled' : ''}><span class="box">${TICK}</span><span class="label">${on ? 'Added' : 'Compare'}</span></label>`;
+// The dates go along to the vehicle page, so the booking form starts with them filled in.
+const viewHref = l => `#vehicle?id=${l.id}&from=${state.from}&to=${state.to}`;
+
+function renderHead(n, animate) {
+  const h = $('title');
+  h.innerHTML = n
+    ? `<span class="num" id="count">${n}</span> ${n === 1 ? 'vehicle' : 'vehicles'} near <em>${CITIES[state.city].short}.</em>`
+    : `No vehicles near <em>${CITIES[state.city].short}</em> with these filters.`;
+  $('trip').innerHTML = `<b>${fmtDate(state.from)} → ${fmtDate(state.to)}</b><br>${days()} day${days() > 1 ? 's' : ''} · ${cityList().length} listed in total`;
+  return animate ? splitWords(h) : [];
+}
+
+function renderFilters() {
+  const [lo, hi] = bounds(), step = CITIES[state.city].step;
+  document.querySelectorAll('.seg[data-key]').forEach(seg => {
+    const key = seg.dataset.key;
+    seg.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(String(f[key]) === b.dataset.v)));
+  });
+  const vals = { type: { all: 'All', car: 'Cars', bike: 'Motorbikes' }[f.type], trans: { any: 'Any', auto: 'Auto', manual: 'Manual' }[f.trans] };
+  $('typeVal').textContent = vals.type;
+  $('transVal').textContent = vals.trans;
+  $('kmVal').textContent = f.km ? `≤ ${f.km} km` : f.areas.size ? `${f.areas.size} area${f.areas.size > 1 ? 's' : ''}` : 'Anywhere';
+
+  // Price: a histogram of every listing in the city, inked where it falls inside the range.
+  for (const [id, v] of [['pmin', f.price[0]], ['pmax', f.price[1]]]) Object.assign($(id), { min: lo, max: hi, step, value: v });
+  $('pminText').textContent = money(f.price[0]);
+  $('pmaxText').textContent = money(f.price[1]) + (f.price[1] === hi ? '+' : '');
+  $('priceVal').textContent = f.price[0] === lo && f.price[1] === hi ? 'Any' : `${money(f.price[0])}–${f.price[1]}`;
+  const pct = v => (v - lo) / (hi - lo) * 100;
+  Object.assign($('rangeFill').style, { left: `calc(${pct(f.price[0])}% + ${10 - pct(f.price[0]) / 5}px)`, right: `calc(${100 - pct(f.price[1])}% + ${10 - (100 - pct(f.price[1])) / 5}px)` });
+  const bins = 14, counts = Array(bins).fill(0), inRange = Array(bins).fill(false);
+  cityList().filter(l => passes(l, 'price')).forEach(l => counts[Math.min(bins - 1, Math.floor((l.price - lo) / (hi - lo) * bins))]++);
+  counts.forEach((_, i) => { const mid = lo + (i + .5) * (hi - lo) / bins; inRange[i] = mid >= f.price[0] && mid <= f.price[1]; });
+  const top = Math.max(1, ...counts);
+  $('hist').innerHTML = counts.map((c, i) => `<i class="${inRange[i] ? 'in' : ''}" style="height:${c ? 20 + c / top * 80 : 6}%"></i>`).join('');
+
+  // Checkbox lists, each count worked out with the other filters applied.
+  const list = (el, key, values, label = v => v) => {
+    el.innerHTML = values.map(v => {
+      const n = cityList().filter(l => passes(l, key) && (key === 'brands' ? l.brand : l.area) === v).length;
+      const on = f[key].has(v), off = !n && !on;
+      return `<li><label class="opt${off ? ' off' : ''}"><input type="checkbox" data-set="${key}" value="${v}"${on ? ' checked' : ''}${off ? ' disabled' : ''}><span class="box">${TICK}</span>${label(v)}<em>${n}</em></label></li>`;
+    }).join('');
+  };
+  const uniq = k => [...new Set(cityList().map(l => l[k]))];
+  list($('brands'), 'brands', uniq('brand').sort());
+  list($('areas'), 'areas', uniq('area').sort((a, b) => cityList().find(l => l.area === a).km - cityList().find(l => l.area === b).km));
+  $('brandVal').textContent = f.brands.size ? `${f.brands.size} picked` : 'Any';
+
+  // Seats for cars, engine size for motorbikes.
+  $('sizeNote').hidden = f.type !== 'all';
+  $('seatsSeg').hidden = f.type !== 'car';
+  $('ccSeg').hidden = f.type !== 'bike';
+  $('sizeTitle').textContent = f.type === 'car' ? 'Seats' : f.type === 'bike' ? 'Engine size' : 'Seats or engine';
+  $('sizeVal').textContent = f.type === 'car' ? (f.seats ? `${f.seats}+` : 'Any') : f.type === 'bike' ? (f.cc === 'any' ? 'Any' : f.cc === 'small' ? '≤ 125' : '126–160') : '';
+
+  $('ratings').innerHTML = [0, 4, 4.5, 4.8].map(r => {
+    const n = cityList().filter(l => passes(l, 'rating') && COMPANIES[l.co].rating >= r).length;
+    const full = Math.floor(r), stars = r ? `<span class="stars" aria-hidden="true">${'★'.repeat(full)}<s>${'★'.repeat(5 - full)}</s></span>` : '';
+    return `<li><label class="opt"><input type="radio" name="rating" data-rating="${r}"${f.rating === r ? ' checked' : ''}><span class="box"></span>${r ? `${r.toFixed(1)} and up ${stars}` : 'Any rating'}<em>${n}</em></label></li>`;
+  }).join('');
+  $('ratingVal').textContent = f.rating ? `${f.rating.toFixed(1)}+` : 'Any';
+}
+
+let prevTags = new Set();
+function renderTags(animate) {
+  const tags = activeTags();
+  $('tags').hidden = !tags.length;
+  $('tags').innerHTML = tags.map((t, i) => `<span class="tag" data-label="${t.label}">${t.label}<button type="button" data-untag="${i}" aria-label="Remove ${t.label}">${CROSS}</button></span>`).join('')
+    + (tags.length ? '<button class="link-btn" type="button" data-clear>Clear all</button>' : '');
+  if (animate && motion) {
+    const fresh = [...$('tags').querySelectorAll('.tag')].filter(el => !prevTags.has(el.dataset.label));
+    if (fresh.length) gsap.from(fresh, { scale: .85, opacity: 0, duration: .35, ease: 'back.out(2)', stagger: .04 });
+  }
+  prevTags = new Set(tags.map(t => t.label));
+  const n = tags.length;
+  $('filtersCount').textContent = n ? String(n).padStart(2, '0') : '';
+  document.querySelectorAll('[data-clear]').forEach(b => { b.disabled = !n; });
+}
+
+function renderList(rows) {
+  $('list').innerHTML = rows.map(rowHTML).join('');
+  const hidden = cityList().length - rows.length;
+  $('listEnd').innerHTML = `<span>End of results · ${rows.length} of ${cityList().length} listings near ${CITIES[state.city].short}</span>`
+    + (hidden ? `<span>${hidden} hidden by your filters</span>` : '<span>Prices in AUD, per day, before any company fees</span>');
+}
+
+/* Map: a stylised, not-to-scale city drawn in SVG. Distance uses a square-root scale so the airport still fits. */
+const C = { x: 500, y: 400 };
+const at = l => { const r = 70 * Math.sqrt(l.km), a = l.deg * Math.PI / 180; return { x: C.x + r * Math.cos(a), y: C.y + r * Math.sin(a) }; };
+const BASE = {
+  mel: {
+    rot: -6,
+    parks: '<ellipse cx="400" cy="250" rx="70" ry="50"/><rect x="590" y="345" width="48" height="56" rx="6"/><ellipse cx="420" cy="590" rx="58" ry="36"/>',
+    roads: 'M500 0V330M470 340 300 160 150 0M560 380 1000 330M500 430 482 800M380 470 120 530M560 420 760 560 1000 640M500 330 640 230 860 0',
+    water: '<path class="m-water" d="M0 470C90 480 180 520 260 560 330 600 400 640 430 700 450 740 455 780 460 800H0Z"/><ellipse class="m-water" cx="420" cy="592" rx="24" ry="13"/><path class="m-river" d="M1000 360C900 380 820 330 740 380 680 420 620 450 560 440 500 430 450 452 400 452 340 452 300 480 250 545"/>',
+    labels: [['Port Phillip Bay', 215, 745, 'big'], ['Yarra River', 690, 352], ['Tullamarine Fwy', 205, 95], ['St Kilda Rd', 512, 700], ['Royal Park', 352, 254], ['CBD', 470, 360]],
+    cbd: { x: 430, y: 330, w: 150, h: 100 },
+  },
+  hcm: {
+    rot: 40,
+    parks: '<ellipse cx="455" cy="330" rx="40" ry="28"/><rect x="520" y="420" width="70" height="30" rx="6"/><ellipse cx="300" cy="300" rx="44" ry="30"/>',
+    roads: 'M500 400 300 150 160 0M500 400 520 0M500 400 0 420M500 400 330 800M420 260 0 120M500 400 1000 160M610 480 1000 520',
+    water: '<path class="m-river" d="M720 0C700 120 780 200 760 300 740 400 640 430 640 500 640 580 760 600 800 680 830 740 820 780 830 800"/><path class="m-river" style="stroke-width:12" d="M748 250C680 262 620 232 560 250 500 268 440 240 380 250 300 262 200 232 0 252"/><path class="m-river" style="stroke-width:14" d="M650 470C560 520 460 520 360 560 260 600 120 600 0 640"/>',
+    labels: [['Saigon River', 640, 312, 'big'], ['Thi Nghe canal', 210, 236], ['Ben Nghe canal', 215, 590], ['District 1', 470, 455], ['Binh Thanh', 600, 205], ['Tan Son Nhat', 300, 120]],
+    cbd: { x: 440, y: 340, w: 130, h: 110 },
+  },
+};
+function renderMap(rows, animate) {
+  const b = BASE[state.city], z = state.zoom, w = 1000 / z, h = 800 / z;
+  const svg = $('mapSvg');
+  svg.setAttribute('viewBox', `${C.x - w / 2} ${C.y - h / 2} ${w} ${h}`);
+  let streets = '';
+  for (let i = -1200; i <= 2200; i += 46) streets += `M${i} -400V1200M-400 ${i}H1400`;
+  let cbd = '';
+  for (let x = b.cbd.x; x <= b.cbd.x + b.cbd.w; x += 22) cbd += `M${x} ${b.cbd.y}V${b.cbd.y + b.cbd.h}`;
+  for (let y = b.cbd.y; y <= b.cbd.y + b.cbd.h; y += 20) cbd += `M${b.cbd.x} ${y}H${b.cbd.x + b.cbd.w}`;
+  const s = 1 / z;   // pins and labels keep their size when zooming
+  const pins = rows.map(l => {
+    const p = at(l), label = money(l.price), wd = label.length * 9.4 + 22;
+    return `<g class="pin${l.avail === 'clash' ? ' clash' : ''}${state.picked === l.id ? ' on' : ''}" data-pin="${l.id}" transform="translate(${p.x} ${p.y}) scale(${s})" tabindex="0" role="button" aria-label="${l.brand} ${l.model}, ${label} a day">
+      <g class="pin-in"><rect x="${-wd / 2}" y="-44" width="${wd}" height="32" rx="16"/><path d="M-7 -13 0 -2 7 -13Z"/><text y="-23">${label}</text></g></g>`;
+  }).join('');
+  svg.innerHTML = `<defs><pattern id="hatch" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect class="m-hatch-bg" width="9" height="9"/><line class="m-hatch-line" x1="0" y1="0" x2="0" y2="9"/></pattern></defs>
+    <rect class="m-land" x="-400" y="-400" width="1800" height="1600"/>
+    <path class="m-street" d="${streets}" transform="rotate(${b.rot} 500 400)" opacity=".9"/>
+    <g class="m-park">${b.parks}</g>
+    <path class="m-street" d="${cbd}" style="stroke-width:3.4"/>
+    <path class="m-road" d="${b.roads}"/>
+    ${b.water}
+    ${b.labels.map(([t, x, y, big]) => `<text class="m-label${big ? ' big' : ''}" x="${x}" y="${y}" transform="translate(${x} ${y}) scale(${s}) translate(${-x} ${-y})">${t}</text>`).join('')}
+    ${[2, 5, 10].map(k => `<circle class="m-ring" cx="${C.x}" cy="${C.y}" r="${70 * Math.sqrt(k)}"/><text class="m-ring-label" x="${C.x + 70 * Math.sqrt(k) * .707 + 6}" y="${C.y - 70 * Math.sqrt(k) * .707 - 6}">${k} km</text>`).join('')}
+    <g class="m-you" transform="translate(${C.x} ${C.y}) scale(${s})"><circle r="22"/><circle r="8"/></g>
+    ${pins}`;
+  $('mapTag').innerHTML = `${CITIES[state.city].short} <span>· not to scale</span>`;
+  $('zoomIn').disabled = z >= 2; $('zoomOut').disabled = z <= 1;
+
+  $('mlist').innerHTML = rows.map(l => `<li class="mrow${state.picked === l.id ? ' on' : ''}" data-pick="${l.id}">
+      <div class="tile">${art(l)}</div>
+      <div><b>${l.brand} ${l.model}</b><small>${COMPANIES[l.co].name} · ★ ${COMPANIES[l.co].rating.toFixed(1)} · ${l.km} km</small></div>
+      <div class="mprice">${money(l.price)}<small> /day</small></div></li>`).join('');
+
+  const l = byId[state.picked];
+  $('mapCard').hidden = !l;
+  if (l) {
+    const co = COMPANIES[l.co], on = state.compare.includes(l.id);
+    $('mapCard').innerHTML = `<div class="tile">${art(l)}</div>
+      <div><span class="row-kind label">${l.kind} · ${l.area}</span><h3>${l.brand} ${l.model}</h3>
+        <div class="row-co"><span class="co"><b>${co.name}</b><span class="rating">${co.rating.toFixed(1)}<small>(${co.reviews})</small></span></span></div></div>
+      <div class="mc-side"><div><div class="price"><sup>A$</sup>${l.price}<small>/ day</small></div><p class="total"><b>${money(l.price * days())}</b> est. · ${days()} days</p></div>
+        <div class="row-actions" style="padding:0">${cmpHTML(l, on, state.compare.length >= 3 && !on)}<a class="btn dark" href="${viewHref(l)}" data-view-id="${l.id}">View ${ARROW}</a></div></div>`;
+  }
+  if (animate && motion) gsap.from(svg.querySelectorAll('.pin-in'), { scale: 0, transformOrigin: '50% 100%', duration: .5, ease: 'back.out(2.2)', stagger: .05, delay: .15 });
+}
+
+function renderEmpty() {
+  const n = cityList().length;
+  $('emptyText').textContent = `${n} vehicles are listed near ${CITIES[state.city].short} for ${fmtDate(state.from, { day: 'numeric', month: 'short' })} – ${fmtDate(state.to, { day: 'numeric', month: 'short' })}, but none of them match every filter you picked. Dropping one usually helps.`;
+  // Try undoing each filter on a copy and count what comes back.
+  const tryUndo = undo => { const saved = f; f = { ...f, brands: new Set(f.brands), areas: new Set(f.areas), price: [...f.price] }; undo(); const k = results().length; f = saved; return k; };
+  const opts = activeTags().map((t, i) => ({ ...t, i, gain: tryUndo(t.undo) })).filter(t => t.gain).sort((a, b) => b.gain - a.gain);
+  $('loosen').innerHTML = opts.map(t => `<li><button type="button" data-untag="${t.i}">Remove “${t.label}” <span>+${t.gain} vehicle${t.gain > 1 ? 's' : ''} →</span></button></li>`).join('')
+    + `<li><button type="button" data-clear>Clear all filters <span>+${n} vehicles →</span></button></li>`;
+}
+
+function renderTray() {
+  const ids = state.compare, show = ids.length >= 2, tray = $('tray');
+  $('trayCount').textContent = `${ids.length} of 3 picked`;
+  $('slots').innerHTML = ids.map(id => { const l = byId[id];
+    return `<li class="slot"><div>${art(l)}</div><div><b>${l.brand} ${l.model}</b><small>${COMPANIES[l.co].name} · ${money(l.price)}/day</small></div><button type="button" data-uncmp="${id}" aria-label="Remove ${l.brand} ${l.model} from compare">${CROSS}</button></li>`; }).join('')
+    + (ids.length < 3 ? '<li class="slot open">+ Add a third</li>' : '');
+  $('trayGo').href = `#compare?ids=${ids.join(',')}&from=${state.from}&to=${state.to}`;
+  $('trayGo').firstChild.textContent = `Compare ${ids.length} `;
+  const was = tray.classList.contains('show');
+  if (show === was) return;
+  if (!motion) { tray.classList.toggle('show', show); return; }
+  if (show) { tray.classList.add('show'); gsap.fromTo(tray, { y: 140 }, { y: 0, duration: .6, ease: 'power3.out', clearProps: 'transform' }); }
+  else gsap.to(tray, { y: 140, duration: .4, ease: 'power2.in', onComplete: () => { tray.classList.remove('show'); gsap.set(tray, { clearProps: 'transform' }); } });
+}
+
+function render({ animate = false, rowsIn = animate } = {}) {
+  const rows = results(), empty = !rows.length;
+  const shown = empty ? 'empty' : state.view === 'map' ? 'map' : 'list';
+  root.dataset.view = shown;
+  if (state.picked && !rows.some(l => l.id === state.picked)) state.picked = null;
+  if (shown === 'map' && !state.picked) state.picked = rows[0].id;
+
+  const prevCount = +($('count')?.textContent || 0);
+  renderHead(rows.length, false);
+  renderFilters();
+  renderTags(animate);
+  $('resultsLabel').textContent = `(03) Results · ${String(rows.length).padStart(2, '0')}`;
+  $('sheetDone').textContent = empty ? 'No matches yet' : `Show ${rows.length} vehicle${rows.length > 1 ? 's' : ''}`;
+  document.querySelectorAll('.views button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.view === (state.view === 'map' ? 'map' : 'list'))));
+  document.querySelectorAll('.views button').forEach(b => { b.disabled = empty; });
+  $('listView').hidden = shown !== 'list';
+  $('mapView').hidden = shown !== 'map';
+  $('emptyView').hidden = shown !== 'empty';
+  if (shown === 'list') renderList(rows);
+  if (shown === 'map') renderMap(rows, rowsIn);
+  if (shown === 'empty') renderEmpty();
+  renderTray();
+
+  // URL: view and city only, like the login page.
+  const url = new URL(location.href);
+  url.searchParams.delete('view'); url.searchParams.delete('city');
+  if (state.view === 'map') url.searchParams.set('view', 'map');
+  if (empty && state.view === 'empty') url.searchParams.set('view', 'empty');
+  if (state.city === 'hcm') url.searchParams.set('city', 'hcm');
+  history.replaceState(null, '', url);
+  document.querySelectorAll('[data-proto]').forEach(a => a.setAttribute('aria-current', String(
+    a.dataset.proto === 'hcm' ? state.city === 'hcm' : state.city === 'mel' && a.dataset.proto === (empty ? 'empty' : state.view))));
+
+  if (motion && animate) {
+    if (rows.length && prevCount !== rows.length && $('count')) {
+      const o = { n: prevCount }; gsap.to(o, { n: rows.length, duration: .5, ease: 'power2.out', onUpdate: () => { $('count').textContent = Math.round(o.n); } });
+    }
+    if (rowsIn) {
+      if (shown === 'list') gsap.from('#list .row', { y: 18, opacity: 0, duration: .5, stagger: .04, ease: 'power2.out' });
+      if (shown === 'empty') gsap.from('#emptyView .ghost-art, #emptyView h2, #emptyView p, .loosen li', { y: 16, opacity: 0, duration: .5, stagger: .05, ease: 'power2.out' });
+      if (shown === 'map') gsap.from('#mlist .mrow', { x: -12, opacity: 0, duration: .4, stagger: .03, ease: 'power2.out' });
+    }
+  }
+}
+
+/* ── Events ────────────────────────────────────────── */
+const update = () => { if (state.view === 'empty') state.view = 'list'; render({ animate: true }); };
+
+document.querySelectorAll('.seg[data-key]').forEach(seg => seg.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const key = seg.dataset.key, v = b.dataset.v;
+  f[key] = ['km', 'seats'].includes(key) ? +v : v;
+  if (key === 'type') { f.seats = 0; f.cc = 'any'; }
+  update();
+}));
+$('filters').addEventListener('change', e => {
+  const t = e.target;
+  if (t.dataset.set) { t.checked ? f[t.dataset.set].add(t.value) : f[t.dataset.set].delete(t.value); update(); }
+  if (t.dataset.rating) { f.rating = +t.dataset.rating; update(); }
+});
+// Price: the two thumbs can't cross. The list updates once the thumb is let go.
+for (const [id, i] of [['pmin', 0], ['pmax', 1]]) {
+  $(id).addEventListener('input', e => {
+    const v = +e.target.value, other = f.price[1 - i], gap = CITIES[state.city].step;
+    f.price[i] = i ? Math.max(v, other + gap) : Math.min(v, other - gap);
+    renderFilters();
+  });
+  $(id).addEventListener('change', update);
+}
+document.addEventListener('click', e => {
+  const untag = e.target.closest('[data-untag]'), clear = e.target.closest('[data-clear]');
+  if (untag) { activeTags()[+untag.dataset.untag].undo(); update(); }
+  if (clear) { f = fresh(); update(); }
+  const uncmp = e.target.closest('[data-uncmp]');
+  if (uncmp) { state.compare = state.compare.filter(id => id !== uncmp.dataset.uncmp); render(); }
+  const view = e.target.closest('[data-view-id]');
+  if (view) { e.preventDefault(); const l = byId[view.dataset.viewId];
+    toast(`Prototype: opens the ${l.brand} ${l.model} page with ${fmtDate(state.from, { day: 'numeric', month: 'short' })} – ${fmtDate(state.to, { day: 'numeric', month: 'short' })} filled in`); }
+  const soon = e.target.closest('[data-soon]');
+  if (soon) { e.preventDefault(); toast(`Prototype: the ${soon.dataset.soon} page comes later`); }
+  const pick = e.target.closest('[data-pick], [data-pin]');
+  if (pick) { state.picked = pick.dataset.pick || pick.dataset.pin; render();
+    if (motion) gsap.from('#mapCard', { y: 14, opacity: 0, duration: .35, ease: 'power2.out' }); }
+});
+document.addEventListener('change', e => {
+  const t = e.target.closest('[data-cmp]'); if (!t) return;
+  const id = t.dataset.cmp;
+  state.compare = t.checked ? [...state.compare, id].slice(0, 3) : state.compare.filter(x => x !== id);
+  render();
+});
+$('trayClear').addEventListener('click', () => { state.compare = []; render(); });
+$('trayGo').addEventListener('click', e => { e.preventDefault(); toast('Prototype: this opens the compare page (vehicles and companies side by side)'); });
+$('sort').addEventListener('change', e => { state.sort = e.target.value; render({ animate: true }); });
+document.querySelectorAll('.views button').forEach(b => b.addEventListener('click', () => {
+  if (state.view === b.dataset.view) return;
+  state.view = b.dataset.view; render({ animate: true });
+}));
+$('zoomIn').addEventListener('click', () => { state.zoom = Math.min(2, state.zoom + .5); render(); });
+$('zoomOut').addEventListener('click', () => { state.zoom = Math.max(1, state.zoom - .5); render(); });
+$('mapSvg').addEventListener('keydown', e => { const p = e.target.closest('[data-pin]'); if (p && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); p.dispatchEvent(new MouseEvent('click', { bubbles: true })); } });
+$('mapSvg').addEventListener('mouseover', e => { const p = e.target.closest('[data-pin]'); document.querySelectorAll('.mrow').forEach(r => r.classList.toggle('on', r.dataset.pick === (p?.dataset.pin || state.picked))); });
+$('mlist').addEventListener('mouseover', e => { const r = e.target.closest('[data-pick]'); document.querySelectorAll('.pin').forEach(p => p.classList.toggle('on', p.dataset.pin === (r?.dataset.pick || state.picked))); });
+
+/* Search bar: the place picks the city; the dates feed every total and the links to the vehicle page. */
+const setDates = () => {
+  $('from').value = state.from; $('to').value = state.to;
+  $('to').min = state.from;
+  $('fromText').textContent = fmtDate(state.from);
+  $('toText').textContent = fmtDate(state.to);
+};
+$('where').value = CITIES[state.city].place;
+setDates();
+for (const id of ['from', 'to']) {
+  $(id).addEventListener('click', e => { try { e.target.showPicker(); } catch {} });
+  $(id).addEventListener('change', e => {
+    if (!e.target.value) return;
+    state[id] = e.target.value;
+    if (state.to <= state.from) { const d = new Date(state.from + 'T00:00'); d.setDate(d.getDate() + 1); state.to = d.toLocaleDateString('en-CA'); }
+    setDates(); render();
+  });
+}
+$('searchbar').addEventListener('submit', e => {
+  e.preventDefault();
+  const q = $('where').value.toLowerCase(), city = /saigon|ho chi minh|hcm|district|vietnam/.test(q) ? 'hcm' : 'mel';
+  if (city !== state.city) { state.city = city; state.compare = []; state.picked = null; f = fresh(); }
+  $('where').value = CITIES[state.city].place;
+  if (state.view === 'empty') state.view = 'list';
+  render({ animate: true });
+  const words = renderHead(results().length, true);
+  if (motion) gsap.from(words, { yPercent: 60, opacity: 0, duration: .6, stagger: .03, ease: 'power3.out' });
+});
+
+/* Filters bottom sheet (under 960px). ?filters=open opens it on load, for screenshots. */
+const sheet = $('filters'), scrim = $('scrim'), mq = matchMedia('(max-width: 960px)');
+function setSheet(open) {
+  if (open === sheet.classList.contains('open')) return;
+  $('filtersBtn').setAttribute('aria-expanded', String(open));
+  scrim.classList.toggle('show', open);
+  document.body.style.overflow = open ? 'hidden' : '';
+  if (!motion) { sheet.classList.toggle('open', open); return; }
+  if (open) {
+    sheet.classList.add('open');
+    gsap.fromTo(sheet, { yPercent: 100 }, { yPercent: 0, duration: .55, ease: 'power3.out', clearProps: 'transform' });
+    gsap.from(sheet.querySelectorAll('.fgroup'), { y: 24, opacity: 0, duration: .5, stagger: .04, delay: .12, ease: 'power2.out' });
+  } else {
+    gsap.to(sheet, { yPercent: 100, duration: .4, ease: 'power2.in', onComplete: () => { sheet.classList.remove('open'); gsap.set(sheet, { clearProps: 'transform' }); } });
+  }
+}
+$('filtersBtn').addEventListener('click', () => setSheet(true));
+for (const el of [$('sheetClose'), $('sheetDone'), scrim]) el.addEventListener('click', () => setSheet(false));
+document.addEventListener('keydown', e => { if (e.key === 'Escape') setSheet(false); });
+mq.addEventListener('change', () => { if (!mq.matches) { sheet.classList.remove('open'); scrim.classList.remove('show'); document.body.style.overflow = ''; } });
+
+const toast = (() => { const el = $('toast'); let t;
+  return msg => { el.textContent = msg; el.classList.add('show'); clearTimeout(t); t = setTimeout(() => el.classList.remove('show'), 3400); }; })();
+
+// Pre-ticked compare items for screenshots: ?compare=mel-01,mel-03
+state.compare = (params.get('compare') || '').split(',').filter(id => byId[id] && byId[id].city === state.city).slice(0, 3);
+render();
+
+/* Entrance: rules draw across, the headline rises word by word, filters and rows settle in. */
+if (motion) {
+  const rule = el => [el, { '--rule': 0 }, { '--rule': 1, duration: 1.1, ease: 'power2.inOut' }];
+  const words = renderHead(results().length, true);
+  const tl = gsap.timeline({ delay: .1, defaults: { ease: 'power3.out' } })
+    .fromTo(...rule(document.querySelector('.meta')))
+    .from('.meta span', { y: 10, opacity: 0, duration: .6, stagger: .08 }, .1)
+    .from('.searchbar', { y: 16, opacity: 0, duration: .7 }, .2)
+    .from(words, { yPercent: 70, opacity: 0, duration: .8, stagger: .035 }, .3)
+    .from('#trip', { opacity: 0, duration: .6 }, .7)
+    .from('.toolbar > *, .tags', { y: 10, opacity: 0, duration: .5, stagger: .05 }, .6);
+  if (!mq.matches) tl.from('.filters-head, .fgroup', { y: 18, opacity: 0, duration: .6, stagger: .05 }, .55);
+  const rows = { list: '#list .row', map: '#mlist .mrow', empty: '#emptyView .ghost-art, #emptyView h2, #emptyView p, .loosen li' }[root.dataset.view];
+  tl.from(rows, { y: 22, opacity: 0, duration: .7, stagger: .06 }, .7);
+  if (root.dataset.view === 'map') tl.from('#mapSvg .pin-in', { scale: 0, transformOrigin: '50% 100%', duration: .5, ease: 'back.out(2.2)', stagger: .05 }, .9)
+                                     .from('#mapCard', { y: 16, opacity: 0, duration: .5 }, 1.2);
+  if (state.compare.length >= 2) tl.fromTo('#tray', { y: 140 }, { y: 0, duration: .6, clearProps: 'transform' }, 1.2);
+}
+if (params.get('filters') === 'open' && mq.matches) setTimeout(() => setSheet(true), motion ? 900 : 0);
+</script>
+</body>
+</html>

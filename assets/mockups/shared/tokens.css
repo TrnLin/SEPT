@@ -1,0 +1,35 @@
+/* RentXe design tokens, shared by every page (landing, login, ...).
+   Orange, black and white only: neutral greys, no blue tints, solid fills, no gradients.
+   Each page embeds a copy in its tokens style block: after editing, run sync-tokens.py.
+   Page-only variables stay in the page's own :root. */
+:root {
+  /* Colour */
+  --brand: #FF6A3D;               /* orange: buttons, accents, the logo */
+  --brand-dark: #E2532A;          /* hover, small orange text on white */
+  --brand-tint: #FFF1EC;          /* selected tab, soft orange fill */
+  --ink: #0E0E0E;                 /* black text and black bands */
+  --ink-deep: #0A0A0A;            /* page background behind dark sections */
+  --paper: #FFFFFF;
+  --muted: #6F6F6F;               /* secondary text on white */
+  --line: #E6E6E6;                /* hairline rules on white */
+  --line-dark: rgb(255 255 255 / .16);   /* hairline rules on black */
+  --fill: #F3F3F3;                /* input and hover fill on white */
+  --danger: #D4380D;              /* form errors: a deep orange-red, so it stays in the palette */
+
+  /* Type */
+  --sans: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --label: 500 12.5px/1.2 var(--mono);   /* "(01) About RentXe" style labels; add uppercase + .04em tracking */
+
+  /* Shape and space */
+  --radius-pill: 999px;
+  --radius-field: 12px;
+  --radius-card: 14px;
+  --gutter: clamp(20px, 4vw, 56px);      /* page side padding */
+  --content-max: 1320px;
+
+  /* Motion */
+  --ease-out: cubic-bezier(.2, .8, .2, 1);
+
+  font-family: var(--sans);
+}

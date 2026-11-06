@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Logo concepts — RentXe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!-- Shared design tokens: a copy of ../shared/tokens.css, kept in sync by ../shared/sync-tokens.py.
+     Edit tokens.css and run the script, not this block. -->
+<style id="tokens">
+/* RentXe design tokens, shared by every page (landing, login, ...).
+   Orange, black and white only: neutral greys, no blue tints, solid fills, no gradients.
+   Each page embeds a copy in its tokens style block: after editing, run sync-tokens.py.
+   Page-only variables stay in the page's own :root. */
+:root {
+  /* Colour */
+  --brand: #FF6A3D;               /* orange: buttons, accents, the logo */
+  --brand-dark: #E2532A;          /* hover, small orange text on white */
+  --brand-tint: #FFF1EC;          /* selected tab, soft orange fill */
+  --ink: #0E0E0E;                 /* black text and black bands */
+  --ink-deep: #0A0A0A;            /* page background behind dark sections */
+  --paper: #FFFFFF;
+  --muted: #6F6F6F;               /* secondary text on white */
+  --line: #E6E6E6;                /* hairline rules on white */
+  --line-dark: rgb(255 255 255 / .16);   /* hairline rules on black */
+  --fill: #F3F3F3;                /* input and hover fill on white */
+  --danger: #D4380D;              /* form errors: a deep orange-red, so it stays in the palette */
+
+  /* Type */
+  --sans: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --label: 500 12.5px/1.2 var(--mono);   /* "(01) About RentXe" style labels; add uppercase + .04em tracking */
+
+  /* Shape and space */
+  --radius-pill: 999px;
+  --radius-field: 12px;
+  --radius-card: 14px;
+  --gutter: clamp(20px, 4vw, 56px);      /* page side padding */
+  --content-max: 1320px;
+
+  /* Motion */
+  --ease-out: cubic-bezier(.2, .8, .2, 1);
+
+  font-family: var(--sans);
+}
+</style>
+<style>
+  /* Each mark is a <symbol> drawn with three colours that every tile sets:
+     --mk-ink (black parts), --mk-accent (orange parts), --mk-bg (cut-outs = the tile colour). */
+  :root { --mk-ink: var(--ink); --mk-accent: var(--brand); --mk-bg: var(--paper); }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--paper); color: var(--ink); -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: var(--content-max); margin: 0 auto; padding: 56px var(--gutter) 96px; }
+
+  .label { font: var(--label); text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  header.top { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 24px;
+               padding-bottom: 28px; border-bottom: 1px solid var(--ink); }
+  header.top h1 { font-size: clamp(44px, 6.4vw, 88px); line-height: .95; letter-spacing: -.035em; font-weight: 800; margin-top: 14px; }
+  header.top h1 em { font-style: normal; color: var(--brand); }
+  header.top p { max-width: 360px; color: var(--muted); font-size: 15px; line-height: 1.5; }
+
+  .concept { display: grid; grid-template-columns: 300px 1fr; gap: 40px; padding: 44px 0; border-bottom: 1px solid var(--line); }
+  .concept h2 { font-size: 34px; letter-spacing: -.025em; font-weight: 800; margin: 10px 0 12px; }
+  .concept p { color: var(--muted); font-size: 15px; line-height: 1.55; }
+  .concept .why { margin-top: 14px; font: 400 12.5px/1.6 var(--mono); color: var(--ink); }
+  .concept .why b { color: var(--brand-dark); font-weight: 500; }
+
+  .tiles { display: grid; grid-template-columns: repeat(3, 1fr) 1.6fr; grid-template-rows: 190px 120px; gap: 10px; }
+  .tile { display: grid; place-items: center; border-radius: var(--radius-card); position: relative; }
+  .tile .cap { position: absolute; left: 12px; bottom: 10px; font: var(--label); font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .tile.light { background: var(--paper); border: 1px solid var(--line); }
+  .tile.dark  { background: var(--ink); --mk-ink: var(--paper); --mk-bg: var(--ink); }
+  .tile.dark .cap { color: #9a9a9a; }
+  .tile.grey  { background: var(--fill); --mk-bg: var(--fill); }
+  .tile svg.big { width: 96px; height: 96px; }
+
+  /* App icon: orange square, mark in black and white */
+  .appicon { width: 92px; height: 92px; border-radius: 22px; background: var(--brand); display: grid; place-items: center;
+             --mk-ink: var(--ink); --mk-accent: var(--paper); --mk-bg: var(--brand); }
+  .appicon svg { width: 60px; height: 60px; }
+
+  .lockup { grid-column: 4; grid-row: 1; }
+  .lockup .lk { display: flex; align-items: center; gap: 12px; }
+  .lockup .lk svg { width: 46px; height: 46px; }
+  .lockup .lk span { font-size: 38px; font-weight: 800; letter-spacing: -.035em; }
+  .lockup .lk span i { font-style: normal; color: var(--brand); }
+
+  .nav { grid-column: 1 / 4; grid-row: 2; justify-content: stretch; padding: 0 22px; }
+  .nav .bar { width: 100%; display: flex; align-items: center; gap: 28px; }
+  .nav .lk { display: flex; align-items: center; gap: 8px; margin-right: auto; }
+  .nav .lk svg { width: 28px; height: 28px; }
+  .nav .lk span { font-size: 21px; font-weight: 800; letter-spacing: -.03em; }
+  .nav a { font-size: 14px; font-weight: 600; color: inherit; text-decoration: none; }
+  .nav .btn { background: var(--brand); color: #fff; padding: 9px 16px; border-radius: var(--radius-pill); }
+
+  .sizes { grid-column: 4; grid-row: 2; gap: 0; display: flex; align-items: flex-end; justify-content: center; gap: 26px; padding-bottom: 12px; }
+  .sizes svg { display: block; }
+  .sizes .tab { display: flex; align-items: center; gap: 7px; background: var(--paper); border: 1px solid var(--line); border-radius: 8px 8px 0 0; padding: 7px 12px; font-size: 12px; font-weight: 600; }
+
+  .current { display: flex; gap: 16px; align-items: center; }
+  .current svg { width: 40px; height: 40px; }
+
+  footer { margin-top: 36px; display: flex; justify-content: space-between; gap: 24px; }
+
+  @media (max-width: 1100px) {
+    .concept { grid-template-columns: 1fr; gap: 24px; }
+  }
+  @media (max-width: 720px) {
+    header.top { grid-template-columns: 1fr; }
+    .tiles { grid-template-columns: 1fr 1fr; grid-template-rows: none; grid-auto-rows: 160px; }
+    .lockup, .nav, .sizes { grid-column: 1 / -1; grid-row: auto; }
+    .nav .bar a:not(.btn) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Mark library. viewBox 48×48. Colours come from the --mk-* variables of the tile the mark sits on. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- 01 Overpass: a black road with a dashed centre line, and an orange road crossing over it -->
+    <symbol id="m-overpass" viewBox="0 0 48 48">
+      <path d="M6 6 42 42" style="stroke:var(--mk-ink)" stroke-width="11"/>
+      <path d="M6 6 42 42" style="stroke:var(--mk-bg)" stroke-width="1.5" stroke-dasharray="2.6 2.6"/>
+      <path d="M42 6 6 42" style="stroke:var(--mk-bg)" stroke-width="15"/>
+      <path d="M42 6 6 42" style="stroke:var(--mk-accent)" stroke-width="11"/>
+    </symbol>
+
+    <!-- 02 Hairpin R: the letter R drawn as one road that climbs, loops the bowl and doubles back in a switchback -->
+    <symbol id="m-hairpin" viewBox="0 0 48 48">
+      <path d="M14 44V9h12.5a9.5 9.5 0 0 1 0 19H21l12.5 16" fill="none" style="stroke:var(--mk-ink)" stroke-width="7.5" stroke-linejoin="round"/>
+      <path d="M14 44V9h12.5a9.5 9.5 0 0 1 0 19H21l12.5 16" fill="none" style="stroke:var(--mk-bg)" stroke-width="1.3" stroke-dasharray="2.4 2.4" stroke-linejoin="round"/>
+      <circle cx="35.5" cy="40" r="5" style="fill:var(--mk-accent)"/>
+    </symbol>
+
+    <!-- 03 Key tag: the fob you hand over with the keys, an X cut out of it -->
+    <symbol id="m-keytag" viewBox="0 0 48 48">
+      <g transform="rotate(-14 24 25)">
+        <path d="M18.5 3h11L38 11.5V40a5 5 0 0 1-5 5H15a5 5 0 0 1-5-5V11.5z" style="fill:var(--mk-accent)"/>
+        <circle cx="24" cy="11" r="3.2" style="fill:var(--mk-bg)"/>
+        <path d="M17.5 22 30.5 37M30.5 22 17.5 37" style="stroke:var(--mk-bg)" stroke-width="4.4" stroke-linecap="round"/>
+      </g>
+    </symbol>
+
+    <!-- 04 Handover: two chevrons meet in the middle and make an X; owner (black) and renter (orange) -->
+    <symbol id="m-handover" viewBox="0 0 48 48">
+      <path d="M5.5 10.5 19 24 5.5 37.5" fill="none" style="stroke:var(--mk-ink)" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M42.5 10.5 29 24l13.5 13.5" fill="none" style="stroke:var(--mk-accent)" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+
+    <!-- 05 Plate: a number plate reading XE, Vietnamese for "vehicle" -->
+    <symbol id="m-plate" viewBox="0 0 48 48">
+      <rect x="2.5" y="10.5" width="43" height="27" rx="5" style="fill:var(--mk-ink)"/>
+      <rect x="5" y="13" width="38" height="22" rx="3" fill="none" style="stroke:var(--mk-bg)" stroke-width="1.1"/>
+      <path d="M10.5 18 20.5 30M20.5 18 10.5 30" style="stroke:var(--mk-accent)" stroke-width="3.8" stroke-linecap="square"/>
+      <path d="M37.5 18H28v12h9.5M28 24h8" fill="none" style="stroke:var(--mk-bg)" stroke-width="3.8"/>
+    </symbol>
+
+    <!-- 06–09 Car key with an X (second round, at the user's request) -->
+    <symbol id="m-crossed" viewBox="0 0 48 48">
+      <g transform="translate(24 24) rotate(45)">
+        <path d="M-22 0a6.3 6.3 0 1 0 12.6 0a6.3 6.3 0 1 0-12.6 0zM-10 -2.1H20l2 2.1-2 2.1H-10zM12 1.5H19.5v5h-2.3V4.4h-2.2v1.8H12z" style="fill:var(--mk-ink)"/>
+        <circle cx="-15.7" cy="0" r="2.4" style="fill:var(--mk-bg)"/>
+      </g>
+      <g transform="translate(24 24) rotate(135)">
+        <path d="M-22 0a6.3 6.3 0 1 0 12.6 0a6.3 6.3 0 1 0-12.6 0zM-10 -2.1H20l2 2.1-2 2.1H-10zM12 -1.5H19.5v-5h-2.3v2.1h-2.2v-1.8H12z" style="fill:var(--mk-accent);stroke:var(--mk-bg);paint-order:stroke" stroke-width="3.2" stroke-linejoin="round"/>
+        <circle cx="-15.7" cy="0" r="2.4" style="fill:var(--mk-bg)"/>
+      </g>
+    </symbol>
+    <symbol id="m-flipkey" viewBox="0 0 48 48">
+      <g transform="translate(24 24) rotate(-45)">
+        <path d="M-2 -3H19.5l3 3-3 3H-2z" style="fill:var(--mk-ink)"/>
+        <path d="M3 3H18v2.6h-2.4V4.4h-2.6v2.4h-2.6V4.4H8v1.8H3z" style="fill:var(--mk-ink)"/>
+        <rect x="-22" y="-9" width="22" height="18" rx="6.5" style="fill:var(--mk-accent)"/>
+        <path d="M-15.8 0h9.6M-11 -4.8v9.6" style="stroke:var(--mk-bg)" stroke-width="3" stroke-linecap="round"/>
+      </g>
+    </symbol>
+    <symbol id="m-xbow" viewBox="0 0 48 48">
+      <path d="M17 21.2H40.5l3.5 2.8-3.5 2.8H17z" style="fill:var(--mk-ink)"/>
+      <path d="M30 26h11v5.5h-3v-2.5h-2.6v3.6h-2.8v-2.4H30z" style="fill:var(--mk-ink)"/>
+      <path d="M5 16 19 32M19 16 5 32" style="stroke:var(--mk-bg)" stroke-width="10" stroke-linecap="round"/>
+      <path d="M5 16 19 32M19 16 5 32" style="stroke:var(--mk-accent)" stroke-width="6" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="m-fob" viewBox="0 0 48 48">
+      <circle cx="24" cy="7.5" r="5" fill="none" style="stroke:var(--mk-ink)" stroke-width="3"/>
+      <rect x="12.5" y="10.5" width="23" height="35" rx="10" style="fill:var(--mk-accent)"/>
+      <circle cx="24" cy="15.5" r="1.6" style="fill:var(--mk-bg)"/>
+      <path d="M19 23.5l10 11M29 23.5l-10 11" style="stroke:var(--mk-bg)" stroke-width="3.6" stroke-linecap="round"/>
+    </symbol>
+
+    <!-- Today's mark, for comparison -->
+    <symbol id="m-current" viewBox="0 0 34 34">
+      <path d="M17 1 31 9v16L17 33 3 25V9z" fill="#FF6A3D"/>
+      <path d="M17 1 31 9 17 17z" fill="#FF8D66"/>
+      <path d="M3 9 17 17 3 25z" fill="#FF7B52"/>
+      <path d="M3 25 17 17 17 33z" fill="#E2532A"/>
+      <path d="M11.5 11.5 22.5 22.5M22.5 11.5 11.5 22.5" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <span class="label">(00) Brand / logo exploration</span>
+      <h1>Nine marks<br>for <em>RentXe</em>.</h1>
+    </div>
+    <div>
+      <p>Flat orange, black and white. Each mark is shown on white, black and as an app icon, in the site header, and down to 16&nbsp;px.</p>
+      <div class="current" style="margin-top:18px">
+        <svg><use href="#m-flipkey"/></svg>
+        <span class="label">Chosen: (07) Flip key — now on every page</span>
+      </div>
+    </div>
+  </header>
+
+  <main id="concepts"></main>
+
+  <footer>
+    <span class="label">RentXe — logo concepts, v1</span>
+    <span class="label">Chosen: (07) Flip key</span>
+  </footer>
+</div>
+
+<template id="concept-tpl">
+  <section class="concept">
+    <div>
+      <span class="label" data-num></span>
+      <h2 data-name></h2>
+      <p data-desc></p>
+      <p class="why" data-why></p>
+    </div>
+    <div class="tiles">
+      <div class="tile light"><svg class="big"><use/></svg><span class="cap">On white</span></div>
+      <div class="tile dark"><svg class="big"><use/></svg><span class="cap">On black</span></div>
+      <div class="tile grey"><div class="appicon"><svg><use/></svg></div><span class="cap">App icon</span></div>
+      <div class="tile light lockup"><div class="lk"><svg><use/></svg><span>Rent<i>Xe</i></span></div><span class="cap">Lockup</span></div>
+      <div class="tile light nav">
+        <div class="bar">
+          <div class="lk"><svg><use/></svg><span>RentXe</span></div>
+          <a href="#">Find a ride</a><a href="#">List your fleet</a><a class="btn" href="#">Log in</a>
+        </div>
+      </div>
+      <div class="tile grey sizes">
+        <svg width="16" height="16"><use/></svg>
+        <svg width="24" height="24"><use/></svg>
+        <svg width="32" height="32"><use/></svg>
+        <div class="tab"><svg width="16" height="16"><use/></svg>RentXe</div>
+      </div>
+    </div>
+  </section>
+</template>
+
+<script>
+  const concepts = [
+    { id: 'overpass', name: 'Overpass',
+      desc: 'An X built from two roads: a black street with a dashed centre line, and an orange road crossing over it with a clean gap.',
+      why: '<b>Reads as</b> X, roads, a crossing of paths: renters meet owners.' },
+    { id: 'hairpin', name: 'Hairpin R',
+      desc: 'The R is one continuous road. It climbs the stem, loops the bowl and doubles back in a switchback, ending at an orange stop.',
+      why: '<b>Ties to</b> the mountain-pass hero on the landing page. The dot is the vehicle or the pickup point.' },
+    { id: 'keytag', name: 'Key tag',
+      desc: 'The fob that comes with every rental key, tilted as if just handed over, with an X cut out of it.',
+      why: '<b>Says</b> rental in one shape. Strongest as an app icon; no ink, so it works on any colour.' },
+    { id: 'handover', name: 'Handover',
+      desc: 'Two chevrons point at each other and form an X. Black is the owner, orange is the renter; the gap is the handover.',
+      why: '<b>Simplest</b> of the five: still sharp at 16 px, easy to animate (the halves slide in and meet).' },
+    { id: 'plate', name: 'Plate',
+      desc: 'A number plate that reads XE, the Vietnamese word for vehicle and the end of the name.',
+      why: '<b>Local</b> and a little playful. The plate also works as a frame for badges like “Verified”.' },
+    { id: 'crossed', name: 'Crossed keys',
+      desc: 'Two car keys crossed into an X, one black and one orange: the owner\'s key and the renter\'s key.',
+      why: '<b>Says</b> rental and X at once. Busier than the others, so check it at 16 px.' },
+    { id: 'flipkey', name: 'Flip key',
+      desc: 'A modern flip key at an angle. The orange head carries the X, and the black blade has cut teeth.',
+      why: '<b>Reads as</b> a car key straight away; the head works on its own as a favicon.' },
+    { id: 'xbow', name: 'X-head key',
+      desc: 'A key lying flat whose head is the letter X, so it reads like part of the word.',
+      why: '<b>Best</b> next to the wordmark; wide, so it is weaker as a square app icon.' },
+    { id: 'fob', name: 'Key fob',
+      desc: 'A smart-key remote on a ring, with an X as its one button, like pressing unlock.',
+      why: '<b>Friendly</b> and very clear at small sizes.' },
+  ];
+
+  const tpl = document.getElementById('concept-tpl');
+  const main = document.getElementById('concepts');
+  concepts.forEach((c, i) => {
+    const node = tpl.content.cloneNode(true);
+    node.querySelector('[data-num]').textContent = `(${String(i + 1).padStart(2, '0')}) Concept`;
+    node.querySelector('[data-name]').textContent = c.name;
+    node.querySelector('[data-desc]').textContent = c.desc;
+    node.querySelector('[data-why]').innerHTML = c.why;
+    node.querySelectorAll('use').forEach(u => u.setAttribute('href', `#m-${c.id}`));
+    main.appendChild(node);
+  });
+</script>
+</body>
+</html>

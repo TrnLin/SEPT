@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RentXe Team Project: Overview</title>
+<style>
+:root{
+  color-scheme:light dark;
+  --background:#f8fafc;--foreground:#0f172a;--muted-foreground:#64748b;
+  --card:#ffffff;--border:#e2e8f0;
+  --secondary:#f1f5f9;--secondary-foreground:#0f172a;
+  --primary:#2563eb;--primary-foreground:#ffffff;
+  --warning:#d97706;--warning-surface:#fffbeb;
+  --destructive:#dc2626;--destructive-surface:#fef2f2;
+  --chart-1:#2563eb;--chart-2:#0d9488;--chart-3:#d97706;--chart-4:#9333ea;
+  --radius:10px;
+  --font-sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --background:#0b0b0c;--foreground:#ededed;--muted-foreground:#a1a1aa;
+    --card:#141416;--border:#2a2a2e;
+    --secondary:#232326;--secondary-foreground:#ededed;
+    --primary:#3b82f6;--primary-foreground:#ffffff;
+    --warning:#f59e0b;--warning-surface:#2a1f0a;
+    --destructive:#f87171;--destructive-surface:#3a1515;
+    --chart-1:#3b82f6;--chart-2:#2dd4bf;--chart-3:#fbbf24;--chart-4:#c084fc;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--background);color:var(--foreground);font-family:var(--font-sans);font-size:14px;line-height:1.45}
+.page{max-width:760px;margin:0 auto;padding:32px 16px 48px}
+h1{font-size:24px;margin:0 0 4px}
+.byline{color:var(--muted-foreground);font-size:13px;margin:0 0 28px}
+.part{font-size:18px;margin:40px 0 18px;padding-top:20px;border-top:2px solid var(--border)}
+.part:first-of-type{margin-top:0}
+code{font-size:.95em}
+
+.wrap{display:flex;flex-direction:column;gap:30px;padding:4px 0 12px}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground);margin:0 0 10px}
+.muted{color:var(--muted-foreground)}
+.lede{font-size:17px;line-height:1.5;margin:0 0 14px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.tile{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px}
+.tile .n{font-size:28px;font-weight:650;line-height:1.1;font-variant-numeric:tabular-nums}
+.tile .l{font-size:12px;color:var(--muted-foreground);margin-top:4px}
+
+.grid12{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:3px}
+.wk{font-size:12px;font-weight:600;text-align:center;padding:5px 0;border-radius:6px;color:var(--muted-foreground)}
+.wk span{display:block;font-weight:400;font-size:11px}
+.wk.today{background:var(--primary);color:var(--primary-foreground)}
+.ph{margin-top:6px;background:color-mix(in oklab,var(--c) 16%,transparent);border-top:3px solid var(--c);border-radius:4px;padding:8px 8px 10px;font-size:12px;display:flex;flex-direction:column;gap:2px;min-height:100px}
+.ph b{font-size:13px}
+.ph em{font-style:normal;font-weight:600;margin-top:auto}
+.events{margin-top:12px;display:flex;flex-direction:column;gap:5px;font-size:13px}
+.tag{display:inline-block;min-width:32px;text-align:center;font-size:11px;font-weight:600;border:1px solid var(--border);border-radius:999px;padding:0 6px;margin-right:8px}
+.tag.now{background:var(--primary);color:var(--primary-foreground);border-color:var(--primary)}
+.mwrap{margin-top:18px}
+.mtitle{font-size:13px;font-weight:600;margin-bottom:6px}
+.mbar,.mlab{display:flex;gap:2px}
+.mbar>div{height:12px;border-radius:4px;background:var(--c)}
+.mlab{font-size:12px;margin-top:5px}
+.mlab>div{white-space:nowrap}
+.mlab b{font-variant-numeric:tabular-nums}
+
+.mx{width:100%;border-collapse:separate;border-spacing:3px;font-size:12.5px;table-layout:fixed;margin:0 -3px}
+.mx th{font-weight:600;text-align:left;padding:4px 8px;vertical-align:top}
+.mx thead th{font-size:12px;color:var(--muted-foreground)}
+.mx tbody th{width:148px;font-size:13px}
+.mx td{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:6px 8px;vertical-align:top}
+.mx td.na{background:transparent;border-color:transparent;color:var(--muted-foreground);text-align:center}
+.num{display:inline-flex;width:18px;height:18px;border-radius:50%;align-items:center;justify-content:center;font-size:11px;background:var(--secondary);color:var(--secondary-foreground);margin-right:6px;flex:none}
+.flowlbl{font-size:13px;font-weight:600;margin:18px 0 8px}
+.flow{display:flex;align-items:stretch;gap:4px}
+.st{flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 6px;font-size:12.5px;font-weight:600;text-align:center;display:flex;flex-direction:column;justify-content:center;gap:2px}
+.st small{font-weight:400;color:var(--muted-foreground);font-size:11px}
+.arr{align-self:center;color:var(--muted-foreground);font-size:13px}
+.note{font-size:12.5px;color:var(--muted-foreground);margin-top:8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--border);background:var(--card);border-radius:999px;padding:3px 10px;font-size:12.5px}
+.extra{margin-top:16px;padding:12px 14px;border:1px dashed var(--border);border-radius:var(--radius)}
+.extra .h{font-size:13px;font-weight:600;margin-bottom:8px}
+.stack{display:grid;grid-template-columns:120px 1fr;gap:8px 12px;align-items:center}
+.stack .k{font-size:12px;color:var(--muted-foreground);font-weight:600}
+.rules{display:grid;grid-template-columns:1fr 1fr;gap:6px 18px;font-size:13px;margin:0;padding:0;list-style:none}
+.rules li{display:flex;gap:8px}
+.rules li::before{content:"✓";color:var(--primary);font-weight:700}
+.traps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.traps li{display:flex;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;font-size:13px}
+.traps .x{flex:none;width:20px;height:20px;border-radius:50%;background:var(--destructive-surface);color:var(--destructive);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.traps .c{display:block;color:var(--muted-foreground);font-size:12.5px;margin-top:1px}
+
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dc{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px}
+.dc h4{margin:0 0 8px;font-size:14px;display:flex;align-items:center;gap:8px}
+.dc h4 .num{width:20px;height:20px;margin-right:0}
+.dc ul{margin:0;padding-left:18px;font-size:13px}
+.dc li{margin:3px 0}
+.srs{display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:12.5px}
+.srs span{background:var(--secondary);color:var(--secondary-foreground);border-radius:6px;padding:3px 8px}
+.foot{font-size:12.5px;color:var(--muted-foreground);margin-top:8px}
+.legend{font-size:12.5px;color:var(--muted-foreground);margin-bottom:6px}
+.warn{color:var(--warning);font-weight:700}
+.cr{display:grid;grid-template-columns:180px 1fr;gap:14px;padding:12px 0;border-top:1px solid var(--border)}
+.cr:last-child{border-bottom:1px solid var(--border)}
+.cr-h b{font-size:14px;display:block}
+.cr-h .pts{font-size:12px;font-weight:600;margin-top:2px}
+.cr-h .from{font-size:12px;color:var(--muted-foreground);margin-top:4px}
+.hd{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px;font-size:13px}
+.hd li{padding-left:20px;position:relative}
+.hd li::before{content:"•";position:absolute;left:6px;color:var(--muted-foreground)}
+.hd li.miss::before{content:"⚠";left:0;color:var(--warning);font-size:12px;top:1px}
+.hd li.miss{font-weight:600}
+.callout{margin-top:12px;padding:12px 14px;border-radius:var(--radius);background:var(--warning-surface);border:1px solid color-mix(in oklab,var(--warning) 45%,transparent);font-size:13px}
+.sub{font-size:13px;font-weight:600;margin:22px 0 8px}
+.scale,.slab{display:flex;gap:2px}
+.scale>div{height:14px;border-radius:4px}
+.slab{margin-top:5px;font-size:12px}
+.slab>div{text-align:left;white-space:nowrap}
+.slab b{display:block;font-size:12px}
+.slab span{color:var(--muted-foreground);font-size:11px;font-variant-numeric:tabular-nums}
+.bars{display:flex;flex-direction:column;gap:6px}
+.br{display:grid;grid-template-columns:34px 1fr 96px;align-items:center;gap:10px;font-size:12.5px}
+.br .g{font-weight:600}
+.track{height:16px}
+.fill{height:100%;border-radius:0 4px 4px 0;background:var(--chart-1)}
+.fill.dim{background:color-mix(in oklab,var(--chart-1) 45%,transparent)}
+.br .v{font-variant-numeric:tabular-nums}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.wkc{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px}
+.wkc.now{border-color:var(--primary)}
+.wkc h5{margin:0;font-size:13px}
+.wkc .d{font-size:12px;color:var(--muted-foreground);margin-bottom:8px}
+.wkc ul{margin:0;padding-left:16px;font-size:12.5px}
+.wkc li{margin:3px 0}
+</style>
+</head>
+<body><div class="page">
+
+<h1>RentXe Team Project: Overview</h1>
+<p class="byline">COSC2101/COSC2732 Software Engineering: Process and Tools · Semester 3 2026 · Written on Wed 4 Nov 2026. Week numbers are worked out from the due dates, assuming no break weeks.</p>
+
+<h2 class="part">Part 1 · The big picture</h2>
+<div class="wrap">
+
+<section>
+  <div class="eyebrow">The 10-second version</div>
+  <p class="lede">Build <b>RentXe</b>, a website where rental companies list cars and motorbikes and customers book them. You work as a <b>5-person Scrum team</b> in <b>Java + Spring Boot</b>. Your tutor plays the client.</p>
+  <div class="tiles">
+    <div class="tile"><div class="n">50</div><div class="l">marks, across 4 hand-ins</div></div>
+    <div class="tile"><div class="n">16</div><div class="l">days until Milestone 1 (Fri 20 Nov), counted from 4 Nov</div></div>
+    <div class="tile"><div class="n">5</div><div class="l">people: Scrum Master, Product Owner, developers</div></div>
+    <div class="tile"><div class="n">3</div><div class="l">user types: customer, rental company, admin</div></div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">The semester at a glance</div>
+  <div class="grid12">
+    <div class="wk">W1<span>26 Oct</span></div>
+    <div class="wk today" title="Written on Wed 4 Nov">W2<span>2 Nov</span></div>
+    <div class="wk">W3<span>9 Nov</span></div>
+    <div class="wk">W4<span>16 Nov</span></div>
+    <div class="wk">W5<span>23 Nov</span></div>
+    <div class="wk">W6<span>30 Nov</span></div>
+    <div class="wk">W7<span>7 Dec</span></div>
+    <div class="wk">W8<span>14 Dec</span></div>
+    <div class="wk">W9<span>21 Dec</span></div>
+    <div class="wk">W10<span>28 Dec</span></div>
+    <div class="wk">W11<span>4 Jan</span></div>
+    <div class="wk">W12<span>11 Jan</span></div>
+  </div>
+  <div class="grid12">
+    <div class="ph" style="--c:var(--chart-1);grid-column:1/5" title="Milestone 1 — due Fri 20 Nov 2026 — 10%"><b>Milestone 1</b><span>Requirements &amp; system design</span><em>Due Fri 20 Nov · 10%</em></div>
+    <div class="ph" style="--c:var(--chart-2);grid-column:5/8" title="Milestone 2 — due Fri 11 Dec 2026 — 15%"><b>Milestone 2</b><span>MVP &amp; main build sprints</span><em>Due Fri 11 Dec · 15%</em></div>
+    <div class="ph" style="--c:var(--chart-3);grid-column:8/12" title="Milestone 3 — due Fri 8 Jan 2027 — 15%"><b>Milestone 3</b><span>Finish the app &amp; deliver</span><em>Due Fri 8 Jan · 15%</em></div>
+    <div class="ph" style="--c:var(--chart-4);grid-column:12/13" title="Final demo — submit Mon 11 Jan 2027, present in tutorial — 10%"><b>Demo</b><span>11 Jan</span><em>10%</em></div>
+  </div>
+  <div class="events">
+    <div><span class="tag now">W2</span>Register your group by the end of week 2. Pick a Scrum Master and Product Owner.</div>
+    <div><span class="tag">W3</span>Your private repo arrives through Classroom 50. Each tutorial becomes a stand-up with the "client".</div>
+  </div>
+  <div class="mwrap">
+    <div class="mtitle">Where the 50 marks are</div>
+    <div class="mbar">
+      <div style="flex:10;--c:var(--chart-1)" title="Milestone 1: 10 marks"></div>
+      <div style="flex:15;--c:var(--chart-2)" title="Milestone 2: 15 marks"></div>
+      <div style="flex:15;--c:var(--chart-3)" title="Milestone 3: 15 marks"></div>
+      <div style="flex:10;--c:var(--chart-4)" title="Final demo: 10 marks"></div>
+    </div>
+    <div class="mlab">
+      <div style="flex:10">M1 <b>10</b></div>
+      <div style="flex:15">M2 <b>15</b></div>
+      <div style="flex:15">M3 <b>15</b></div>
+      <div style="flex:10">Demo <b>10</b></div>
+    </div>
+    <div class="note">M1 is the shortest and smallest. M2 and M3 together are 30 of the 50 marks, and they build on what you plan now.</div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">What you're building: who does what</div>
+  <table class="mx">
+    <thead><tr><th></th><th>Customer</th><th>Rental company</th><th>Admin</th></tr></thead>
+    <tbody>
+      <tr><th><span class="num">1</span>Accounts &amp; profiles</th><td>Register, log in, edit profile</td><td>Register, edit company profile</td><td>Manage user accounts, oversee companies</td></tr>
+      <tr><th><span class="num">2</span>Vehicle listings</th><td class="na">—</td><td>Add, edit, remove cars &amp; bikes: type, brand, model, price, availability</td><td class="na">—</td></tr>
+      <tr><th><span class="num">3</span>Search &amp; compare</th><td>Search; filter by type, price, brand, location; compare companies</td><td class="na">—</td><td class="na">—</td></tr>
+      <tr><th><span class="num">4</span>Bookings</th><td>Pick dates, send request, see status, cancel if allowed</td><td>Approve or reject requests</td><td class="na">—</td></tr>
+      <tr><th><span class="num">5</span>Pickup &amp; return</th><td class="na">—</td><td>Record pickup, return and vehicle condition. The system works out the fee.</td><td class="na">—</td></tr>
+      <tr><th><span class="num">6</span>Reviews</th><td>Rate after a rental; read reviews of vehicles and companies</td><td class="na">—</td><td class="na">—</td></tr>
+    </tbody>
+  </table>
+
+  <div class="flowlbl">One rental, start to finish <span class="muted" style="font-weight:400">(how the six areas connect; one reading of the brief)</span></div>
+  <div class="flow">
+    <div class="st">Search<small>customer</small></div><span class="arr">→</span>
+    <div class="st">Request dates<small>customer</small></div><span class="arr">→</span>
+    <div class="st">Approve or reject<small>company</small></div><span class="arr">→</span>
+    <div class="st">Pickup<small>company records</small></div><span class="arr">→</span>
+    <div class="st">Return<small>condition + fee</small></div><span class="arr">→</span>
+    <div class="st">Review<small>customer</small></div>
+  </div>
+  <div class="note">The customer can cancel "where permitted". Your team writes that rule, and the fee rule, as business rules in the SRS.</div>
+
+  <div class="extra">
+    <div class="h">Optional, for a higher grade: add 1 or 2 custom features. The tutor must approve them first.</div>
+    <div class="chips"><span class="chip">Personalised recommendations</span><span class="chip">AI rental assistant</span><span class="chip">Damage detection from photos</span><span class="chip">Review sentiment analysis</span><span class="chip">Your own idea</span></div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">Required tools</div>
+  <div class="stack">
+    <div class="k">Backend</div><div class="chips"><span class="chip">Java 21+ (same version for all)</span><span class="chip">Spring Boot</span><span class="chip">Maven</span></div>
+    <div class="k">Frontend</div><div class="chips"><span class="chip">HTML / CSS / JS</span><span class="chip">or React</span></div>
+    <div class="k">Database</div><div class="chips"><span class="chip">H2 for dev &amp; test</span><span class="chip">or MySQL throughout</span></div>
+    <div class="k">Test &amp; ship</div><div class="chips"><span class="chip">JUnit 5</span><span class="chip">GitHub Actions CI/CD</span><span class="chip">Docker</span></div>
+    <div class="k">Teamwork</div><div class="chips"><span class="chip">GitHub</span><span class="chip">GitHub Projects (Scrum board)</span><span class="chip">MS Teams</span><span class="chip">Office 365</span><span class="chip">Classroom 50</span></div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">Ground rules for the whole semester</div>
+  <ul class="rules">
+    <li>Scrum: sprints, a Scrum Master, a Product Owner</li>
+    <li>At least 4 stand-ups a week, one in the tutorial</li>
+    <li>Write minutes for meetings</li>
+    <li>Commit often. Never push the whole codebase at once.</li>
+    <li>A working app at the end of every sprint</li>
+    <li>MVC, loosely coupled design, coding standards</li>
+    <li>Refactor throughout, not just at the end</li>
+    <li>Everyone codes, tests, documents and integrates</li>
+    <li>Keep the GitHub Projects board up to date</li>
+    <li>Credit external code and libraries; follow their licences</li>
+  </ul>
+</section>
+
+<section>
+  <div class="eyebrow">Ways to lose marks</div>
+  <ul class="traps">
+    <li><span class="x">✕</span><div><b>Repo not made through Classroom 50</b><span class="c">0 marks, even if the work is good</span></div></li>
+    <li><span class="x">✕</span><div><b>Board not kept up to date</b><span class="c">No progress mark</span></div></li>
+    <li><span class="x">✕</span><div><b>Whole codebase in one big commit</b><span class="c">Marks deducted. Commit small and often.</span></div></li>
+    <li><span class="x">✕</span><div><b>Building something not in the SRS</b><span class="c">Update the SRS first, before the weekly discussion</span></div></li>
+    <li><span class="x">✕</span><div><b>Tasks bigger than 8 hours</b><span class="c">Split them into 1–3 hour tasks</span></div></li>
+    <li><span class="x">✕</span><div><b>Decisions only in chat</b><span class="c">Record every decision in the repo's docs folder</span></div></li>
+  </ul>
+</section>
+
+</div>
+
+<h2 class="part">Part 2 · Milestone 1</h2>
+<div class="wrap">
+
+<section>
+  <div class="eyebrow">Requirements gathering &amp; system design · due Fri 20 Nov 2026</div>
+  <p class="lede">Plan the whole app before writing it: requirements, architecture, and a working Scrum board. You hand in one thing, <b>your repo URL on Canvas</b>. Everything else lives in the repo under <code>docs/Milestone1/</code>.</p>
+</section>
+
+<section>
+  <div class="eyebrow">The four things to deliver</div>
+  <div class="g2">
+    <div class="dc"><h4><span class="num">1</span>Repo &amp; setup</h4>
+      <ul>
+        <li>Repo made <b>through Classroom 50</b> in the RMIT GitHub org</li>
+        <li>Every member has access</li>
+        <li>Separate folders for docs, code, assets</li>
+        <li>README: team name, all members, links</li>
+      </ul></div>
+    <div class="dc"><h4><span class="num">2</span>SRS document</h4>
+      <div class="srs"><span>1 Introduction</span><span>5 UI design</span><span>2 Functional reqs</span><span>6 Assumptions &amp; constraints</span><span>3 Non-functional reqs</span><span>7 Dependencies</span><span>4 System architecture</span><span>8 Glossary</span></div>
+      <div class="foot">Split sections across the team, then review together. It doesn't have to be finished yet.</div></div>
+    <div class="dc"><h4><span class="num">3</span>Architecture diagram <span class="muted" style="font-weight:400;font-size:12px">(SRS §4)</span></h4>
+      <ul>
+        <li>Components, modules and how they talk</li>
+        <li>Database, external systems, APIs</li>
+        <li>Each technology <b>and why you chose it</b> (Canvas: "very important")</li>
+      </ul></div>
+    <div class="dc"><h4><span class="num">4</span>Scrum board on GitHub Projects</h4>
+      <ul>
+        <li>Sprints set up as milestones</li>
+        <li>Requirements split into stories &amp; tasks, one card each</li>
+        <li>Every card has an owner and an estimate</li>
+        <li>Columns: To Do, In Progress, Done (template coming)</li>
+        <li>Labels: bug, enhancement, documentation</li>
+      </ul></div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">How it's marked: what a top grade needs</div>
+  <div class="legend"><span class="warn">⚠</span> = graded by the rubric but <b>missing from the Canvas task list</b></div>
+  <div>
+    <div class="cr"><div class="cr-h"><b>Process &amp; communication</b><div class="pts">2.5 pts</div><div class="from">Marked from: meeting minutes, project setup</div></div>
+      <ul class="hd">
+        <li class="miss">Minutes for every meeting: attendance, agenda, discussion, decisions, action items, follow-up</li>
+        <li class="miss">A clear, complete Definition of Done</li>
+        <li>Every issue labelled Story, Task or Bug</li>
+        <li>Board shows the real, current status</li>
+      </ul></div>
+    <div class="cr"><div class="cr-h"><b>Requirements &amp; planning</b><div class="pts">2.5 pts</div><div class="from">Marked from: user stories, backlog, sprint plan</div></div>
+      <ul class="hd">
+        <li>Every story: "As a <i>who</i>, I want <i>what</i>, so that <i>why</i>"</li>
+        <li class="miss">Sprint 1 stories pass INVEST (Independent, Negotiable, Valuable, Estimable, Small, Testable)</li>
+        <li>Sprint 1 stories estimated and split into tasks</li>
+        <li class="miss">At least 15 more well-defined stories in the backlog</li>
+      </ul></div>
+    <div class="cr"><div class="cr-h"><b>SRS &amp; design</b><div class="pts">2.5 pts</div><div class="from">Marked from: SRS document</div></div>
+      <ul class="hd">
+        <li>Every SRS section complete and detailed</li>
+        <li>Every architecture decision justified: why, and what it affects</li>
+        <li class="miss">A wireframe for every screen</li>
+      </ul></div>
+    <div class="cr"><div class="cr-h"><b>Testing</b><div class="pts">2.5 pts</div><div class="from">Marked from: acceptance criteria</div></div>
+      <ul class="hd">
+        <li class="miss">Every Sprint 1 story has acceptance criteria</li>
+        <li>Each one has a clear pass or fail</li>
+        <li>They describe the result, not how it's built</li>
+      </ul></div>
+  </div>
+  <div class="callout"><b>The takeaway:</b> each of the 4 criteria grades something the task list never asks for. Skip those items and every criterion slides toward Pass or Fail.</div>
+
+  <div class="sub">Each criterion is out of 2.5. The grade bands:</div>
+  <div class="scale">
+    <div style="flex:123;background:color-mix(in oklab,var(--chart-1) 14%,transparent)" title="Fail: 0 to 1.23 (0–49%)"></div>
+    <div style="flex:25;background:color-mix(in oklab,var(--chart-1) 32%,transparent)" title="Pass: over 1.23 to 1.48 (50–59%)"></div>
+    <div style="flex:25;background:color-mix(in oklab,var(--chart-1) 52%,transparent)" title="Credit: over 1.48 to 1.73 (60–69%)"></div>
+    <div style="flex:25;background:color-mix(in oklab,var(--chart-1) 74%,transparent)" title="Distinction: over 1.73 to 1.98 (70–79%)"></div>
+    <div style="flex:52;background:var(--chart-1)" title="High Distinction: over 1.98 to 2.5 (80–100%)"></div>
+  </div>
+  <div class="slab">
+    <div style="flex:123"><b>Fail</b><span>0 – 1.23 · under 50%</span></div>
+    <div style="flex:25"><b>P</b><span>50%+</span></div>
+    <div style="flex:25"><b>C</b><span>60%+</span></div>
+    <div style="flex:25"><b>D</b><span>70%+</span></div>
+    <div style="flex:52"><b>HD</b><span>1.98 – 2.5 · 80%+</span></div>
+  </div>
+
+  <div class="sub">Extra backlog stories needed (beyond Sprint 1), by grade</div>
+  <div class="bars">
+    <div class="br" title="High Distinction: at least 15 additional well-defined stories"><span class="g">HD</span><div class="track"><div class="fill" style="width:93.75%"></div></div><span class="v">15 or more</span></div>
+    <div class="br" title="Distinction: at least 12"><span class="g">D</span><div class="track"><div class="fill dim" style="width:75%"></div></div><span class="v">12 or more</span></div>
+    <div class="br" title="Credit: at least 10"><span class="g">C</span><div class="track"><div class="fill dim" style="width:62.5%"></div></div><span class="v">10 or more</span></div>
+    <div class="br" title="Pass: at least 8"><span class="g">P</span><div class="track"><div class="fill dim" style="width:50%"></div></div><span class="v">8 or more</span></div>
+    <div class="br" title="Fail: 6 or fewer"><span class="g">F</span><div class="track"><div class="fill dim" style="width:37.5%"></div></div><span class="v">6 or fewer</span></div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">A 16-day plan <span style="text-transform:none;letter-spacing:0;font-weight:400">(a suggestion, not from the brief)</span></div>
+  <div class="g3">
+    <div class="wkc now"><h5>Week 2</h5><div class="d">2 – 8 Nov</div>
+      <ul>
+        <li>Register the group (due end of W2)</li>
+        <li>Choose Scrum Master &amp; Product Owner</li>
+        <li>Set up the Teams channel</li>
+        <li>Start minuting every meeting now</li>
+        <li>Brainstorm user stories</li>
+      </ul></div>
+    <div class="wkc"><h5>Week 3</h5><div class="d">9 – 15 Nov</div>
+      <ul>
+        <li>Get the Classroom 50 repo; add folders &amp; README</li>
+        <li>Board: columns, labels, sprints, Definition of Done</li>
+        <li>Give each person SRS sections</li>
+        <li>Write stories with acceptance criteria</li>
+        <li>First in-class stand-up</li>
+      </ul></div>
+    <div class="wkc"><h5>Week 4</h5><div class="d">16 – 20 Nov · due Fri</div>
+      <ul>
+        <li>Architecture diagram + the "why" for each tech</li>
+        <li>Wireframes for every screen</li>
+        <li>Estimate Sprint 1, split into 1–3 h tasks</li>
+        <li>Reach 15+ backlog stories</li>
+        <li>Review together, then submit the repo URL</li>
+      </ul></div>
+  </div>
+</section>
+
+</div>
+</div></body>
+</html>

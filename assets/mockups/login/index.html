@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="en" data-view="login" data-role="renter">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Log in — RentXe</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%224%207%2037%2037%22%3E%3Cg%20transform%3D%22translate%2824%2024%29%20rotate%28-45%29%22%3E%3Cpath%20d%3D%22M-2-3h21.5l3%203-3%203H-2zM3%203h15v2.6h-2.4V4.4H13v2.4h-2.6V4.4H8v1.8H3z%22%20fill%3D%22%230E0E0E%22/%3E%3Crect%20x%3D%22-22%22%20y%3D%22-9%22%20width%3D%2222%22%20height%3D%2218%22%20rx%3D%226.5%22%20fill%3D%22%23FF6A3D%22/%3E%3Cpath%20d%3D%22M-15.8%200h9.6M-11-4.8v9.6%22%20stroke%3D%22%23fff%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!-- Shared design tokens: a copy of ../shared/tokens.css, kept in sync by ../shared/sync-tokens.py.
+     Edit tokens.css and run the script, not this block. -->
+<style id="tokens">
+/* RentXe design tokens, shared by every page (landing, login, ...).
+   Orange, black and white only: neutral greys, no blue tints, solid fills, no gradients.
+   Each page embeds a copy in its tokens style block: after editing, run sync-tokens.py.
+   Page-only variables stay in the page's own :root. */
+:root {
+  /* Colour */
+  --brand: #FF6A3D;               /* orange: buttons, accents, the logo */
+  --brand-dark: #E2532A;          /* hover, small orange text on white */
+  --brand-tint: #FFF1EC;          /* selected tab, soft orange fill */
+  --ink: #0E0E0E;                 /* black text and black bands */
+  --ink-deep: #0A0A0A;            /* page background behind dark sections */
+  --paper: #FFFFFF;
+  --muted: #6F6F6F;               /* secondary text on white */
+  --line: #E6E6E6;                /* hairline rules on white */
+  --line-dark: rgb(255 255 255 / .16);   /* hairline rules on black */
+  --fill: #F3F3F3;                /* input and hover fill on white */
+  --danger: #D4380D;              /* form errors: a deep orange-red, so it stays in the palette */
+
+  /* Type */
+  --sans: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --label: 500 12.5px/1.2 var(--mono);   /* "(01) About RentXe" style labels; add uppercase + .04em tracking */
+
+  /* Shape and space */
+  --radius-pill: 999px;
+  --radius-field: 12px;
+  --radius-card: 14px;
+  --gutter: clamp(20px, 4vw, 56px);      /* page side padding */
+  --content-max: 1320px;
+
+  /* Motion */
+  --ease-out: cubic-bezier(.2, .8, .2, 1);
+
+  font-family: var(--sans);
+}
+</style>
+<!-- GSAP for the reveals (free "standard" licence). The page works without it. -->
+<script defer src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--paper); color: var(--ink); -webkit-font-smoothing: antialiased; }
+  button { font-family: inherit; cursor: pointer; }
+  [hidden] { display: none !important; }
+  html[data-view="login"] [data-only="signup"], html[data-view="signup"] [data-only="login"] { display: none; }
+
+  .page { display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(460px, 1fr); min-height: 100vh; }
+
+  /* ── Left: black editorial panel ──────────────────── */
+  .side { display: flex; flex-direction: column; gap: 48px; padding: 26px var(--gutter) 32px; background: var(--ink); color: #fff; }
+  .brand { display: inline-flex; align-items: center; gap: 10px; color: #fff; text-decoration: none;
+           font-weight: 800; font-size: 23px; letter-spacing: -.02em; }
+  .brand b { color: var(--brand); }
+  .brand svg { width: 34px; height: 34px; }
+  .side-body { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: clamp(28px, 5vh, 56px); }
+  .meta { position: relative; display: flex; justify-content: space-between; gap: 16px; padding-bottom: 14px;
+          font: var(--label); letter-spacing: .04em; text-transform: uppercase; color: rgb(255 255 255 / .7); }
+  .meta::after, .tracker::after { content: ''; position: absolute; left: 0; right: 0; height: 1px; background: var(--line-dark);
+                                  transform: scaleX(var(--rule, 1)); transform-origin: left; }
+  .meta::after { bottom: 0; }
+  .statement { margin: 0; max-width: 860px; font-size: clamp(36px, min(4vw, 7.4vh), 68px); font-weight: 600; line-height: 1.04;
+               letter-spacing: -.04em; text-wrap: pretty; }
+  .statement em { font-style: normal; color: var(--brand); }
+  .statement .soft { color: rgb(255 255 255 / .4); }
+  .w { display: inline-block; }                     /* words, wrapped by the page script for the reveals */
+  .slot { display: inline-block; margin: 0 .04em; vertical-align: -.03em; }
+  .icon { display: block; height: .74em; width: auto; overflow: visible; color: #fff; }
+  .icon.bike { height: .8em; }
+  .icon .gap { fill: none; stroke: var(--ink); stroke-width: 2.4; }   /* black ring between wheel and body */
+  .icon .hub { fill: var(--ink); }
+
+  /* A booking's life, the thing the account keeps track of. The orange bar shows how far this one has got. */
+  .tracker { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); margin: 0; padding: 0; list-style: none; }
+  .tracker::after { top: 0; }
+  .tracker::before { content: ''; position: absolute; z-index: 1; top: -1px; left: 0; height: 3px; background: var(--brand);
+                     width: calc(var(--done, 0) * 100%); transition: width .8s var(--ease-out); }
+  .tracker li { padding: 18px 16px 0 0; font: var(--label); letter-spacing: .04em; text-transform: uppercase;
+                color: rgb(255 255 255 / .42); transition: color .4s; }
+  .tracker li + li { padding-left: 16px; border-left: 1px solid var(--line-dark); }
+  .tracker li span { display: block; margin-bottom: 30px; color: rgb(255 255 255 / .42); }
+  .tracker li.on { color: #fff; }
+  .tracker li.on span { color: var(--brand); }
+  .side-foot { font: 400 12px/1.4 var(--mono); color: rgb(255 255 255 / .5); }
+
+  /* ── Right: the form ──────────────────────────────── */
+  .main { display: flex; flex-direction: column; padding: 26px var(--gutter) 32px; }
+  .top { display: flex; justify-content: space-between; align-items: center; gap: 16px; min-height: 34px; font-size: 14px; }
+  .back { display: inline-flex; align-items: center; gap: 8px; color: var(--ink); font-weight: 600; text-decoration: none; }
+  .back svg { width: 18px; height: 18px; transition: transform .3s var(--ease-out); }
+  .back:hover svg { transform: translateX(-4px); }
+  .top p, .alt { margin: 0; color: var(--muted); }
+  .switch { border: 0; padding: 0; background: none; color: var(--ink); font-size: inherit; font-weight: 700;
+            text-decoration: underline; text-decoration-color: var(--brand); text-decoration-thickness: 2px; text-underline-offset: 4px; }
+  .switch:hover { color: var(--brand-dark); }
+
+  .form-wrap { flex: 1; display: flex; align-items: center; justify-content: center; padding: 56px 0; }
+  form { width: min(100%, 420px); }
+  .kicker { position: relative; display: flex; align-items: center; gap: 10px; margin: 0; padding-bottom: 14px;
+            font: var(--label); letter-spacing: .04em; text-transform: uppercase; }
+  .kicker::before { content: ''; width: 9px; height: 9px; background: var(--brand); }
+  .kicker::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--line);
+                   transform: scaleX(var(--rule, 1)); transform-origin: left; }
+  h1 { margin: 24px 0 28px; font-size: clamp(38px, 3.4vw, 54px); font-weight: 600; line-height: 1; letter-spacing: -.04em; }
+  h1 em { font-style: normal; color: var(--brand); }
+
+  .roles { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 30px; padding: 4px;
+           border-radius: var(--radius-pill); background: var(--fill); }
+  .roles button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0;
+                  border-radius: var(--radius-pill); padding: 10px 14px; background: transparent; color: var(--muted);
+                  font-size: 14px; font-weight: 700; transition: background .25s, color .25s; }
+  .roles button:hover { color: var(--ink); }
+  .roles button[aria-pressed="true"] { background: var(--ink); color: #fff; }
+  .roles svg { width: 18px; height: 18px; }
+
+  .field { margin-bottom: 24px; }
+  .field label { display: block; margin-bottom: 6px; font: var(--label); letter-spacing: .04em; text-transform: uppercase;
+                 color: var(--muted); }
+  .control { position: relative; }
+  .control::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--brand);
+                    transform: scaleX(0); transform-origin: left; transition: transform .45s var(--ease-out); }
+  .control:focus-within::after { transform: scaleX(1); }
+  .field input { width: 100%; border: 0; border-bottom: 1.5px solid var(--line); border-radius: 0; outline: 0; padding: 8px 0 12px;
+                 background: transparent; color: var(--ink); font: 500 18px/1.3 var(--sans); transition: border-color .2s; }
+  .field input::placeholder { color: #B3B3B3; }
+  .field input:hover { border-bottom-color: #C9C9C9; }
+  .field input:focus-visible { outline: 0; }
+  .field .control.has-toggle input { padding-right: 64px; }
+  .toggle { position: absolute; right: 0; bottom: 10px; border: 0; padding: 4px 0 4px 8px; background: none; color: var(--ink);
+            font: 500 12px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
+  .toggle:hover { color: var(--brand-dark); }
+  .hint, .err { margin: 8px 0 0; font-size: 13px; line-height: 1.4; }
+  .hint { color: var(--muted); }
+  .err { color: var(--danger); font-weight: 600; }
+  .err:empty { display: none; }
+  .field.invalid input { border-bottom-color: var(--danger); }
+  .field.invalid .hint { display: none; }
+
+  .row { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin: 4px 0 30px; font-size: 14px; }
+  .check { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; color: var(--ink); }
+  .check input { width: 17px; height: 17px; margin: 0; accent-color: var(--ink); cursor: pointer; }
+  .row a, .check a { color: var(--ink); font-weight: 600; text-decoration: underline; text-decoration-color: var(--line);
+                     text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
+  .row a:hover, .check a:hover { color: var(--brand-dark); text-decoration-color: currentColor; }
+  .terms { flex-direction: column; align-items: flex-start; gap: 0; }
+  .terms .err { margin-left: 27px; }
+
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: var(--radius-pill);
+         padding: 11px 20px; font-size: 15px; font-weight: 700; text-decoration: none; background: var(--brand); color: #fff;
+         transition: background .2s; }
+  .btn:hover { background: var(--brand-dark); }
+  .submit { width: 100%; height: 60px; justify-content: space-between; padding: 0 7px 0 26px; font-size: 16px; }
+  .submit i { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; background: var(--ink);
+              transition: transform .35s var(--ease-out); }
+  .submit i svg { width: 20px; height: 20px; }
+  .submit:hover i { transform: translateX(4px); }
+  .submit[aria-busy="true"] { pointer-events: none; background: var(--brand-dark); }
+  .submit[aria-busy="true"] i svg { animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .alt { margin-top: 26px; text-align: center; font-size: 14px; }
+
+  .main-foot { display: flex; justify-content: space-between; gap: 16px; font: 400 12px/1.4 var(--mono); color: var(--muted); }
+  .main-foot a { color: inherit; text-decoration: none; }
+  .main-foot a:hover { color: var(--ink); }
+  .main-foot nav { display: flex; gap: 18px; }
+
+  .toast { position: fixed; left: 50%; bottom: 28px; z-index: 11; transform: translate(-50%, 16px); opacity: 0;
+           padding: 10px 18px; border-radius: var(--radius-pill); background: var(--ink); color: #fff; font-size: 14px;
+           font-weight: 600; transition: .3s; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  .top .brand { display: none; color: var(--ink); }   /* the logo moves up here when the black panel is gone */
+
+  /* ── Smaller screens: no black panel, just the form. The "Sign up" switch stays under the button. ── */
+  @media (max-width: 960px) {
+    .page { grid-template-columns: 1fr; }
+    .side, .top p { display: none; }
+    .top .brand { display: inline-flex; }
+    .form-wrap { align-items: flex-start; padding: 48px 0; }
+  }
+  @media (max-width: 520px) {
+    .main-foot { flex-direction: column; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0s !important; animation-duration: 0s !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <aside class="side" aria-label="About your RentXe account">
+    <a class="brand" href="../landing-3d/index.html" aria-label="RentXe home">
+      <svg viewBox="4 7 37 37" aria-hidden="true">
+        <g transform="translate(24 24) rotate(-45)">
+          <path d="M-2-3h21.5l3 3-3 3H-2zM3 3h15v2.6h-2.4V4.4H13v2.4h-2.6V4.4H8v1.8H3z" fill="currentColor"/>
+          <rect x="-22" y="-9" width="22" height="18" rx="6.5" fill="#FF6A3D"/>
+          <path d="M-15.8 0h9.6M-11-4.8v9.6" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+        </g>
+      </svg>
+      <span>Rent<b>Xe</b></span>
+    </a>
+
+    <div class="side-body">
+      <div class="meta"><span id="metaLeft">(00) Your account</span><span>Cars · Motorbikes · Local rental companies</span></div>
+      <p class="statement" id="statement"></p>
+      <ol class="tracker" id="tracker" aria-label="How a booking moves along"></ol>
+    </div>
+
+    <div class="side-foot">© 2026 RentXe · COSC2101 team project prototype</div>
+  </aside>
+
+  <main class="main">
+    <div class="top">
+      <a class="brand" href="../landing-3d/index.html" aria-label="RentXe home">
+        <svg viewBox="4 7 37 37" aria-hidden="true">
+          <g transform="translate(24 24) rotate(-45)">
+            <path d="M-2-3h21.5l3 3-3 3H-2zM3 3h15v2.6h-2.4V4.4H13v2.4h-2.6V4.4H8v1.8H3z" fill="currentColor"/>
+            <rect x="-22" y="-9" width="22" height="18" rx="6.5" fill="#FF6A3D"/>
+            <path d="M-15.8 0h9.6M-11-4.8v9.6" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+          </g>
+        </svg>
+        <span>Rent<b>Xe</b></span>
+      </a>
+      <a class="back" href="../landing-3d/index.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+        Back to home
+      </a>
+      <p><span data-only="login">New to RentXe?</span><span data-only="signup">Have an account?</span>
+        <button class="switch" type="button" data-go="signup" data-only="login">Sign up</button><button class="switch" type="button" data-go="login" data-only="signup">Log in</button></p>
+    </div>
+
+    <div class="form-wrap">
+      <form id="form" novalidate>
+        <p class="kicker" id="kicker">(01) Log in</p>
+        <h1 id="title">Welcome <em>back.</em></h1>
+
+        <div class="roles" role="group" aria-label="Account type">
+          <button type="button" data-role="renter" aria-pressed="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.2-4 4.3-6 8-6s6.8 2 8 6"/></svg>
+            Renter
+          </button>
+          <button type="button" data-role="company" aria-pressed="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21V9l9-5 9 5v12M3 21h18M8 21v-6h8v6M8 11h.01M16 11h.01"/></svg>
+            Rental company
+          </button>
+        </div>
+
+        <div class="field" data-only="signup">
+          <label for="name" id="nameLabel">Full name</label>
+          <div class="control"><input id="name" name="name" autocomplete="name" placeholder="Minh Tran" aria-describedby="name-err"></div>
+          <p class="err" id="name-err" aria-live="polite"></p>
+        </div>
+        <div class="field">
+          <label for="email">Email</label>
+          <div class="control"><input id="email" name="email" type="email" autocomplete="email" inputmode="email" placeholder="name@example.com" aria-describedby="email-err"></div>
+          <p class="err" id="email-err" aria-live="polite"></p>
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="control has-toggle">
+            <input id="password" name="password" type="password" autocomplete="current-password" placeholder="••••••••" aria-describedby="password-hint password-err">
+            <button class="toggle" type="button" id="toggle" aria-controls="password" aria-pressed="false">Show</button>
+          </div>
+          <p class="hint" id="password-hint" data-only="signup">At least 8 characters.</p>
+          <p class="err" id="password-err" aria-live="polite"></p>
+        </div>
+
+        <div class="row" data-only="login">
+          <label class="check"><input type="checkbox" name="remember" checked> Keep me logged in</label>
+          <a href="#" id="forgot">Forgot password?</a>
+        </div>
+        <div class="row terms" data-only="signup">
+          <label class="check"><input type="checkbox" id="terms" name="terms" aria-describedby="terms-err"> <span>I agree to the <a href="#">Terms</a> and <a href="#">Privacy policy</a></span></label>
+          <p class="err" id="terms-err" aria-live="polite"></p>
+        </div>
+
+        <button class="btn submit" type="submit" id="submit">
+          <span id="submitLabel">Log in</span>
+          <i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></i>
+        </button>
+
+        <p class="alt"><span data-only="login">Don't have an account?</span><span data-only="signup">Already on RentXe?</span>
+          <button class="switch" type="button" data-go="signup" data-only="login">Create one</button><button class="switch" type="button" data-go="login" data-only="signup">Log in instead</button></p>
+      </form>
+    </div>
+
+    <div class="main-foot">
+      <span>Admins log in here too.</span>
+      <nav aria-label="Legal"><a href="#">Help</a><a href="#">Terms</a><a href="#">Privacy</a></nav>
+    </div>
+  </main>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script type="module">
+// The view (log in / sign up) and account type (renter / rental company) come from the URL, so the landing page
+// can link straight to "?view=signup" or "?as=company". Changing either updates the URL without reloading.
+const params = new URLSearchParams(location.search);
+const state = { view: params.get('view') === 'signup' ? 'signup' : 'login',
+                role: params.get('as') === 'company' ? 'company' : 'renter' };
+const root = document.documentElement, $ = id => document.getElementById(id);
+const form = $('form'), statement = $('statement'), tracker = $('tracker');
+
+// Flat silhouettes from the landing page's About line.
+const CAR = `<span class="slot"><svg class="icon car" viewBox="0 0 120 48" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M8 38C6.6 38 5.6 37 5.7 35.6L6.3 27C6.5 24.6 8 23 10.3 22.6L31 20.4 43 9.6C45 7.8 47.5 7 50.2 7H71.5C74.4 7 77 8.2 78.9 10.4L88 20.6 109.6 23.4C112.6 23.8 114.6 26.3 114.4 29.3L114 35C113.9 36.7 112.5 38 110.8 38ZM40.5 20.3 47.6 12.6C48.5 11.6 49.7 11 51 11H60.5V20.3ZM64.5 20.3V11H71.4C73.1 11 74.7 11.7 75.8 13L82.4 20.3Z"/><circle class="gap" cx="29" cy="37.5" r="10.2"/><circle fill="currentColor" cx="29" cy="37.5" r="9.4"/><circle class="hub" cx="29" cy="37.5" r="4.3"/><circle class="gap" cx="93" cy="37.5" r="10.2"/><circle fill="currentColor" cx="93" cy="37.5" r="9.4"/><circle class="hub" cx="93" cy="37.5" r="4.3"/></svg></span>`;
+const BIKE = `<span class="slot"><svg class="icon bike" viewBox="0 0 96 56" aria-hidden="true"><path fill="currentColor" d="M10 41C8.6 32.6 12.5 26.5 19.5 24.8L20.6 22H45.5C47.6 22 48.7 23.8 47.9 25.7L46.4 29.2C45.6 31.2 46.9 33.4 49.1 33.4H59.5L66.4 13.2C67 11.4 69 10.5 70.8 11.2L73.4 12.3 83.2 34.5C84.1 36.6 82.8 39 80.5 39.3L66 41.2Z"/><rect fill="currentColor" x="18.5" y="16.6" width="27.5" height="5.4" rx="2.7"/><path d="M63.5 9.6H75.5" stroke="currentColor" stroke-width="3.6" stroke-linecap="round"/><circle fill="currentColor" cx="77.2" cy="17" r="2.6"/><circle class="gap" cx="23" cy="44" r="10.2"/><circle fill="currentColor" cx="23" cy="44" r="9.4"/><circle class="hub" cx="23" cy="44" r="4.3"/><circle class="gap" cx="80" cy="44" r="10.2"/><circle fill="currentColor" cx="80" cy="44" r="9.4"/><circle class="hub" cx="80" cy="44" r="4.3"/></svg></span>`;
+
+const COPY = {
+  renter: {
+    login:  { title: 'Welcome <em>back.</em>',
+              statement: `Your next car ${CAR} or motorbike ${BIKE} is <em>waiting.</em> <span class="soft">Right where you left it.</span>` },
+    signup: { title: 'Start <em>riding.</em>',
+              statement: `Every car ${CAR} and motorbike ${BIKE} nearby, <em>one account.</em> <span class="soft">Book in minutes.</span>` },
+    steps: ['Request sent', 'Approved', 'Picked up', 'Returned'], done: .5,
+    name: ['Full name', 'Minh Tran', 'name'],
+  },
+  company: {
+    login:  { title: 'Back to your <em>fleet.</em>',
+              statement: `Your fleet and every request, <em>in one place.</em> <span class="soft">Approve, hand over, check in.</span>` },
+    signup: { title: 'List your <em>fleet.</em>',
+              statement: `Put your cars ${CAR} and motorbikes ${BIKE} in front of <em>more riders.</em> <span class="soft">Free to list.</span>` },
+    steps: ['New request', 'Approved', 'Handed over', 'Returned'], done: .75,
+    name: ['Company name', 'Saigon Wheels Co.', 'organization'],
+  },
+};
+
+/* ── Motion (GSAP). Skipped when GSAP didn't load or reduced motion is on: everything is simply shown. ── */
+const motion = !!window.gsap && matchMedia('(prefers-reduced-motion: no-preference)').matches;
+const rise = { yPercent: 70, opacity: 0, duration: .8, ease: 'power3.out' };
+// Wrap each word in a span so words can rise in one by one. The inline car and scooter count as words.
+function splitWords(el) {
+  const out = [];
+  (function walk(node) {
+    for (const child of [...node.childNodes]) {
+      if (child.nodeType === Node.TEXT_NODE) {
+        const frag = document.createDocumentFragment();
+        for (const part of child.textContent.split(/(\s+)/)) {
+          if (!part) continue;
+          if (/^\s+$/.test(part)) { frag.append(' '); continue; }
+          const w = Object.assign(document.createElement('span'), { className: 'w', textContent: part });
+          frag.append(w); out.push(w);
+        }
+        child.replaceWith(frag);
+      } else if (child.nodeType === Node.ELEMENT_NODE) {
+        if (child.matches('.slot')) out.push(child); else walk(child);
+      }
+    }
+  })(el);
+  return out;
+}
+
+function render(animate) {
+  const { view, role } = state, copy = COPY[role], login = view === 'login';
+  root.dataset.view = view;
+  root.dataset.role = role;
+  document.title = `${login ? 'Log in' : 'Sign up'} — RentXe`;
+  document.querySelectorAll('.roles button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.role === role)));
+
+  $('kicker').textContent = `(01) ${login ? 'Log in' : 'Sign up'}${role === 'company' ? ' · Rental company' : ''}`;
+  $('title').innerHTML = copy[view].title;
+  $('submitLabel').textContent = login ? 'Log in' : role === 'company' ? 'Register company' : 'Create account';
+  $('metaLeft').textContent = role === 'company' ? '(00) Company account' : '(00) Your account';
+  const [label, placeholder, auto] = copy.name;
+  $('nameLabel').textContent = label;
+  Object.assign($('name'), { placeholder, autocomplete: auto });
+  $('password').autocomplete = login ? 'current-password' : 'new-password';
+
+  statement.innerHTML = copy[view].statement;
+  tracker.innerHTML = copy.steps.map((s, i) => `<li><span>0${i + 1} /</span>${s}</li>`).join('');
+  tracker.querySelectorAll('li').forEach((li, i) => li.classList.toggle('on', i < copy.done * 4));
+  tracker.style.setProperty('--done', copy.done);
+
+  const url = new URL(location.href);
+  url.searchParams.delete('view'); url.searchParams.delete('as');
+  if (!login) url.searchParams.set('view', 'signup');
+  if (role === 'company') url.searchParams.set('as', 'company');
+  history.replaceState(null, '', url);
+
+  clearErrors();
+  if (animate && motion) {
+    gsap.from(splitWords(statement), { ...rise, stagger: .025 });
+    gsap.from([$('title'), ...form.querySelectorAll('.field, .row, .submit')].filter(el => el.offsetParent),
+              { y: 12, opacity: 0, duration: .5, stagger: .04, ease: 'power2.out' });
+  }
+}
+
+document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => {
+  state.view = b.dataset.go; render(true);
+  (state.view === 'signup' ? $('name') : $('email')).focus();
+}));
+document.querySelectorAll('.roles button').forEach(b => b.addEventListener('click', () => {
+  if (state.role === b.dataset.role) return;
+  state.role = b.dataset.role; render(true);
+}));
+
+// Show / hide the password.
+$('toggle').addEventListener('click', e => {
+  const show = $('password').type === 'password';
+  $('password').type = show ? 'text' : 'password';
+  e.currentTarget.textContent = show ? 'Hide' : 'Show';
+  e.currentTarget.setAttribute('aria-pressed', String(show));
+});
+
+/* ── Validation: on submit, then live for any field already marked wrong ── */
+const RULES = {
+  name:     v => v.trim() ? '' : state.role === 'company' ? 'Enter your company name.' : 'Enter your full name.',
+  email:    v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) ? '' : 'Enter an email address like name@example.com.',
+  password: v => state.view === 'login' ? (v ? '' : 'Enter your password.') : (v.length >= 8 ? '' : 'Use at least 8 characters.'),
+  terms:    (_, el) => el.checked ? '' : 'Please accept the Terms to continue.',
+};
+function check(id) {
+  const el = $(id), msg = RULES[id](el.value, el);
+  $(`${id}-err`).textContent = msg;
+  el.setAttribute('aria-invalid', String(!!msg));
+  el.closest('.field')?.classList.toggle('invalid', !!msg);
+  return !msg;
+}
+function clearErrors() {
+  for (const id of Object.keys(RULES)) {
+    $(`${id}-err`).textContent = '';
+    $(id).removeAttribute('aria-invalid');
+    $(id).closest('.field')?.classList.remove('invalid');
+  }
+}
+for (const id of Object.keys(RULES))
+  $(id).addEventListener(id === 'terms' ? 'change' : 'input', () => { if ($(id).getAttribute('aria-invalid') === 'true') check(id); });
+
+const toast = (() => { const el = $('toast'); let t;
+  return msg => { el.textContent = msg; el.classList.add('show'); clearTimeout(t); t = setTimeout(() => el.classList.remove('show'), 3200); }; })();
+
+form.addEventListener('submit', e => {
+  e.preventDefault();
+  const ids = state.view === 'login' ? ['email', 'password'] : ['name', 'email', 'password', 'terms'];
+  const bad = ids.filter(id => !check(id));
+  if (bad.length) { $(bad[0]).focus(); return; }
+  const btn = $('submit');
+  btn.setAttribute('aria-busy', 'true');
+  $('submitLabel').textContent = state.view === 'login' ? 'Logging in…' : 'Creating account…';
+  setTimeout(() => {
+    btn.removeAttribute('aria-busy');
+    render(false);
+    toast(state.role === 'company'
+      ? 'Prototype: this would open the rental company dashboard'
+      : 'Prototype: this would open your bookings');
+  }, 900);
+});
+$('forgot').addEventListener('click', e => { e.preventDefault(); toast('Prototype: this would email you a reset link'); });
+
+render(false);
+
+// Entrance: rules draw across, the statement rises word by word, the form settles in.
+if (motion) {
+  const rule = el => [el, { '--rule': 0 }, { '--rule': 1, duration: 1.1, ease: 'power2.inOut' }];
+  gsap.timeline({ delay: .1, defaults: { ease: 'power3.out' } })
+    .fromTo(...rule(document.querySelector('.meta')))
+    .from('.meta span', { y: 10, opacity: 0, duration: .6, stagger: .08 }, .1)
+    .from(splitWords(statement), { ...rise, stagger: .03 }, .2)
+    .fromTo(...rule(tracker), .6)
+    .from(tracker.children, { y: 16, opacity: 0, duration: .6, stagger: .08 }, .75)
+    .fromTo(...rule($('kicker')), .15)
+    .from([$('title'), '.roles', ...form.querySelectorAll('.field, .row, .submit, .alt')].filter(el =>
+      typeof el === 'string' || el.offsetParent), { y: 18, opacity: 0, duration: .7, stagger: .06 }, .25);
+}
+</script>
+</body>
+</html>
