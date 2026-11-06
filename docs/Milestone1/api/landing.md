@@ -239,7 +239,7 @@ Header:
 
 | ID | Rule |
 |---|---|
-| LP-24 | Logged out, the header shows the theme toggle, **Log in** and **Sign up**. Logged in, the page stays the same and nothing redirects: **Log in** and **Sign up** are replaced by the account menu, with the visitor's initials and first name from `GET /api/v1/auth/me`. A customer gets the same menu as the search page (search.md). A company's menu adds **Dashboard**, and an admin's adds **Admin** (assumption until those pages are mocked up). Every menu has **Log out**. |
+| LP-24 | Logged out, the header shows the theme toggle, **Log in** and **Sign up**. Logged in, the page stays the same and nothing redirects: **Log in** and **Sign up** are replaced by the account menu, with the visitor's initials and first name from `GET /api/v1/auth/me`. A customer gets the same menu as the search page (search.md). A company's menu adds **Dashboard**, and an admin's adds **Admin** (assumption until those pages are mocked up). A company account's name is the person who registered it (login.md Q1), so the mockup's `?user=company` sample "Yarra Car Co." should become a person's name (mockup to-do). Every menu has **Log out**. |
 
 Static pages linked from here:
 

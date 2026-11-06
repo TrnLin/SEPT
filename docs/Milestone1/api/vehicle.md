@@ -229,7 +229,7 @@ Errors:
 | Status | When |
 |---|---|
 | `400` | Unknown `placeId` |
-| `404` | No vehicle with this id, or `listed` is `false` (VEH-35) |
+| `404` | No vehicle with this id, `listed` is `false`, or its company is not live (VEH-35) |
 
 Notes:
 - An empty `imageUrls` is normal. The page shows the drawing until the company uploads photos.
@@ -433,8 +433,8 @@ Errors:
 | Status | When |
 |---|---|
 | `400` | Missing field, badly formed date, `startDate` not after today, `endDate` not after `startDate`, unknown `insurance` |
-| `401` | Not logged in. The page sends the customer to log in, then back to the same URL. |
-| `403` | Role is not `CUSTOMER`, or the account is `SUSPENDED` |
+| `401` | Not logged in. The page sends the customer to log in with `next` set to this URL, so they come back to the same vehicle and dates (login.md LOGIN-29). |
+| `403` | Role is not `CUSTOMER`, the account is `SUSPENDED`, or the CSRF header is missing or wrong (login.md LOGIN-36) |
 | `404` | No vehicle with `vehicleId`, or not listed |
 | `409` | Some of the dates are blocked when the booking is saved (VEH-19, VEH-20). Adds `bookedDates`. |
 
@@ -657,7 +657,7 @@ Numbered so the SRS can use them. Rules marked §2.8 go into SRS §2.8. The exam
 | # | Rule |
 |---|---|
 | VEH-16 | Only a logged-in `CUSTOMER` with status `ACTIVE` can send a request. Not logged in: `401`. Other role or suspended: `403`. |
-| VEH-17 | The vehicle must exist and be listed. Otherwise `404`. |
+| VEH-17 | The vehicle must exist, be listed and belong to a live company (VEH-35). Otherwise `404`. |
 | VEH-18 | The dates must pass VEH-2 and VEH-3. Otherwise `400`. |
 | VEH-19 | The dates must be free (VEH-7) when the booking is saved. Otherwise `409` with the blocked days. A quote does not hold the dates. |
 | VEH-20 | If two requests for overlapping dates on one vehicle arrive together, the first to be saved gets `201` and the other gets `409`. This also applies when the same customer sends the same request twice. |
@@ -700,7 +700,7 @@ Numbered so the SRS can use them. Rules marked §2.8 go into SRS §2.8. The exam
 | # | Rule |
 |---|---|
 | VEH-34 | `completedRentals` = the company's `RETURNED` bookings. `fleet` = its listed vehicles by type. `replyTimeMinutes` = the median minutes from `createdAt` to `respondedAt` over the company's bookings answered in the last 90 days, `null` if none (assumption). |
-| VEH-35 | A vehicle with `listed: false` returns `404` from every endpoint in this file and cannot be requested. Assumption: its own company and admins can still read it. |
+| VEH-35 | A vehicle with `listed: false`, or whose company is not live (not `verified`, or its account is `SUSPENDED`; login.md LOGIN-26, LOGIN-27), returns `404` from every endpoint in this file and cannot be requested. Its own company and admins can still read it. |
 
 ## Changes to shared models
 

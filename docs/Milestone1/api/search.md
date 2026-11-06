@@ -442,7 +442,7 @@ Errors:
 | Status | When |
 |---|---|
 | `400` | `ids` missing, more than 3, or repeated; unknown `placeId`; date problems as in search |
-| `404` | An ID that does not exist or is out of search scope (not listed, or its company is not verified). `detail` names the ID |
+| `404` | An ID that does not exist or is out of search scope (not listed, or its company is not live). `detail` names the ID |
 
 Notes:
 
@@ -532,7 +532,7 @@ Numbered so the SRS can pick them up. "Page" marks a rule for the frontend only.
 
 **SR-1.** A search needs a place and both dates. Picking a suggestion sets the place. On submit with typed text, or with `location` from the landing page, the page calls `GET /api/v1/places?q=<text>`. It uses the place whose `label` equals the text (ignoring case), or else the first suggestion. If there are no suggestions, the Where field shows its error state ("No place matches"), and no search is sent.
 
-**SR-2.** A vehicle is in scope when `listed` is `true`, its company is `verified` (assumption, open question 5), and its `location.city` equals the place's `city`, ignoring case. Vehicles out of scope never appear and are not counted anywhere on the page.
+**SR-2.** A vehicle is in scope when `listed` is `true`, its company is live, meaning `verified` with an `ACTIVE` account (login.md LOGIN-26, LOGIN-27), and its `location.city` equals the place's `city`, ignoring case. Vehicles out of scope never appear and are not counted anywhere on the page.
 
 **SR-3.** `distanceKm` is the straight-line distance (haversine, Earth radius 6371 km) from the place's `lat`/`lng` to the vehicle's pick-up `lat`/`lng`, rounded half-up to 1 decimal place. Filters and sorts use the rounded value. Example: Melbourne CBD (−37.8136, 144.9631) to Richmond (−37.8230, 145.0000) is 3.4 km.
 
@@ -642,7 +642,7 @@ Merged into the README on 2026-11-06, except `Vehicle.units`, which waits for RE
 2. **Do `REQUESTED` bookings block dates (SR-6)?** Proposal: yes. Two customers cannot request the same vehicle for the same days, and an approval can never clash. The cost is that an unanswered request holds the vehicle, so requests may need to expire. Also: can a vehicle returned on a day be picked up the same day (SR-7)? This must match vehicle.md's calendar and its `409` on `POST /api/v1/bookings`.
 3. **Booked vehicles in results.** The mockup shows them, flagged (SR-9). Keep that, hide them, or add a "Free for my dates only" filter?
 4. **Recommended sort.** Accept the formula in SR-18, or pick something simpler? It could later grow into the "Personalised recommendations" custom feature.
-5. **Search scope.** Only verified companies (SR-2)? And should a suspended company's vehicles leave search? The README has `status` on User, not on Company.
+5. **Search scope.** Resolved 2026-11-06: only vehicles of live companies, meaning verified with an `ACTIVE` account (SR-2). A suspended company's vehicles leave search through its account's status, so Company needs no status of its own (login.md LOGIN-26, LOGIN-27).
 6. **Logged-out visitors.** Can they open the search page? The API allows it. They would need a logged-out nav, which has no mockup.
 7. **Where places come from.** A seeded `Place` table (proposal) or an external geocoder such as Nominatim or Google Places (licence, API key and rate limits go in SRS §7)? "Near me" from the browser's location would need `lat` and `lng` parameters. It is not in the mockup.
 8. **Engine sizes over 160 cc.** These motorbikes match neither engine option. Add "Over 160 cc", or build the options from the data?
