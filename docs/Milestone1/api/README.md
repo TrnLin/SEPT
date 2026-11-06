@@ -4,18 +4,20 @@ The REST API the backend needs so each mockup page can work. Each page has its o
 
 Use these files to write SRS §2 (functional requirements), §2.8 (business rules), §3.2 (security) and §5 (UI design). Every endpoint names its SRS feature area, and every rule has an ID (`LP-`, `LOGIN-`, `SR-`, `VEH-`) that a requirement or acceptance test can cite.
 
-> Draft. Nothing here is built yet. If the team changes an endpoint, update the page file and log the change in `../decision-log.md`.
+> Draft. Nothing here is built yet. If the team changes an endpoint, update the page file and log the change in `../decisions/`.
 
 ## Pages
 
 | Page | Mockup | Schema | Rules |
 |---|---|---|---|
-| Landing | `assets/mockups/landing-3d/` | [landing.md](landing.md) | LP-1 to LP-16 |
+| Landing | `assets/mockups/landing-3d/` | [landing.md](landing.md) | LP-1 to LP-25 |
 | Log in and sign up | `assets/mockups/login/` | [login.md](login.md) | LOGIN-1 to LOGIN-24 |
 | Search (customer) | `assets/mockups/search/` | [search.md](search.md) | SR-1 to SR-24 |
 | Vehicle detail (customer) | `assets/mockups/vehicle/` (not committed yet) | [vehicle.md](vehicle.md) | VEH-1 to VEH-35 |
 
 The logo concept sheet (`assets/mockups/logo/`) has no data, so it has no schema.
+
+Static pages with no API, linked from the landing page: `/for-companies`, `/terms` and `/privacy` ([landing.md](landing.md) LP-25). They have no mockup yet, and each needs a simple wireframe for SRS §5.
 
 ## Endpoint index
 
@@ -40,7 +42,8 @@ The logo concept sheet (`assets/mockups/logo/`) has no data, so it has no schema
 | `POST /api/v1/bookings` | Send a booking request | 2.4 | `CUSTOMER` | [vehicle.md](vehicle.md) |
 | `GET /api/v1/vehicles/{id}/reviews` | Reviews of one vehicle | 2.6 | Public | [vehicle.md](vehicle.md) |
 | `GET /api/v1/vehicles/{id}/similar` | Up to 3 similar vehicles | 2.3 | Public | [vehicle.md](vehicle.md) |
-| `GET /api/v1/reviews/featured` | Reviews for the landing page | 2.6 | Public | [landing.md](landing.md) |
+
+The landing page's reviews are static sample content, so it has no endpoint of its own. `GET /api/v1/reviews/featured` is kept in [landing.md](landing.md) as an option for later, not in the MVP.
 
 ### Not covered yet
 
@@ -98,6 +101,20 @@ Status codes used:
 | `404` | Not found, or hidden from this caller (for example an unlisted vehicle) |
 | `409` | Conflict: the email is taken, or the dates clash with a booking |
 | `429` | Too many attempts, with a `Retry-After` header. Proposal: [login.md](login.md) LOGIN-23. |
+
+## Theme: light and dark mode
+
+Every page supports a light and a dark theme. It needs no API.
+
+| Topic | Rule |
+|---|---|
+| Default | Follows the visitor's system setting (`prefers-color-scheme`). |
+| Toggle | System, Light and Dark, in the header: next to **Log in** when logged out, next to the account menu when logged in (assumption). |
+| Saved | In the browser's `localStorage`, key `rentxe-theme`, value `system`, `light` or `dark`. It holds on every page and after a reload, but not across browsers or devices. No User field, no endpoint. |
+| First paint | A small script in `<head>` reads the saved value before the page draws, so the page never flashes the wrong theme. |
+| Not themed | The landing page's 3D hero scene. Its sky follows the visitor's clock ([landing.md](landing.md) LP-19, LP-22). |
+| Design | `assets/mockups/shared/tokens.css` has the theme colours (`--theme-bg`, `--theme-text`, `--theme-muted`, `--theme-line`, `--theme-fill`, `--theme-card`, `--theme-band`), light by default and dark under `data-theme="dark"`. Same palette: black background, white text, the same orange. The landing mockup uses them; login, search and vehicle still use fixed light colours and need the same pass. |
+| SRS | Usability requirement for §3.3, for example: every page is readable in both themes, with text contrast of at least 4.5:1. |
 
 ## Shared models
 
@@ -230,7 +247,7 @@ InsuranceOption:
 | `bookingId` | long | One review per `RETURNED` booking |
 | `authorId` | long | The customer |
 | `vehicleId`, `companyId` | long | _derived_ from the booking |
-| `rating` | int | 1 to 5 |
+| `rating` | int | 1 to 5. One score for the whole rental: the vehicle and the service together. It counts toward the vehicle's average and the company's `rating`. |
 | `comment` | string | |
 | `createdAt` | timestamp | |
 
@@ -243,7 +260,7 @@ InsuranceOption:
 
 ## Decisions for the team
 
-The four files agree on each default below. Change one, and change every rule it lists. Record the outcome in `../decision-log.md`.
+The four files agree on each default below. Change one, and change every rule it lists. Record the outcome in `../decisions/`, one file per decision.
 
 | # | Question | Current default | Rules affected |
 |---|---|---|---|
@@ -252,7 +269,7 @@ The four files agree on each default below. Change one, and change every rule it
 | 3 | Is the return day free for the next pick-up? | No. A booking blocks both its start and end days, as the vehicle mockup's calendar shows. | SR-7, VEH-6, VEH-7 |
 | 4 | "Only 2 left": is one Vehicle row one physical vehicle? | Yes, so the label has nothing to count. search.md shows option A (`Vehicle.units`) because the mockup does; option B drops the label. | SR-8, search.md Q1, vehicle.md Q12 |
 | 5 | Which companies appear in search? | Only `verified` ones. Company has no suspended status yet. | SR-2, login.md Q2, search.md Q5 |
-| 6 | One rating per review, or one for the vehicle and one for the company? | One `rating`. The landing copy says customers rate both. | landing.md Q3 |
-| 7 | One cancellation rule for everyone, or one per company? | One rule: free until 24 hours before pick-up, then 50% of `totalPrice`. The landing copy says "where their rules allow". | VEH-22, VEH-23, landing.md Q4 |
+| 6 | One rating per review, or one for the vehicle and one for the company? | Decided: one `rating` for the vehicle and the service together. The landing copy will be reworded. | landing.md Q3 |
+| 7 | One cancellation rule for everyone, or one per company? | Decided: one rule for everyone. Free until 24 hours before pick-up, then 50% of `totalPrice`. The landing copy will be reworded. | VEH-22, VEH-23, landing.md Q4 |
 | 8 | Can logged-out visitors use search and vehicle pages? | The read endpoints are Public; sending a booking needs a `CUSTOMER` login. No logged-out nav is mocked up. | search.md Q6, vehicle.md Q16 |
 | 9 | Is payment in scope? | No. RentXe records amounts; the page says "You won't be charged until the company approves". | vehicle.md Q8 |

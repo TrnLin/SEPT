@@ -8,7 +8,7 @@ The public home page. It explains RentXe, starts a vehicle search, and points re
 | Route | `/` (assumption) |
 | Access | Public |
 
-Most of the page is static marketing copy. It needs one endpoint of its own (featured reviews) and two from other files.
+Most of the page is static marketing copy, the reviews included. It has no endpoint of its own and calls two from other files.
 
 ## URL parameters and states
 
@@ -16,9 +16,11 @@ Most of the page is static marketing copy. It needs one endpoint of its own (fea
 |---|---|---|---|
 | `?vehicle=` | `car`, `bike` | Starts the hero form on the Car or Motorbike tab, with the matching 3D vehicle or photo. Default `car`. | Optional. Nothing links to it yet. |
 | `?mode=` | `static`, `3d` | Forces the phone layout (a photo) or the desktop layout (3D scene with scroll zoom). | No. A test switch. The product picks the layout from the screen size. |
-| `?scenery=`, `?time=`, `?camera=`, `?car=` | | Settings for the "Prototype controls" panel. | No. Mockup tooling. |
+| `?scenery=`, `?time=`, `?camera=` | `mountains`, `city`; `day`, `sunset`, `night`; `scenic`, `chase`, `topdown` | Pins one part of the hero scene, for screenshots and demos. Without them the page picks (LP-17 to LP-20). | Yes, as a test switch. |
+| `?car=` | hex colour | Body colour of the 3D vehicle. | No. Mockup tooling. |
+| `?user=` | `customer`, `company`, `admin` | Previews the logged-in header (LP-24) with sample users. Also in the panel's User row. | No. The product reads `GET /api/v1/auth/me`. |
 | Logged out | | Header shows **Log in** and **Sign up**. | Yes. The only state the mockup shows. |
-| Logged in | | Not in the mockup. See open question 5. | To decide |
+| Logged in | | Same page. **Log in** and **Sign up** become the account menu (LP-24). No redirect. Not in the mockup yet. | Yes |
 | Reduced motion | | No scroll zoom. About becomes a normal section. | Yes. No API impact. |
 
 ## What the page shows
@@ -31,8 +33,9 @@ Most of the page is static marketing copy. It needs one endpoint of its own (fea
 | Header | About, How it works, For rental companies, Reviews | Static. In-page links. |
 | Header | Log in | Static link to `/login` |
 | Header | Sign up | Static link to `/login?view=signup` |
-| Header | Logged-in nav (not in mockup) | `GET /api/v1/auth/me` (login.md). Assumption. |
-| Hero | 3D scene (desktop) or photo (phones) | Static assets. Follows the Car or Motorbike tab. |
+| Header | Theme toggle, next to Log in: one button that cycles System, Light, Dark | Browser only: `localStorage` (LP-23). No API. |
+| Header | Account menu when logged in (mockup: `?user=`) | `GET /api/v1/auth/me` (login.md): initials, first name, `role` (LP-24) |
+| Hero | 3D scene (desktop) or photo (phones) | Static assets. Follows the Car or Motorbike tab. Scenery, camera and time of day are picked in the browser on each load (LP-17 to LP-21). No API. |
 | Hero | Eyebrow "New · Cars & motorbikes from local rental companies" | Static |
 | Hero | Heading "Find your ride. Hit the road." and lead text | Static |
 | Hero form | Car / Motorbike tabs | Static. Fixed values `CAR`, `MOTORBIKE` (Vehicle `type`). |
@@ -45,28 +48,31 @@ Most of the page is static marketing copy. It needs one endpoint of its own (fea
 | (02) How it works | Four steps: Search, Compare, Request, Ride & return | Static |
 | (03) For rental companies | Heading and four bullets | Static |
 | (03) For rental companies | Register your company | Static link to `/login?view=signup&as=company` |
-| (03) For rental companies | See how it works | Static. `href="#"` in the mockup, a dead link. |
+| (03) For rental companies | See how it works | Static link to `/for-companies`, a static page (LP-25). A dead link (`href="#"`) in the mockup. |
 | (03) For rental companies | "Booking requests" card (Honda Vision, Toyota Vios, Yamaha NVX) | Static illustration of the company dashboard. Not live data. No API. |
 | (04) Reviews | Heading and intro text | Static |
-| (04) Reviews | Three review cards: stars | `GET /api/v1/reviews/featured` → `rating` |
-| (04) Reviews | Quote | → `comment` |
-| (04) Reviews | Name "Minh T." | → `authorDisplayName` |
-| (04) Reviews | "rented a motorbike for 3 days" | → `vehicleType` and `rentalDays` |
-| (04) Reviews | Third card "Khanh N. · rental company owner" | Cannot come from a Review. See open question 1. |
+| (04) Reviews | Three review cards: stars, quote, name, "rented a motorbike for 3 days" | Static sample content written into the page (LP-21). No API. |
+| (04) Reviews | Third card "Khanh N. · rental company owner" | Static. It can stay, because the cards are no longer real Review rows. |
 | CTA | "Ready to ride?" text | Static |
 | CTA | Search vehicles | Static. Scrolls to the hero form. |
 | CTA | List your fleet | Static. Scrolls to "For rental companies". |
 | Footer | Logo and tagline | Static |
 | Footer | About, How it works, Reviews, List your fleet | Static. In-page links. |
 | Footer | Company log in | Static link to `/login?as=company` |
-| Footer | Contact us, Terms, Privacy | Static. `href="#"` in the mockup. No pages designed yet. |
+| Footer | Contact us | Static email link: `mailto:support@rentxe.example` (address to be chosen). A dead link in the mockup. |
+| Footer | Terms, Privacy | Static links to `/terms` and `/privacy`, plain text pages (LP-25). Dead links in the mockup. |
 | Footer | "© 2026 RentXe · ... placeholder content" | Static. Remove "prototype" and "placeholder" before release. |
 | Mockup only | Toast "Prototype: this would open the search results page" | None. The product opens the search page. |
+| Mockup only | Toast "Prototype: the … page comes later" | None. Links to pages with no mockup yet: `/for-companies`, `/terms`, `/privacy` and the account pages. |
 | Mockup only | "Prototype controls" panel | None. Mockup tooling. |
 
 ## Endpoints
 
-### GET /api/v1/reviews/featured
+None in the MVP. The reviews section is static (LP-21), so the landing page needs no endpoint of its own.
+
+### Option for later: GET /api/v1/reviews/featured
+
+Not in the MVP. Kept here in case the team later wants real reviews on the landing page. If it is built, LP-7 to LP-11 apply, and the page hides the section when the call gives nothing to show (LP-11).
 
 Reviews for the "Rated by the people who rode" cards.
 
@@ -150,7 +156,7 @@ Errors:
 Notes:
 
 - Read-only. No `401` or `403`: anyone can call it.
-- An empty `content` is a valid answer, for example on a new site with no reviews.
+- An empty `content` is a valid answer, for example on a new site with no reviews. The endpoint never answers `404` for "no reviews"; the page treats an empty list like a failed call (LP-11).
 - Never returns the author's id, full name or email.
 - Which reviews are eligible: LP-7.
 - The answer is the same for every visitor, so the server may cache it for a few minutes (assumption).
@@ -193,6 +199,10 @@ Submitting the hero form opens the search page. It makes no API call.
 | Sign up | `/login?view=signup` |
 | Register your company | `/login?view=signup&as=company` |
 | Company log in | `/login?as=company` |
+| See how it works | `/for-companies` (static page) |
+| Terms | `/terms` (static page) |
+| Privacy | `/privacy` (static page) |
+| Contact us | `mailto:support@rentxe.example` |
 
 ## Validation and business rules
 
@@ -207,7 +217,43 @@ Hero search form:
 | LP-5 | Pick-up location is optional free text, trimmed, at most 100 characters (assumption). If blank, `location` is not sent and the search page uses its default city. |
 | LP-6 | Submitting opens the search page with the parameters above. The search page must check them again, because anyone can edit a URL. |
 
-Featured reviews:
+Hero scene (desktop 3D only):
+
+| ID | Rule |
+|---|---|
+| LP-17 | Scenery: each page load picks Mountains or City at random, with equal chances. |
+| LP-18 | Camera: each page load picks Scenic, Chase or Top at random, with equal chances. The Front ¾ and Side cameras are removed. |
+| LP-19 | Time of day comes from the visitor's local clock: Day from 07:00 to 16:59, Sunset from 05:00 to 06:59 and from 17:00 to 19:59, Night from 20:00 to 04:59. The light or dark theme never changes it (LP-22). |
+| LP-20 | `?scenery=`, `?camera=` and `?time=` pin that part of the scene. The page never writes them back to the URL, so a plain reload picks again. |
+
+Phones and touch tablets show the static photo instead of the 3D scene, so LP-17 to LP-20 do not apply there.
+
+Theme:
+
+| ID | Rule |
+|---|---|
+| LP-22 | The page follows the site's light or dark theme: header, sections, cards and footer. The hero scene does not: its sky comes only from LP-19, so a dark-theme visitor at noon sees Day, and a light-theme visitor at 21:00 sees Night. The copy over the hero stays white on the scene, and the hero search box stays light, in both themes. |
+| LP-23 | The theme starts from the visitor's system setting (`prefers-color-scheme`). A theme toggle in the header, next to **Log in**, offers System, Light and Dark. The choice is saved in the browser's `localStorage` (README, Theme), so it holds on every page and after a reload. No API call. |
+
+Header:
+
+| ID | Rule |
+|---|---|
+| LP-24 | Logged out, the header shows the theme toggle, **Log in** and **Sign up**. Logged in, the page stays the same and nothing redirects: **Log in** and **Sign up** are replaced by the account menu, with the visitor's initials and first name from `GET /api/v1/auth/me`. A customer gets the same menu as the search page (search.md). A company's menu adds **Dashboard**, and an admin's adds **Admin** (assumption until those pages are mocked up). Every menu has **Log out**. |
+
+Static pages linked from here:
+
+| ID | Rule |
+|---|---|
+| LP-25 | `/for-companies`, `/terms` and `/privacy` are static pages with no API. `/for-companies` explains the company side in six steps: register; get verified by an admin (listings appear in search only after that); list vehicles; approve or decline requests; record pick-up, return and condition; build a rating from finished rentals. It ends with **Register your company** (`/login?view=signup&as=company`). `/terms` and `/privacy` hold placeholder text until the team writes them. Each page needs a simple wireframe. |
+
+Reviews section:
+
+| ID | Rule |
+|---|---|
+| LP-21 | The reviews section shows three fixed sample reviews written into the page. It makes no API call, so it always shows. |
+
+Featured reviews from the API (only if the option above is built):
 
 | ID | Rule |
 |---|---|
@@ -215,7 +261,7 @@ Featured reviews:
 | LP-8 | Eligible reviews are shown newest first. |
 | LP-9 | The author is shown as first name and last initial only: the first word of `fullName`, a space, the first letter of the last word, and a full stop (`Minh Tran` → `Minh T.`). A one-word name is shown as is. The full name, email and id are never shown. |
 | LP-10 | `rentalDays` counts days the same way as the fee rule in SRS §2.8 (return date minus pick-up date). The card shows "for 1 day", "for N days", or "for a week" when it is 7. |
-| LP-11 | If the call fails or returns no reviews, the page still loads. The cards are hidden; the section heading and text stay, so the **Reviews** nav link still works. Assumption. |
+| LP-11 | If the call fails (network error or `5xx`) or returns fewer than 3 reviews, the page still loads and the whole Reviews section is hidden, with no error message. The **Reviews** links in the header and footer are hidden too, so they never point at a missing section. |
 
 Promises in the page copy. Other files own these rules; they are listed so the SRS matches what the page says.
 
@@ -238,16 +284,16 @@ Changes only if the team picks that answer to an open question:
 | Model | Change | When |
 |---|---|---|
 | Review | Add `featured` (boolean, set by an admin, default `false`) | Admins pick the landing reviews (open question 2) |
-| Review | Replace `rating` with `vehicleRating` and `companyRating` (int, 1 to 5) | Customers rate the vehicle and the company separately (open question 3) |
-| Company | Add a cancellation rule field | Each company sets its own cancel rule (open question 4) |
 
 ## Open questions
 
-1. The third review card is a rental company owner's quote. A Review can only come from a customer's returned booking. Show three customer reviews (this file assumes so), move owner quotes into the "For rental companies" section as static copy, or add a testimonial feature (not in any mockup)?
-2. Are featured reviews picked automatically (LP-7, assumed here) or by an admin? Admin picks need `Review.featured` and an admin screen that no mockup shows.
-3. The reviews intro says customers "rate the vehicle and the company". The README Review has one `rating`. Keep one rating and change the copy, or store two ratings?
-4. "You can cancel where their rules allow" (How it works, step 3) says each company sets its own cancel rule. Is it one rule for everyone in SRS §2.8, or one per company? Change the copy to match.
-5. What does a logged-in visitor see on `/`? The landing page with their role's nav, or a redirect (customer to search, company to their dashboard, admin to the admin area)?
+1. Resolved: the reviews are static sample content (LP-21), so the company owner's quote can stay.
+2. Only if the API option is built: are featured reviews picked automatically (LP-7) or by an admin? Admin picks need `Review.featured` and an admin screen that no mockup shows.
+3. Resolved: one rating covers the vehicle and the service together, and counts toward both the vehicle's and the company's average. Reword the intro to: "After every completed rental, customers give one rating for the vehicle and the service together, so the next person knows what to expect."
+4. Resolved: one cancellation rule for everyone (vehicle.md VEH-22, VEH-23). Reword How it works, step 03 to: "The rental company approves it, and you can cancel free until 24 hours before pick-up."
+5. Resolved: a logged-in visitor sees the same landing page, with the account menu in place of **Log in** and **Sign up** (LP-24). No redirect for any role.
 6. Resolved: search.md defines `GET /api/v1/places` and reads `type`, `location`, `from` and `to` from its URL.
-7. Can a rental start today? The first review ("picked it up the same afternoon") says yes, but LP-3 follows the vehicle page's date fields, where the earliest pick-up is tomorrow. If same-day pick-up is wanted, change LP-3, SR-4 and VEH-3 together, or change the review copy.
-8. "See how it works" in the companies section, and Contact us, Terms and Privacy in the footer, link nowhere. Are Terms and Privacy pages in scope? The sign-up form links to them too.
+7. Resolved: the earliest pick-up stays tomorrow (LP-3). Change the first review's quote to: "Found a scooter two streets from my hotel, booked it in a few minutes and picked it up the next morning."
+8. Resolved: "See how it works" opens the static page `/for-companies`, Contact us is an email link, and Terms and Privacy are static text pages, which the sign-up form also links to (LP-25).
+9. Resolved: the scene follows the clock (LP-19), the page follows the light or dark theme (LP-22), and the toggle sits in the header next to **Log in**, saved in `localStorage` (LP-23). A daytime demo still shows Day unless the URL pins `?time=`.
+10. Resolved: the mockup was updated on 6 Nov 2026 to match LP-17 to LP-25: random scenery and camera, time from the clock, no Front ¾ or Side, the theme toggle and dark styles, the logged-in header (`?user=`), the reworded copy, and the four links. `/for-companies`, `/terms` and `/privacy` have no mockup yet; their links show a "comes later" toast.

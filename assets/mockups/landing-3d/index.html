@@ -46,14 +46,50 @@
 
   font-family: var(--sans);
 }
+
+/* Theme colours. Light by default; dark when the html element has data-theme="dark".
+   The rules are in docs/Milestone1/api/README.md, section Theme. Use these for page and card backgrounds,
+   body text and rules, so one attribute flips a page. --ink and --paper stay fixed black and white,
+   for things that keep their colour in both themes (the hero, orange buttons, the black CTA button). */
+:root {
+  --theme-bg: #FFFFFF;            /* page background */
+  --theme-text: #0E0E0E;          /* body text */
+  --theme-muted: #6F6F6F;         /* secondary text */
+  --theme-line: #E6E6E6;          /* hairline rules */
+  --theme-fill: #F3F3F3;          /* inputs, hovers, soft tags */
+  --theme-card: #FFFFFF;          /* cards, menus */
+  --theme-band: #0E0E0E;          /* black bands and the footer */
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --theme-bg: #0E0E0E;
+  --theme-text: #F2F2F2;
+  --theme-muted: #A3A3A3;         /* 8:1 on the background */
+  --theme-line: #2A2A2A;
+  --theme-fill: #1C1C1C;
+  --theme-card: #222222;
+  --theme-band: #181818;
+}
 </style>
+<!-- Theme: the saved choice (localStorage "rentxe-theme": system, light or dark), else the system setting.
+     Runs before the page draws so it never flashes the wrong theme. See docs/Milestone1/api/README.md, Theme. -->
+<script>
+  (() => {
+    let choice = 'system';
+    try { choice = localStorage.getItem('rentxe-theme') || 'system'; } catch { /* storage blocked */ }
+    if (!['system', 'light', 'dark'].includes(choice)) choice = 'system';
+    const dark = choice === 'dark' || (choice === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.themeChoice = choice;
+  })();
+</script>
 <!-- GSAP for the text and section reveals (free "standard" licence). The page works without it. -->
 <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js"></script>
 <style>
   /* Colours, fonts and radii come from the tokens block above. Only page-specific values live here. */
   :root {
-    --about-bg: var(--paper);       /* the About section and the vehicle's screen: one solid colour */
+    --about-bg: var(--theme-bg);    /* the About section and the vehicle's screen: one solid colour */
     --hero-h: 100vh;
     --scrim: .45;
   }
@@ -82,9 +118,11 @@
          padding: 22px clamp(20px, 4vw, 56px); transition: background .3s, padding .3s, box-shadow .3s; }
   html.scrolled .nav { padding-top: 13px; padding-bottom: 13px; background: rgb(10 10 10 / .82); backdrop-filter: blur(14px);
                        box-shadow: 0 1px 0 rgb(255 255 255 / .06); }
-  html.on-light .nav { background: var(--about-bg); backdrop-filter: none; box-shadow: 0 1px 0 var(--line); }
-  html.on-light .nav .brand, html.on-light .nav .links a, html.on-light .nav .btn.ghost { color: var(--ink); }
-  html.on-light .nav .btn.ghost:hover { background: #F2F2F2; }
+  html.on-light .nav { background: var(--about-bg); backdrop-filter: none; box-shadow: 0 1px 0 var(--theme-line); }
+  html.on-light .nav .brand, html.on-light .nav .links a, html.on-light .nav .btn.ghost,
+  html.on-light .nav .theme-btn, html.on-light .nav .account-btn { color: var(--theme-text); }
+  html.on-light .nav .btn.ghost:hover, html.on-light .nav .theme-btn:hover,
+  html.on-light .nav .account-btn:hover, html.on-light .nav .account-btn[aria-expanded="true"] { background: var(--theme-fill); }
   .brand { display: flex; align-items: center; gap: 10px; color: #fff; text-decoration: none;
            font-weight: 800; font-size: 23px; letter-spacing: -.02em; }
   .brand b { color: var(--brand); }
@@ -93,12 +131,43 @@
   .links a { color: rgb(255 255 255 / .82); text-decoration: none; font-size: 15px; font-weight: 500; }
   .links a:hover { color: #fff; }
   .auth { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+  /* 10px top / 12px bottom, not 11/11: labels like "Log in" and "Sign up" have descenders (g, p), so centring the
+     line box makes the words look low. One pixel up centres them by eye. Same total height. */
   .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 999px;
-         padding: 11px 20px; font-size: 15px; font-weight: 700; text-decoration: none;
+         padding: 10px 20px 12px; font-size: 15px; font-weight: 700; text-decoration: none;
          background: var(--brand); color: #fff; transition: background .2s, transform .2s; }
   .btn:hover { background: var(--brand-dark); }
   .btn.ghost { background: transparent; color: #fff; }
   .btn.ghost:hover { background: rgb(255 255 255 / .12); }
+
+  /* Theme toggle (System → Light → Dark) and the account menu that replaces Log in / Sign up when logged in.
+     Both sit in .auth; over the hero they are white, over the sections they follow the theme. */
+  .theme-btn { display: grid; place-items: center; width: 42px; height: 42px; border: 0; border-radius: 50%;
+               background: transparent; color: #fff; transition: background .2s; }
+  .theme-btn:hover { background: rgb(255 255 255 / .12); }
+  .theme-btn svg { display: none; width: 20px; height: 20px; transform: translateY(1px); }   /* level with the words, not the line box */
+  html[data-theme-choice="system"] .theme-btn .i-system,
+  html[data-theme-choice="light"] .theme-btn .i-light,
+  html[data-theme-choice="dark"] .theme-btn .i-dark { display: block; }
+  html.signed-in .auth [data-guest] { display: none; }
+  .account { position: relative; }
+  .account-btn { display: flex; align-items: center; gap: 10px; border: 0; border-radius: 999px; padding: 4px 12px 4px 4px;
+                 background: none; color: #fff; font-size: 15px; font-weight: 600; transition: background .2s; }
+  .account-btn:hover, .account-btn[aria-expanded="true"] { background: rgb(255 255 255 / .12); }
+  .avatar { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--brand);
+            color: #fff; font-size: 13px; font-weight: 700; letter-spacing: .02em; }
+  .account-btn svg { width: 16px; height: 16px; transition: transform .3s var(--ease-out); }
+  .account-btn[aria-expanded="true"] svg { transform: rotate(180deg); }
+  .account-menu { position: absolute; right: 0; top: calc(100% + 12px); width: 268px; padding: 6px; border: 1px solid var(--theme-text);
+                  border-radius: var(--radius-field); background: var(--theme-card); color: var(--theme-text); }
+  .account-who { display: grid; gap: 3px; padding: 12px 12px 14px; margin-bottom: 6px; border-bottom: 1px solid var(--theme-line); }
+  .account-who b { font-size: 15px; }
+  .account-who span { color: var(--theme-muted); font-size: 13px; }
+  .account-who .label { margin-top: 8px; color: var(--brand); font: var(--label); letter-spacing: .04em; text-transform: uppercase; }
+  .account-menu a { display: block; padding: 10px 12px; border-radius: 8px; color: inherit; font-size: 14px; font-weight: 500;
+                    text-decoration: none; }
+  .account-menu a:hover, .account-menu a:focus-visible { background: var(--theme-fill); outline: 0; }
+  .account-menu hr { margin: 6px 0; border: 0; border-top: 1px solid var(--theme-line); }
 
   /* ── Copy + search ────────────────────────────────── */
   .copy { position: absolute; z-index: 2; left: clamp(20px, 4vw, 56px); top: 50%;
@@ -113,7 +182,7 @@
   h1 .accent { color: var(--brand); }
   .lead { margin: 0; max-width: 480px; font-size: 18px; line-height: 1.55; color: rgb(255 255 255 / .88); }
 
-  .search { margin-top: 30px; }
+  .search { margin-top: 30px; color-scheme: light; }   /* the hero form stays light in both themes (LP-22) */
   .tabs { display: inline-flex; gap: 4px; padding: 5px 5px 0; border-radius: 14px 14px 0 0;
           background: rgb(255 255 255 / .94); }
   .tabs button { display: inline-flex; align-items: center; gap: 8px; border: 0; border-radius: 10px;
@@ -165,7 +234,7 @@
   html.zoom .track { height: 330vh; }
   html.zoom .hero { position: sticky; top: 0; height: 100vh; min-height: 0; }
   .panel { display: none; position: absolute; z-index: 4; overflow: hidden; pointer-events: none; background: var(--about-bg);
-           color: var(--ink); }
+           color: var(--theme-text); }
   .splash { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
             transform: translateY(calc(var(--s) * .16)); }
   .splash svg { width: var(--s); height: var(--s); }
@@ -186,15 +255,15 @@
                                                    rgb(0 0 0 / .42) 100%); }
 
   /* ── Sections after the hero: orange About, then white and black bands ── */
-  .about { display: flex; background: var(--about-bg); color: var(--ink); padding: 120px clamp(20px, 4vw, 56px) 56px; }
+  .about { display: flex; background: var(--about-bg); color: var(--theme-text); padding: 120px clamp(20px, 4vw, 56px) 56px; }
   .about-inner { flex: 1; width: 100%; max-width: 1320px; margin: 0 auto; display: flex; flex-direction: column;
                  gap: clamp(40px, 7vh, 80px); }
   .meta, .kicker, .facts, .steps, .reviews { position: relative; }
   .meta::after, .kicker::after, .facts::before, .steps::before, .reviews::before {
-    content: ''; position: absolute; left: 0; right: 0; height: 1px; background: var(--line);
+    content: ''; position: absolute; left: 0; right: 0; height: 1px; background: var(--theme-line);
     transform: scaleX(var(--rule, 1)); transform-origin: left; }
   .meta::after, .kicker::after { bottom: 0; }
-  .facts::before, .steps::before, .reviews::before { top: 0; background: var(--ink); }
+  .facts::before, .steps::before, .reviews::before { top: 0; background: var(--theme-text); }
   .band .kicker::after { background: rgb(255 255 255 / .16); }
   .meta { display: flex; justify-content: space-between; gap: 16px; padding-bottom: 14px;
           font: 500 12.5px/1.2 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
@@ -204,7 +273,7 @@
   .statement em { background: linear-gradient(currentColor, currentColor) 0 94% / calc(var(--u, 1) * 100%) .07em no-repeat; }
   .cta h2 em { color: #fff; }
   .w { display: inline-block; }                     /* words, wrapped by the page script for the reveals */
-  .statement .soft { color: rgb(0 0 0 / .38); }
+  .statement .soft { color: color-mix(in srgb, var(--theme-text) 38%, transparent); }
   .slot { display: inline-block; margin: 0 .04em; vertical-align: -.03em; clip-path: inset(-40% 0 -40% 0); }
   .icon { display: block; height: .74em; width: auto; overflow: visible; }
   .icon.bike { height: .8em; }
@@ -212,22 +281,22 @@
   .icon .hub { fill: var(--about-bg); }
   .facts { display: grid; grid-template-columns: 1fr 1fr auto; }
   .fact { padding: 18px 32px 0 0; }
-  .fact + .fact { padding-left: 32px; border-left: 1px solid var(--line); }
+  .fact + .fact { padding-left: 32px; border-left: 1px solid var(--theme-line); }
   .fact h3 { margin: 0 0 10px; font: 500 12.5px/1.2 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
-  .fact p { margin: 0; max-width: 430px; font-size: 16px; line-height: 1.5; color: var(--muted); }
-  .round-link { align-self: end; display: inline-flex; align-items: center; gap: 14px; padding-left: 32px; color: var(--ink);
+  .fact p { margin: 0; max-width: 430px; font-size: 16px; line-height: 1.5; color: var(--theme-muted); }
+  .round-link { align-self: end; display: inline-flex; align-items: center; gap: 14px; padding-left: 32px; color: var(--theme-text);
                 font-weight: 700; font-size: 15px; text-decoration: none; }
-  .round-link span { display: grid; place-items: center; width: 58px; height: 58px; border-radius: 50%; background: var(--ink);
-                     color: #fff; transition: transform .35s cubic-bezier(.2, .8, .2, 1); }
+  .round-link span { display: grid; place-items: center; width: 58px; height: 58px; border-radius: 50%; background: var(--theme-text);
+                     color: var(--theme-bg); transition: transform .35s cubic-bezier(.2, .8, .2, 1); }
   .round-link svg { width: 22px; height: 22px; }
   .round-link:hover span { transform: translateY(6px); background: var(--brand); }
 
-  main.sections { background: #fff; color: var(--ink); }
+  main.sections { background: var(--theme-bg); color: var(--theme-text); }
   html.zoom main.sections > .section:first-child { padding-top: clamp(48px, 7vw, 96px); }
   .section { max-width: 1432px; margin: 0 auto; padding: clamp(72px, 10vw, 136px) clamp(20px, 4vw, 56px); }
   .section-head { display: grid; grid-template-columns: 1fr 1fr; gap: 24px 64px; align-items: end; margin-bottom: 56px; }
   .section-head .kicker { grid-column: 1 / -1; }
-  .section-head p:last-child { margin: 0; max-width: 460px; font-size: 18px; line-height: 1.55; color: var(--muted); }
+  .section-head p:last-child { margin: 0; max-width: 460px; font-size: 18px; line-height: 1.55; color: var(--theme-muted); }
   .kicker { display: flex; align-items: center; gap: 10px; margin: 0; padding-bottom: 14px;
             font: 500 12.5px/1.2 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
   .kicker::before { content: ''; width: 9px; height: 9px; background: var(--brand); }
@@ -235,12 +304,12 @@
 
   .steps { display: grid; grid-template-columns: repeat(4, 1fr); margin: 0; padding: 0; list-style: none; }
   .step { padding: 22px 28px 8px 0; }
-  .step + .step { padding-left: 28px; border-left: 1px solid var(--line); }
+  .step + .step { padding-left: 28px; border-left: 1px solid var(--theme-line); }
   .num { display: block; margin-bottom: 48px; font: 500 13px/1 var(--mono); color: var(--brand-dark); }
   .step h3 { margin: 0 0 10px; font-size: 24px; letter-spacing: -.02em; }
-  .step p { margin: 0; color: var(--muted); font-size: 15.5px; line-height: 1.55; }
+  .step p { margin: 0; color: var(--theme-muted); font-size: 15.5px; line-height: 1.55; }
 
-  .band { background: var(--ink); color: #fff; }
+  .band { background: var(--theme-band); color: #fff; }
   .split { display: grid; grid-template-columns: 1fr 1.05fr; gap: clamp(32px, 6vw, 96px); align-items: center; }
   .split .kicker { margin-bottom: 28px; }
   .split h2 { margin-bottom: 30px; }
@@ -254,31 +323,31 @@
   .btn.line:hover { background: rgb(255 255 255 / .08); }
   .band .btn.dark { background: var(--brand); }
   .band .btn.dark:hover { background: var(--brand-dark); }
-  .console { padding: 22px; border-radius: 14px; background: #fff; color: var(--ink); }
+  .console { padding: 22px; border-radius: 14px; background: var(--theme-card); color: var(--theme-text); }
   .console-head { display: flex; justify-content: space-between; align-items: center; padding-bottom: 14px; margin-bottom: 6px;
-                  border-bottom: 1px solid var(--line); font-weight: 700; }
-  .console-head span { font: 500 12px/1 var(--mono); color: var(--muted); text-transform: uppercase; }
+                  border-bottom: 1px solid var(--theme-line); font-weight: 700; }
+  .console-head span { font: 500 12px/1 var(--mono); color: var(--theme-muted); text-transform: uppercase; }
   .booking { display: grid; grid-template-columns: 40px 1fr auto; gap: 14px; align-items: center; padding: 14px 0;
-             border-bottom: 1px solid var(--line); }
+             border-bottom: 1px solid var(--theme-line); }
   .booking:last-child { border-bottom: 0; padding-bottom: 2px; }
   .booking i { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; font-style: normal;
-               font-weight: 800; font-size: 13px; background: var(--ink); color: #fff; }
+               font-weight: 800; font-size: 13px; background: var(--theme-text); color: var(--theme-card); }
   .booking b { display: block; font-size: 14.5px; }
-  .booking small { color: var(--muted); font-size: 12.5px; }
+  .booking small { color: var(--theme-muted); font-size: 12.5px; }
   .booking .acts { display: flex; gap: 6px; }
-  .booking .acts span { padding: 7px 13px; border-radius: 999px; font-size: 12px; font-weight: 700; box-shadow: inset 0 0 0 1.5px var(--line); }
+  .booking .acts span { padding: 7px 13px; border-radius: 999px; font-size: 12px; font-weight: 700; box-shadow: inset 0 0 0 1.5px var(--theme-line); }
   .booking .acts span:first-child { background: var(--brand); color: #fff; box-shadow: none; }
   .booking .tag { padding: 7px 13px; border-radius: 999px; font: 500 11.5px/1 var(--mono); text-transform: uppercase;
-                  background: #F1F1F1; color: var(--ink); }
+                  background: var(--theme-fill); color: var(--theme-text); }
 
   .reviews { display: grid; grid-template-columns: repeat(3, 1fr); }
   .review { margin: 0; padding: 24px 32px 0 0; display: flex; flex-direction: column; }
-  .review + .review { padding-left: 32px; border-left: 1px solid var(--line); }
+  .review + .review { padding-left: 32px; border-left: 1px solid var(--theme-line); }
   .stars { color: var(--brand); letter-spacing: 3px; font-size: 14px; }
   .review blockquote { flex: 1; margin: 18px 0 28px; font-size: clamp(20px, 1.7vw, 24px); font-weight: 500; line-height: 1.38;
                        letter-spacing: -.015em; }
-  .review figcaption { font: 500 12px/1.5 var(--mono); letter-spacing: .03em; text-transform: uppercase; color: var(--muted); }
-  .review figcaption b { color: var(--ink); font-weight: 500; }
+  .review figcaption { font: 500 12px/1.5 var(--mono); letter-spacing: .03em; text-transform: uppercase; color: var(--theme-muted); }
+  .review figcaption b { color: var(--theme-text); font-weight: 500; }
 
   .cta { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 28px; padding: clamp(32px, 5vw, 64px);
          border-radius: 4px; color: var(--ink); background: var(--brand); }
@@ -286,7 +355,7 @@
   .cta p { margin: 0; color: rgb(0 0 0 / .7); font-size: 17px; }
   .cta .btn { background: var(--ink); color: #fff; }
   .cta .btn.ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--ink); }
-  footer.foot { background: var(--ink); color: rgb(255 255 255 / .62); }
+  footer.foot { background: var(--theme-band); color: rgb(255 255 255 / .62); }
   .foot .section { display: grid; grid-template-columns: 1.4fr repeat(3, 1fr); gap: 32px; padding-top: 64px; padding-bottom: 40px; }
   .foot h4 { margin: 0 0 14px; color: #fff; font: 500 12px/1.2 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
   .foot a { display: block; margin: 8px 0; color: inherit; text-decoration: none; font-size: 14px; }
@@ -298,9 +367,9 @@
     .split, .section-head { grid-template-columns: 1fr; }
     .steps { grid-template-columns: 1fr 1fr; }
     .step:nth-child(3) { padding-left: 0; border-left: 0; }
-    .step:nth-child(n+3) { border-top: 1px solid var(--line); }
+    .step:nth-child(n+3) { border-top: 1px solid var(--theme-line); }
     .reviews { grid-template-columns: 1fr; }
-    .review + .review { padding-left: 0; border-left: 0; border-top: 1px solid var(--line); }
+    .review + .review { padding-left: 0; border-left: 0; border-top: 1px solid var(--theme-line); }
     .review { padding-bottom: 28px; }
     .facts { grid-template-columns: 1fr 1fr; }
     .round-link { grid-column: 1 / -1; padding: 24px 0 0; }
@@ -310,9 +379,9 @@
     .about { padding-top: 76px; }
     .meta span:last-child { display: none; }
     .facts, .steps { grid-template-columns: 1fr; }
-    .fact + .fact { padding-left: 0; border-left: 0; border-top: 1px solid var(--line); margin-top: 18px; }
+    .fact + .fact { padding-left: 0; border-left: 0; border-top: 1px solid var(--theme-line); margin-top: 18px; }
     .step, .step + .step { padding-left: 0; border-left: 0; }
-    .step + .step { border-top: 1px solid var(--line); }
+    .step + .step { border-top: 1px solid var(--theme-line); }
     .num { margin-bottom: 20px; }
     .booking { grid-template-columns: 40px 1fr; }
     .booking .acts, .booking .tag { grid-column: 2; justify-self: start; }
@@ -367,8 +436,22 @@
     <a href="#reviews">Reviews</a>
   </nav>
   <div class="auth">
-    <a class="btn ghost" href="../login/index.html">Log in</a>
-    <a class="btn" href="../login/index.html?view=signup">Sign up</a>
+    <button class="theme-btn" type="button" id="themeBtn" aria-label="Theme: System. Click to change.">
+      <svg class="i-system" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17a8.5 8.5 0 0 0 0-17z" fill="currentColor" stroke="none"/></svg>
+      <svg class="i-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg>
+      <svg class="i-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5z"/></svg>
+    </button>
+    <a class="btn ghost" href="../login/index.html" data-guest>Log in</a>
+    <a class="btn" href="../login/index.html?view=signup" data-guest>Sign up</a>
+    <!-- Logged in (LP-24): same page, the account menu replaces Log in / Sign up. Preview with ?user=customer|company|admin. -->
+    <div class="account" id="account" hidden>
+      <button class="account-btn" type="button" id="accountBtn" aria-expanded="false" aria-controls="accountMenu" aria-haspopup="true">
+        <span class="avatar" aria-hidden="true"></span>
+        <span class="account-name"></span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <div class="account-menu" id="accountMenu" hidden></div>
+    </div>
   </div>
 </header>
 
@@ -474,7 +557,7 @@
     <ol class="steps">
       <li class="step"><span class="num">01 /</span><h3>Search</h3><p>Tell us where and when. Filter by vehicle type, brand, price and pick-up location.</p></li>
       <li class="step"><span class="num">02 /</span><h3>Compare</h3><p>See the same kind of vehicle from different companies, with prices, details and reviews.</p></li>
-      <li class="step"><span class="num">03 /</span><h3>Request</h3><p>Send a booking request for your dates. The rental company approves it, and you can cancel where their rules allow.</p></li>
+      <li class="step"><span class="num">03 /</span><h3>Request</h3><p>Send a booking request for your dates. The rental company approves it, and you can cancel free until 24 hours before pick-up.</p></li>
       <li class="step"><span class="num">04 /</span><h3>Ride &amp; return</h3><p>Pick up, ride, and bring it back. The fee is worked out from your rental period, then leave a review.</p></li>
     </ol>
   </section>
@@ -492,7 +575,7 @@
         </ul>
         <div class="actions">
           <a class="btn dark" href="../login/index.html?view=signup&amp;as=company">Register your company</a>
-          <a class="btn line" href="#">See how it works</a>
+          <a class="btn line" href="/for-companies" data-soon="For rental companies">See how it works</a>
         </div>
       </div>
       <div class="console" aria-label="Example of the rental company dashboard">
@@ -508,10 +591,10 @@
     <div class="section-head">
       <p class="kicker">(04) Reviews</p>
       <h2 id="reviews-title">Rated by the people <em>who rode.</em></h2>
-      <p>After every completed rental, customers rate the vehicle and the company, so the next person knows what to expect.</p>
+      <p>After every completed rental, customers give one rating for the vehicle and the service together, so the next person knows what to expect.</p>
     </div>
     <div class="reviews">
-      <figure class="review"><div class="stars">★★★★★</div><blockquote>“Found a scooter two streets from my hotel, booked it in a few minutes and picked it up the same afternoon.”</blockquote><figcaption><b>Minh T.</b> · rented a motorbike for 3 days</figcaption></figure>
+      <figure class="review"><div class="stars">★★★★★</div><blockquote>“Found a scooter two streets from my hotel, booked it in a few minutes and picked it up the next morning.”</blockquote><figcaption><b>Minh T.</b> · rented a motorbike for 3 days</figcaption></figure>
       <figure class="review"><div class="stars">★★★★★</div><blockquote>“Comparing three companies on one page saved us a lot of calls. The car was exactly as listed.”</blockquote><figcaption><b>Sarah L.</b> · rented a car for a week</figcaption></figure>
       <figure class="review"><div class="stars">★★★★<span style="opacity:.3">★</span></div><blockquote>“We list twelve bikes now. Requests come in already filled out, so approving them takes seconds.”</blockquote><figcaption><b>Khanh N.</b> · rental company owner</figcaption></figure>
     </div>
@@ -541,7 +624,7 @@
       </div>
       <div><h4>RentXe</h4><a href="#about">About</a><a href="#how">How it works</a><a href="#reviews">Reviews</a></div>
       <div><h4>Rental companies</h4><a href="#companies">List your fleet</a><a href="../login/index.html?as=company">Company log in</a></div>
-      <div><h4>Help</h4><a href="#">Contact us</a><a href="#">Terms</a><a href="#">Privacy</a></div>
+      <div><h4>Help</h4><a href="mailto:support@rentxe.example">Contact us</a><a href="/terms" data-soon="Terms">Terms</a><a href="/privacy" data-soon="Privacy">Privacy</a></div>
       <div class="legal">© 2026 RentXe · COSC2101 team project prototype · placeholder content</div>
     </div>
   </footer>
@@ -554,10 +637,12 @@
     <div class="chips" data-key="scenery"><button data-v="mountains">Mountains</button><button data-v="city">City</button></div></div>
   <div class="proto-row"><span>Time</span>
     <div class="chips" data-key="time"><button data-v="day">Day</button><button data-v="sunset">Sunset</button><button data-v="night">Night</button></div></div>
+  <div class="proto-row"><span>User</span>
+    <div class="chips" data-key="user"><button data-v="guest">Guest</button><button data-v="customer">Customer</button><button data-v="company">Company</button><button data-v="admin">Admin</button></div></div>
   <div class="proto-row"><span>Vehicle</span>
     <div class="chips" data-key="vehicle"><button data-v="car">Car</button><button data-v="bike">Motorbike</button></div></div>
   <div class="proto-row"><span>Camera</span>
-    <div class="chips" data-key="camera"><button data-v="scenic">Scenic</button><button data-v="front">Front ¾</button><button data-v="side">Side</button><button data-v="chase">Chase</button><button data-v="topdown">Top</button></div></div>
+    <div class="chips" data-key="camera"><button data-v="scenic">Scenic</button><button data-v="chase">Chase</button><button data-v="topdown">Top</button></div></div>
   <div class="proto-row"><span>Colour</span>
     <div class="chips swatches" data-key="carColor">
       <button data-v="#FF6A3D" style="--c:#FF6A3D" aria-label="Orange"></button>
@@ -627,6 +712,70 @@ setVehicle(PAGE.vehicle);
 const toast = (() => { const el = document.getElementById('toast'); let id;
   return msg => { el.textContent = msg; el.classList.add('show'); clearTimeout(id); id = setTimeout(() => el.classList.remove('show'), 2600); }; })();
 document.getElementById('search').addEventListener('submit', e => { e.preventDefault(); toast('Prototype: this would open the search results page'); });
+
+// Links to pages that have no mockup yet (/for-companies, /terms, /privacy, account pages).
+document.addEventListener('click', e => {
+  const a = e.target.closest('[data-soon]');
+  if (a) { e.preventDefault(); toast(`Prototype: the ${a.dataset.soon} page comes later`); }
+});
+
+// Theme toggle: System → Light → Dark, saved in localStorage (LP-23). The head script already applied it.
+const themeBtn = document.getElementById('themeBtn'), systemDark = matchMedia('(prefers-color-scheme: dark)');
+const THEME_NAMES = { system: 'System', light: 'Light', dark: 'Dark' };
+function applyTheme(choice) {
+  root.dataset.themeChoice = choice;
+  root.dataset.theme = choice === 'dark' || (choice === 'system' && systemDark.matches) ? 'dark' : 'light';
+  themeBtn.title = `Theme: ${THEME_NAMES[choice]}`;
+  themeBtn.setAttribute('aria-label', `Theme: ${THEME_NAMES[choice]}. Click to change.`);
+}
+themeBtn.addEventListener('click', () => {
+  const order = Object.keys(THEME_NAMES), next = order[(order.indexOf(root.dataset.themeChoice) + 1) % order.length];
+  try { localStorage.setItem('rentxe-theme', next); } catch { /* storage blocked: the choice lasts until reload */ }
+  applyTheme(next);
+  toast(`Theme: ${THEME_NAMES[next]}`);
+});
+systemDark.addEventListener('change', () => { if (root.dataset.themeChoice === 'system') applyTheme('system'); });
+applyTheme(root.dataset.themeChoice || 'system');
+
+// Logged-in header (LP-24). The real page reads GET /api/v1/auth/me; the mockup previews it with ?user=
+// or the panel's User row. Initials and first name come from fullName, the links from role.
+const USERS = {
+  customer: { fullName: 'Minh Tran', email: 'minh.tran@example.com', label: 'Customer account',
+              links: [['Search', '../search/index.html'], ['My bookings'], ['Profile'], ['My reviews'], ['Settings']] },
+  company:  { fullName: 'Yarra Car Co.', email: 'hello@yarracar.example', label: 'Company account',
+              links: [['Dashboard'], ['Profile']] },
+  admin:    { fullName: 'Alex Nguyen', email: 'admin@rentxe.example', label: 'Admin account', links: [['Admin']] },
+};
+const account = document.getElementById('account'), accountBtn = document.getElementById('accountBtn'),
+      accountMenu = document.getElementById('accountMenu');
+const words = name => name.replace(/[^\p{L}\s]/gu, '').trim().split(/\s+/);
+function setUser(role) {
+  const u = USERS[role];
+  PAGE.user = u ? role : 'guest';
+  root.classList.toggle('signed-in', !!u);
+  account.hidden = !u;
+  accountMenu.hidden = true; accountBtn.setAttribute('aria-expanded', 'false');
+  if (!u) return;
+  const w = words(u.fullName);
+  account.querySelector('.avatar').textContent = (w[0][0] + (w.length > 1 ? w.at(-1)[0] : '')).toUpperCase();
+  account.querySelector('.account-name').textContent = w[0];
+  accountMenu.innerHTML = `<div class="account-who"><b>${u.fullName}</b><span>${u.email}</span><span class="label">${u.label}</span></div>`
+    + u.links.map(([name, href]) => href ? `<a href="${href}">${name}</a>` : `<a href="#" data-soon="${name}">${name}</a>`).join('')
+    + '<hr><a href="#" data-logout>Log out</a>';
+}
+accountBtn.addEventListener('click', () => {
+  const open = accountMenu.hidden;
+  accountMenu.hidden = !open; accountBtn.setAttribute('aria-expanded', String(open));
+});
+document.addEventListener('click', e => {
+  if (e.target.closest('[data-logout]')) {
+    e.preventDefault(); setUser('guest'); toast('Prototype: logged out');
+    dispatchEvent(new CustomEvent('rentxe:user-changed', { detail: 'guest' }));
+  } else if (!account.contains(e.target)) { accountMenu.hidden = true; accountBtn.setAttribute('aria-expanded', 'false'); }
+});
+addEventListener('keydown', e => { if (e.key === 'Escape') { accountMenu.hidden = true; accountBtn.setAttribute('aria-expanded', 'false'); } });
+PAGE.setUser = setUser;
+setUser(params.get('user'));
 const iso = d => new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
 const day = n => new Date(Date.now() + n * 864e5);
 document.getElementById('from').value = iso(day(1));
@@ -741,12 +890,19 @@ if (!window.PAGE.static) {
   const { mergeGeometries } = await import('three/addons/utils/BufferGeometryUtils.js');
 
   /* ═════════════ 1. Settings ═════════════
-     Also settable from the URL, e.g. index.html?vehicle=bike&scenery=city&time=night&camera=topdown&car=2F80ED */
+     Every load picks the scenery and the camera at random (LP-17, LP-18) and the time of day from the
+     visitor's clock (LP-19). The light/dark theme never changes the scene (LP-22).
+     The URL can pin any of them (LP-20), e.g. index.html?vehicle=bike&scenery=city&time=night&camera=topdown&car=2F80ED */
+  const anyOf = list => list[Math.floor(Math.random() * list.length)];
+  const hour = new Date().getHours();
   const CONFIG = {
-    vehicle: 'car',        // car | bike
-    scenery: 'mountains',  // mountains | city
-    time: 'sunset',        // day | sunset | night
-    camera: 'scenic',      // scenic | front | side | chase | topdown
+    vehicle: 'car',                              // car | bike
+    scenery: anyOf(['mountains', 'city']),
+    time: hour >= 7 && hour < 17 ? 'day'         // 07:00–16:59
+        : hour >= 5 && hour < 20 ? 'sunset'      // 05:00–06:59 and 17:00–19:59
+        : 'night',                               // 20:00–04:59
+    camera: anyOf(['scenic', 'chase', 'topdown']),
+    user: window.PAGE.user,                      // guest | customer | company | admin: the header preview
     carColor: '#FF6A3D',   // body colour of whichever vehicle is shown
     speed: 16,             // metres per second the world scrolls past the car
   };
@@ -780,8 +936,6 @@ if (!window.PAGE.static) {
   // Camera shots. shift = lens shift as a fraction of the screen (pushes the vehicle right).
   // Each vehicle scales the whole shot (VEHICLES[..].cam). shadow: half-size of the sun's shadow area.
   const PRESETS = {
-    front:   { pos: [-4.6, 2.4, -11.5], look: [-.6, 1.25, 1], fov: 36, shift: [.2, .05] },
-    side:    { pos: [-15, 2.2, -1],     look: [0, 1, -.6],     fov: 30, shift: [.2, 0] },
     chase:   { pos: [-2.4, 2.9, 9.2],   look: [.4, 1, -4],     fov: 40, shift: [.14, -.06] },
     topdown: { pos: [-8, 32, 22],       look: [.5, 0, -1],     fov: 40, shift: [.14, .02], shadow: 34 },
     // Scenic, mountains: a drone gliding along beside the road (see PASS.drone).
@@ -797,9 +951,6 @@ if (!window.PAGE.static) {
     if (name === 'scenic' && CONFIG.scenery === 'city') name = 'aerial';
     const p = PRESETS[name], fixed = !!(p.world || p.drone), k = fixed ? 1 : VEHICLES[CONFIG.vehicle].cam[name] ?? 1;
     let pos = p.pos.map(c => c * k), fov = p.fov, shift = p.shift;
-    if (name === 'side' && CONFIG.scenery === 'city') {      // stand on the far sidewalk, not inside a building
-      pos[0] = Math.max(pos[0], -10); pos[1] += 1; fov += 14;
-    }
     const look = p.look.map(c => c * k);
     if (p.still) { /* framed for any screen shape */ }
     else if (width / height <= 1.1) {
@@ -1831,7 +1982,7 @@ if (!window.PAGE.static) {
             screenName: 'Car_Screen', zoom: { via: [[-3.4, 1.9, 1.6], [-1.25, 1.3, .2], [-.4, 1.33, .28]], stop: .33 } },
     bike: { glb: 'bike-glb', bodyName: 'Bike_Body', wheelNames: ['Wheel_F', 'Wheel_R'], wheelR: .27,
             beams: [[0, 1.07, -.72]], lamp: [0, 1.1, -.75], bob: .6, lean: true, blinkers: [[.2, 1.05, -.62], [.17, .66, .98]],
-            cam: { front: .68, side: .68, chase: .85, topdown: .62, poster: .62 },
+            cam: { chase: .85, topdown: .62, poster: .62 },
             screenName: 'Bike_Screen', zoom: { via: [[1.8, 2.3, 3.6], [.42, 1.8, .65]], stop: .3 } },
   };
   const vehicle = new THREE.Group();                         // holds both models; only one is visible
@@ -2275,20 +2426,17 @@ if (!window.PAGE.static) {
 
   /* ═════════════ 13. Prototype panel ═════════════ */
 
+  // The panel does not write to the URL, so every reload picks a new scenery and camera (LP-20).
   function syncControls() {
     document.querySelectorAll('.chips').forEach(group => group.querySelectorAll('button').forEach(b =>
       b.setAttribute('aria-pressed', String(CONFIG[group.dataset.key] === b.dataset.v))));
-    try {
-      const q = new URLSearchParams({ vehicle: CONFIG.vehicle, scenery: CONFIG.scenery, time: CONFIG.time, camera: CONFIG.camera,
-                                      car: CONFIG.carColor.slice(1) });
-      history.replaceState(null, '', '?' + q);
-    } catch { /* file:// in some browsers */ }
   }
   document.querySelectorAll('.chips').forEach(group => group.addEventListener('click', e => {
     const b = e.target.closest('button');
     if (!b) return;
     CONFIG[group.dataset.key] = b.dataset.v;
-    ({ time: applyTime, scenery: applyScenery, carColor: applyCarColor, vehicle: applyVehicle })[group.dataset.key]?.();
+    ({ time: applyTime, scenery: applyScenery, carColor: applyCarColor, vehicle: applyVehicle,
+       user: () => window.PAGE.setUser(CONFIG.user) })[group.dataset.key]?.();
     syncControls();
   }));
   const speedInput = document.getElementById('speed');
@@ -2301,6 +2449,7 @@ if (!window.PAGE.static) {
   protoToggle.addEventListener('click', toggleProto);
   addEventListener('keydown', e => { if (e.key.toLowerCase() === 'p' && !e.target.closest('input')) toggleProto(); });
 
+  addEventListener('rentxe:user-changed', e => { CONFIG.user = e.detail; syncControls(); });   // Log out in the menu
   addEventListener('rentxe:vehicle', e => {                      // Car / Motorbike tabs in the search box
     CONFIG.vehicle = e.detail;
     applyVehicle(); syncControls();
