@@ -9,6 +9,7 @@ The rubric asks for the reason behind every choice. Fill in "Why" and "Alternati
 | Build | Maven | | |
 | Frontend | HTML/CSS/JavaScript or React (pick one) | | |
 | Database | H2 (dev/test) or MySQL (pick one) | | |
+| Login / auth | Not decided: A Spring Security sessions (recommended) or B Supabase Auth on the page | See [login-auth-approach](../decisions/login-auth-approach.md) and [auth-flows.html](auth-flows.html) | |
 | Unit tests | JUnit 5 | | |
 | CI/CD | GitHub Actions | | |
 | Containers | Docker | | |

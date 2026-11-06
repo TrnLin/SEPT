@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>RentXe — Login options A and B</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --brand: #FF6A3D; --brand-dark: #E2532A; --brand-tint: #FFF1EC;
+    --ink: #0E0E0E; --paper: #FFFFFF; --muted: #6B6B6B; --line: #E6E6E6;
+    --sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); }
+  .page { width: 1600px; padding: 64px 72px 72px; }
+  .kicker { font: 500 14px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  h1 { font-size: 56px; line-height: 1.02; letter-spacing: -.03em; font-weight: 800; margin: 14px 0 0; }
+  h1 em { font-style: normal; color: var(--brand); }
+  .lede { font-size: 19px; line-height: 1.5; color: var(--muted); max-width: 980px; margin: 18px 0 0; }
+  section { margin-top: 64px; border-top: 2px solid var(--ink); padding-top: 22px; }
+  .head { display: flex; align-items: baseline; gap: 22px; }
+  .head .tag { font: 600 15px/1 var(--mono); color: var(--brand-dark); letter-spacing: .06em; text-transform: uppercase; }
+  .head h2 { margin: 0; font-size: 34px; letter-spacing: -.02em; font-weight: 800; }
+  .head .rec { margin-left: auto; font: 600 13px/1 var(--mono); text-transform: uppercase; letter-spacing: .08em;
+    background: var(--brand); color: #fff; padding: 9px 12px 8px; border-radius: 999px; }
+  .sum { font-size: 17px; line-height: 1.5; color: var(--muted); margin: 10px 0 8px; max-width: 1200px; }
+  svg { display: block; }
+  svg text { font-family: var(--sans); }
+  table { width: 100%; border-collapse: collapse; margin-top: 18px; font-size: 16px; }
+  th, td { text-align: left; padding: 14px 16px 14px 0; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.45; }
+  th { font: 600 13px/1 var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); padding-bottom: 12px; border-bottom: 1px solid var(--ink); }
+  td:first-child { font-weight: 700; width: 220px; }
+  td .bad { color: var(--brand-dark); font-weight: 600; }
+  .foot { margin-top: 28px; font: 400 13px/1.5 var(--mono); color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="page" id="page">
+  <div class="kicker">RentXe · login.md decision #1 · draft for the team</div>
+  <h1>How login works: <em>option A</em> vs <em>option B</em></h1>
+  <p class="lede">Both use Supabase as the Postgres database. They differ in who checks the password and what the browser holds afterwards: a session cookie (A) or a Supabase token (B).</p>
+
+  <section>
+    <div class="head"><span class="tag">Option A</span><h2>Spring Security handles login</h2><span class="rec">Recommended</span></div>
+    <p class="sum">Spring checks the password and keeps a session. The browser only holds a cookie with a random session ID. Supabase is just the database, and its Auth feature stays off.</p>
+    <svg id="a"></svg>
+  </section>
+
+  <section>
+    <div class="head"><span class="tag">Option B</span><h2>The page logs in with Supabase Auth</h2></div>
+    <p class="sum">The page signs users up and logs them in through Supabase's JavaScript library, without Spring. Spring only checks the token on later requests.</p>
+    <svg id="b"></svg>
+  </section>
+
+  <section>
+    <div class="head"><span class="tag">Side by side</span><h2>What each option means for the team</h2></div>
+    <table>
+      <thead><tr><th>Topic</th><th>A · Spring Security session</th><th>B · Supabase Auth on the page</th></tr></thead>
+      <tbody>
+        <tr><td>Who checks the password</td><td>Spring (BCrypt hash in our <code>users</code> table)</td><td>Supabase Auth</td></tr>
+        <tr><td>What the browser holds</td><td><code>HttpOnly</code> cookie with a random session ID. JavaScript can't read it.</td><td>A JWT and a refresh token in <code>localStorage</code>. Any script on the page can read them.</td></tr>
+        <tr><td>Renewing the login</td><td>Automatic: each request resets the 30-minute timer. Remember-me logs the user back in after that.</td><td>Automatic: the Supabase library swaps the refresh token for a new JWT about every hour</td></tr>
+        <tr><td>Log out</td><td>Session deleted on the server, so it stops working at once</td><td><span class="bad">The JWT keeps working until it expires (up to 1 hour)</span></td></tr>
+        <tr><td>Suspending an account</td><td>Check <code>ACTIVE</code> on each request (about 20 lines)</td><td>The same check is needed, or a suspended user keeps access for up to 1 hour</td></tr>
+        <tr><td>Roles and companies</td><td>Created by Spring in one transaction</td><td><span class="bad">Two separate calls. If the second fails, the login has no role. The role must never come from <code>user_metadata</code>, which users can edit themselves.</span></td></tr>
+        <tr><td>Reset and confirmation emails</td><td>We build them with Spring Mail (if reset stays in scope)</td><td>Included. The built-in sender is limited, so real users need our own SMTP server.</td></tr>
+        <tr><td>CSRF protection</td><td>Needed: Spring's token cookie and header</td><td>Not needed, because the token goes in a header</td></tr>
+        <tr><td>Tests (JUnit 5, GitHub Actions)</td><td>Run fully offline against H2</td><td>Spring tests use fake JWTs. Login itself can't be tested without Supabase.</td></tr>
+        <tr><td>Security code we can show (SRS §3.2)</td><td>All of it is in our Spring app</td><td>Mostly inside Supabase. Check with the tutor first.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="foot">Endpoints and rule numbers (LOGIN-n) refer to docs/Milestone1/api/login.md. Not agreed by the team yet.</div>
+</div>
+
+<script>
+const NS = 'http://www.w3.org/2000/svg';
+const C = { brand: '#FF6A3D', brandDark: '#E2532A', tint: '#FFF1EC', ink: '#0E0E0E', muted: '#6B6B6B', line: '#E6E6E6', mid: '#BDBDBD' };
+
+function el(parent, tag, attrs = {}, text) {
+  const n = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+  if (text != null) n.textContent = text;
+  parent.appendChild(n);
+  return n;
+}
+
+/* Draw a sequence diagram. Steps:
+   {sec:'(01) Log in'}                       section divider
+   {from, to, label, sub, back}              arrow (back = dashed reply)
+   {at, text:[...], warn}                    note box centred on a lane
+   {span:[i,j], text:[...], warn}            note box spanning lanes  */
+function seq(svg, lanes, steps) {
+  const W = 1456, gutter = 190, top = 18, headH = 74;
+  const xs = lanes.map((_, i) => gutter + 130 + i * ((W - gutter - 260) / (lanes.length - 1)));
+  const lifeG = el(svg, 'g'), bodyG = el(svg, 'g');
+  let y = top + headH + 34;
+
+  lanes.forEach((l, i) => {
+    const w = 250, bx = xs[i] - w / 2;
+    el(svg, 'rect', { x: bx, y: top, width: w, height: headH, rx: 10, fill: l.dark ? C.ink : '#fff', stroke: C.ink, 'stroke-width': 1.5 });
+    el(svg, 'text', { x: xs[i], y: top + 32, 'text-anchor': 'middle', 'font-size': 19, 'font-weight': 700, fill: l.dark ? '#fff' : C.ink }, l.name);
+    el(svg, 'text', { x: xs[i], y: top + 56, 'text-anchor': 'middle', 'font-size': 13, 'font-family': 'JetBrains Mono, monospace', fill: l.dark ? 'rgba(255,255,255,.7)' : C.muted }, l.sub);
+  });
+
+  const lineH = 21;
+  for (const s of steps) {
+    if (s.sec) {
+      y += 14;
+      el(bodyG, 'line', { x1: 0, x2: W, y1: y, y2: y, stroke: C.line, 'stroke-width': 1 });
+      el(bodyG, 'text', { x: 0, y: y + 28, 'font-size': 14, 'font-weight': 600, 'font-family': 'JetBrains Mono, monospace', fill: C.brandDark, 'letter-spacing': '.04em' }, s.sec.toUpperCase());
+      if (s.hint) s.hint.forEach((h, k) => el(bodyG, 'text', { x: 0, y: y + 52 + k * 19, 'font-size': 14, fill: C.muted }, h));
+      y += 34;
+      continue;
+    }
+    if (s.from != null) {
+      const x1 = xs[s.from], x2 = xs[s.to], dir = Math.sign(x2 - x1);
+      const lines = [s.label].concat(s.sub ? [].concat(s.sub) : []);
+      const labelTop = y;
+      lines.forEach((t, k) => el(bodyG, 'text', {
+        x: (x1 + x2) / 2, y: labelTop + 16 + k * lineH, 'text-anchor': 'middle',
+        'font-size': k === 0 ? 16 : 14, 'font-weight': k === 0 ? 600 : 400,
+        'font-family': k === 0 && s.code !== false ? 'JetBrains Mono, monospace' : 'Plus Jakarta Sans, sans-serif',
+        fill: k === 0 ? C.ink : C.muted, stroke: '#fff', 'stroke-width': 7, 'paint-order': 'stroke', 'stroke-linejoin': 'round' }, t));
+      const ay = labelTop + 16 + (lines.length - 1) * lineH + 14;
+      const col = s.warnLine ? C.brand : C.ink;
+      el(bodyG, 'line', { x1: x1 + dir * 4, x2: x2 - dir * 12, y1: ay, y2: ay, stroke: col, 'stroke-width': 2, 'stroke-dasharray': s.back ? '7 6' : 'none' });
+      el(bodyG, 'path', { d: `M${x2 - dir * 2},${ay} l${-dir * 13},-7 v14 z`, fill: col });
+      y = ay + 26;
+      continue;
+    }
+    if (s.text) {
+      const pad = 14, lh = 21;
+      let x1, x2;
+      if (s.span) { x1 = xs[s.span[0]] - 140; x2 = xs[s.span[1]] + 140; }
+      else { x1 = xs[s.at] - (s.w || 300) / 2; x2 = xs[s.at] + (s.w || 300) / 2; }
+      const h = pad * 2 + s.text.length * lh - 4;
+      el(bodyG, 'rect', { x: x1, y, width: x2 - x1, height: h, rx: 8,
+        fill: s.warn ? C.tint : s.ok ? '#F4F4F4' : '#fff', stroke: s.warn ? C.brand : C.mid, 'stroke-width': s.warn ? 1.5 : 1 });
+      s.text.forEach((t, k) => {
+        const bold = t.startsWith('**');
+        el(bodyG, 'text', { x: s.left ? x1 + 18 : (x1 + x2) / 2, y: y + pad + 15 + k * lh, 'text-anchor': s.left ? 'start' : 'middle',
+          'font-size': 15, 'font-weight': bold ? 700 : 400, fill: s.warn && bold ? C.brandDark : C.ink }, bold ? t.slice(2) : t);
+      });
+      y += h + 22;
+      continue;
+    }
+  }
+  y += 6;
+  lanes.forEach((_, i) => el(lifeG, 'line', { x1: xs[i], x2: xs[i], y1: top + headH, y2: y, stroke: C.mid, 'stroke-width': 1.5, 'stroke-dasharray': '2 5' }));
+  svg.setAttribute('width', W); svg.setAttribute('height', y + 4); svg.setAttribute('viewBox', `0 0 ${W} ${y + 4}`);
+}
+
+/* ---------- Option A ---------- */
+seq(document.getElementById('a'), [
+  { name: 'Browser', sub: 'our page' },
+  { name: 'Spring Boot API', sub: 'Spring Security', dark: true },
+  { name: 'Supabase', sub: 'Postgres only' },
+], [
+  { sec: '(01) Log in', hint: ['Sign-up is the same,', 'plus creating the user', '(and Company) rows.'] },
+  { from: 0, to: 1, label: 'POST /api/v1/auth/login', sub: 'email, password, rememberMe' },
+  { from: 1, to: 2, label: 'SELECT user by email' },
+  { at: 1, w: 330, text: ['Check the BCrypt password hash', 'Check the account is ACTIVE', 'Create session, new session ID'] },
+  { from: 1, to: 0, back: true, label: '200 CurrentUser', sub: 'Set-Cookie: JSESSIONID (+ remember-me if ticked)' },
+
+  { sec: '(02) Every request', hint: ['The browser attaches', 'the cookie by itself.'] },
+  { from: 0, to: 1, label: 'GET /api/v1/bookings', sub: 'Cookie: JSESSIONID=8F3A…' },
+  { at: 1, w: 330, text: ['Look up session → user Minh', 'Still ACTIVE? (our ~20-line check)'] },
+  { from: 1, to: 2, label: 'SELECT bookings' },
+  { from: 1, to: 0, back: true, label: '200 bookings' },
+
+  { sec: '(03) Renew', hint: ['Nothing to build.'] },
+  { span: [0, 1], ok: true, text: ['Each request resets the 30-minute idle timer, automatically.', 'After that, the remember-me cookie logs the user back in (14 days).'] },
+
+  { sec: '(04) Log out / suspend' },
+  { from: 0, to: 1, label: 'POST /api/v1/auth/logout' },
+  { at: 1, w: 330, text: ['Delete the session on the server'] },
+  { from: 1, to: 0, back: true, label: '204', sub: 'cookies cleared' },
+  { span: [0, 1], ok: true, text: ['The old cookie now points at nothing, so the next request gets 401 at once.', 'A suspended user is cut off on their next request by the ACTIVE check.'] },
+]);
+
+/* ---------- Option B ---------- */
+seq(document.getElementById('b'), [
+  { name: 'Browser', sub: 'our page + supabase-js' },
+  { name: 'Supabase Auth', sub: 'Supabase service' },
+  { name: 'Spring Boot API', sub: 'checks tokens', dark: true },
+  { name: 'Supabase', sub: 'Postgres' },
+], [
+  { sec: '(01) Sign up', hint: ['Two calls, so a role', 'and Company only exist', 'if the second succeeds.'] },
+  { from: 0, to: 1, label: 'auth.signUp()', sub: 'email, password' },
+  { from: 1, to: 0, back: true, label: 'JWT + refresh token' },
+  { from: 0, to: 2, label: 'POST /api/v1/profile', sub: 'role COMPANY, companyName · Bearer JWT' },
+  { from: 2, to: 3, label: 'INSERT user row + Company' },
+  { span: [0, 2], warn: true, text: ['**Risk', 'If this second call fails, the account exists in Supabase with no role or Company.', 'The role must be set here by Spring, never read from user_metadata (users can edit it).'] },
+
+  { sec: '(02) Log in', hint: ['Spring is not involved.'] },
+  { from: 0, to: 1, label: 'auth.signInWithPassword()', sub: 'email, password' },
+  { at: 1, w: 300, text: ['Check password, issue tokens'] },
+  { from: 1, to: 0, back: true, label: 'JWT (1 hour) + refresh token', sub: 'kept in localStorage' },
+
+  { sec: '(03) Every request', hint: ['The page adds the', 'token itself.'] },
+  { from: 0, to: 2, label: 'GET /api/v1/bookings', sub: 'Authorization: Bearer eyJhbGci…' },
+  { at: 2, w: 340, text: ['Verify the JWT signature with', "Supabase's public keys", 'Still ACTIVE? (same ~20-line check)'] },
+  { from: 2, to: 3, label: 'SELECT bookings' },
+  { from: 2, to: 0, back: true, label: '200 bookings' },
+
+  { sec: '(04) Renew', hint: ['Done by the', 'Supabase library.'] },
+  { from: 0, to: 1, label: 'refresh token', sub: 'about every hour, automatically' },
+  { from: 1, to: 0, back: true, label: 'new JWT + new refresh token' },
+
+  { sec: '(05) Log out / suspend' },
+  { from: 0, to: 1, label: 'auth.signOut()' },
+  { at: 1, w: 300, text: ['Revoke the refresh token'] },
+  { span: [0, 2], warn: true, text: ['**Gap', 'The JWT the page already holds still works until it expires, up to 1 hour.', 'Only the ACTIVE check in Spring cuts off a suspended user straight away.'] },
+]);
+
+document.fonts.ready.then(() => { document.body.dataset.ready = '1'; });
+</script>
+</body>
+</html>

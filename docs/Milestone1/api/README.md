@@ -11,13 +11,13 @@ Use these files to write SRS §2 (functional requirements), §2.8 (business rule
 | Page | Mockup | Schema | Rules |
 |---|---|---|---|
 | Landing | `assets/mockups/landing-3d/` | [landing.md](landing.md) | LP-1 to LP-25 |
-| Log in and sign up | `assets/mockups/login/` | [login.md](login.md) | LOGIN-1 to LOGIN-24 |
+| Log in and sign up | `assets/mockups/login/` | [login.md](login.md) | LOGIN-1 to LOGIN-32 |
 | Search (customer) | `assets/mockups/search/` | [search.md](search.md) | SR-1 to SR-24 |
 | Vehicle detail (customer) | `assets/mockups/vehicle/` (not committed yet) | [vehicle.md](vehicle.md) | VEH-1 to VEH-35 |
 
 The logo concept sheet (`assets/mockups/logo/`) has no data, so it has no schema.
 
-Static pages with no API, linked from the landing page: `/for-companies`, `/terms` and `/privacy` ([landing.md](landing.md) LP-25). They have no mockup yet, and each needs a simple wireframe for SRS §5.
+Static pages with no API: `/for-companies`, `/terms` and `/privacy`, linked from the landing page ([landing.md](landing.md) LP-25), and `/help`, linked from the login page ([login.md](login.md) LOGIN-31). They have no mockup yet, and each needs a simple wireframe for SRS §5.
 
 ## Endpoint index
 
@@ -35,7 +35,7 @@ Static pages with no API, linked from the landing page: `/for-companies`, `/term
 | `GET /api/v1/vehicles/search` | Search results for a place and dates | 2.3 | Public | [search.md](search.md) |
 | `GET /api/v1/vehicles/search/facets` | Filter options with counts, empty-state suggestions | 2.3 | Public | [search.md](search.md) |
 | `GET /api/v1/vehicles/compare` | Up to 3 vehicles side by side | 2.3 | Public | [search.md](search.md) |
-| `GET /api/v1/bookings/summary` | Active booking count for the nav | 2.4 | `CUSTOMER` | [search.md](search.md) |
+| `GET /api/v1/bookings/summary` | Active booking count for the nav, and where a customer goes after log in (login.md LOGIN-28) | 2.4 | `CUSTOMER` | [search.md](search.md) |
 | `GET /api/v1/vehicles/{id}` | One vehicle, with its company and review summary | 2.2 | Public | [vehicle.md](vehicle.md) |
 | `GET /api/v1/vehicles/{id}/availability` | Booked days for the calendar | 2.2 | Public | [vehicle.md](vehicle.md) |
 | `GET /api/v1/vehicles/{id}/quote` | Price for chosen dates and cover | 2.4 | Public | [vehicle.md](vehicle.md) |
@@ -69,7 +69,7 @@ These parts of the brief have no mockup, so they have no endpoints here. Add a p
 | "Today" | The date in the pick-up place's time zone (`Location.timeZone`), or the searched place's (`Place.timeZone`) when there is no single vehicle. |
 | Searched place | Travels between pages and to the API as `placeId`. The server works out distances from it. |
 | Money | Amounts are decimals with 2 places (`BigDecimal` in Java), for example `68.00`. Every price is in AUD. A response that holds prices also has `"currency": "AUD"`. |
-| Auth | Spring Security session. Log in sets an `HttpOnly` session cookie. "Keep me logged in" adds a remember-me cookie. Endpoints marked **Public** need no session. For `/api/**`, an unauthenticated call gets `401`, not a redirect to a login form. |
+| Auth | Not decided yet: see team decision 10. The docs are written for option A, a Spring Security session. Log in sets an `HttpOnly` session cookie. "Keep me logged in" adds a remember-me cookie. Endpoints marked **Public** need no session. For `/api/**`, an unauthenticated call gets `401`, not a redirect to a login form. |
 | CSRF | Proposal: keep Spring's CSRF protection with a readable `XSRF-TOKEN` cookie; the page sends it back in the `X-XSRF-TOKEN` header. See [login.md](login.md) open question 5. |
 | Roles | `CUSTOMER`, `COMPANY`, `ADMIN`. An endpoint lists the roles allowed to call it. |
 | Lists | Spring Data paging: `?page=0&size=20&sort=price,asc`. The response is `{ "content": [...], "page": { "size", "number", "totalElements", "totalPages" } }`. |
@@ -109,7 +109,7 @@ Every page supports a light and a dark theme. It needs no API.
 | Topic | Rule |
 |---|---|
 | Default | Follows the visitor's system setting (`prefers-color-scheme`). |
-| Toggle | System, Light and Dark, in the header: next to **Log in** when logged out, next to the account menu when logged in (assumption). |
+| Toggle | System, Light and Dark, at the top right of every page: next to **Log in** when logged out, next to the account menu when logged in. The login page has neither, so it sits at the right end of its top row ([login.md](login.md) Q13). |
 | Saved | In the browser's `localStorage`, key `rentxe-theme`, value `system`, `light` or `dark`. It holds on every page and after a reload, but not across browsers or devices. No User field, no endpoint. |
 | First paint | A small script in `<head>` reads the saved value before the page draws, so the page never flashes the wrong theme. |
 | Not themed | The landing page's 3D hero scene. Its sky follows the visitor's clock ([landing.md](landing.md) LP-19, LP-22). |
@@ -125,9 +125,9 @@ The page files use these models and do not redefine them. Fields marked _derived
 | Field | Type | Notes |
 |---|---|---|
 | `id` | long | |
-| `fullName` | string | For a `COMPANY` account, the company name given at sign-up |
+| `fullName` | string | For a `COMPANY` account, the person who registered the company |
 | `email` | string | Unique, stored in lower case |
-| `role` | enum | `CUSTOMER`, `COMPANY`, `ADMIN` |
+| `role` | enum | `CUSTOMER`, `COMPANY`, `ADMIN`. One role per account, set at sign-up (LOGIN-4). |
 | `status` | enum | `ACTIVE`, `SUSPENDED`. Admins can suspend accounts. |
 | `companyId` | long \| null | Set when `role` is `COMPANY` |
 | `createdAt` | timestamp | |
@@ -147,8 +147,9 @@ _server only_. `id`, `userId`, `tokenHash`, `expiresAt`, `usedAt` (timestamp \| 
 | Field | Type | Notes |
 |---|---|---|
 | `id` | long | |
-| `name` | string | |
-| `verified` | boolean | `false` when created at sign-up. Set by an admin. |
+| `name` | string | Unique, ignoring case and extra spaces (login.md LOGIN-11) |
+| `phone` | string | Contact number from sign-up, digits only (LOGIN-25). Returned only to the company itself and to admins, never in public responses. |
+| `verified` | boolean | `false` when created at sign-up. Set by an admin. The company is live (its vehicles are public) only when `verified` and its account is `ACTIVE` (login.md LOGIN-26). |
 | `rating` | decimal \| null | _derived_: average review rating, 1 decimal place. `null` with no reviews. |
 | `reviewCount` | int | _derived_ |
 | `createdAt` | timestamp | "On RentXe since 2021" |
@@ -268,8 +269,9 @@ The four files agree on each default below. Change one, and change every rule it
 | 2 | Can a rental start today? | No. The earliest pick-up is tomorrow, because the company must approve first. The landing review ("picked it up the same afternoon") and the vehicle calendar (lets you click today) need changing to match. | LP-3, SR-4, VEH-3 |
 | 3 | Is the return day free for the next pick-up? | No. A booking blocks both its start and end days, as the vehicle mockup's calendar shows. | SR-7, VEH-6, VEH-7 |
 | 4 | "Only 2 left": is one Vehicle row one physical vehicle? | Yes, so the label has nothing to count. search.md shows option A (`Vehicle.units`) because the mockup does; option B drops the label. | SR-8, search.md Q1, vehicle.md Q12 |
-| 5 | Which companies appear in search? | Only `verified` ones. Company has no suspended status yet. | SR-2, login.md Q2, search.md Q5 |
+| 5 | Which companies appear in search? | Decided: only live companies, meaning `verified` by an admin with an `ACTIVE` account. Unverified companies can set up their profile and vehicles while hidden. An admin rejects or removes a company by suspending its account, so Company has no status of its own. | SR-2, VEH-35, LOGIN-26, LOGIN-27, login.md Q2, search.md Q5 |
 | 6 | One rating per review, or one for the vehicle and one for the company? | Decided: one `rating` for the vehicle and the service together. The landing copy will be reworded. | landing.md Q3 |
 | 7 | One cancellation rule for everyone, or one per company? | Decided: one rule for everyone. Free until 24 hours before pick-up, then 50% of `totalPrice`. The landing copy will be reworded. | VEH-22, VEH-23, landing.md Q4 |
 | 8 | Can logged-out visitors use search and vehicle pages? | The read endpoints are Public; sending a booking needs a `CUSTOMER` login. No logged-out nav is mocked up. | search.md Q6, vehicle.md Q16 |
 | 9 | Is payment in scope? | No. RentXe records amounts; the page says "You won't be charged until the company approves". | vehicle.md Q8 |
+| 10 | How does login work? | Open, not decided. Both options keep Supabase as the database. A: Spring Security sessions with an `HttpOnly` cookie (recommended; the docs are written for it). B: the page logs in with Supabase Auth and Spring checks the JWT. See [the options](../decisions/login-auth-approach.md) and [the diagram](../architecture/auth-flows.html). | Every `/auth/*` endpoint, LOGIN-12 and LOGIN-15 to LOGIN-24, login.md Q4, Q5, Q8, Q9, Q16 |

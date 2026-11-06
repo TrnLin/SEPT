@@ -7,6 +7,7 @@ One page to log in, sign up as a renter or a rental company, and ask for a passw
 | Mockup | `assets/mockups/login/index.html` |
 | SRS area | 2.1 User and Profile Management |
 | Owns | Every endpoint under `/api/v1/auth/*` |
+| Auth approach | **Not decided** (Q16). This file is written for option A, Spring Security sessions. Option B, Supabase Auth on the page, would change the cookies, log out, reset password and CSRF parts. |
 
 ## Page states
 
@@ -18,6 +19,7 @@ One page to log in, sign up as a renter or a rental company, and ask for a passw
 | `login/?view=signup&as=company` | Sign up | Rental company | List your fleet. | Register company |
 
 - Any other `view` value means log in. Any other `as` value means renter.
+- Any state can also carry `next`, the page to return to after success, for example `login/?next=%2Fvehicles%2F68%3Fstart%3D2026-12-11%26end%3D2026-12-14` (LOGIN-29). Switching the view or account type keeps it.
 - Switching the view or account type rewrites the URL without a reload.
 - The landing page links to all four states. The customer nav's "Log out" link ends here too.
 - Other states: field errors (shown on submit, then updated as the user types), a busy button ("Logging in…", "Creating account…"), and a toast.
@@ -29,38 +31,44 @@ One page to log in, sign up as a renter or a rental company, and ask for a passw
 |---|---|---|
 | Side panel statement and booking tracker | Both | Static copy that changes with the account type. No data. |
 | Renter / Rental company toggle | Both | URL `as`. Sign up: picks the endpoint (`register/customer` or `register/company`). Log in: changes the copy only and sends nothing (LOGIN-13). |
-| Full name / Company name | Sign up | Renter: `fullName` on `POST /api/v1/auth/register/customer`. Company: `companyName` on `POST /api/v1/auth/register/company`. |
+| Full name | Sign up, renter | `fullName` on `POST /api/v1/auth/register/customer` |
+| Company name, Your name, Phone | Sign up, company | `companyName`, `fullName` and `phone` on `POST /api/v1/auth/register/company`. The mockup has only Company name so far; Your name and Phone are to be added (Q1). |
 | Email | Both | `email` on log in and both register endpoints |
 | Password, Show / Hide | Both | `password`. Show / Hide is client-only. |
 | "At least 8 characters." | Sign up | Static hint for LOGIN-5 |
 | Keep me logged in (ticked by default) | Log in | `rememberMe` on `POST /api/v1/auth/login` |
 | Forgot password? | Log in | `POST /api/v1/auth/forgot-password` with the Email field's value |
 | I agree to the Terms and Privacy policy | Sign up | `acceptTerms` on both register endpoints |
-| Terms, Privacy, Help links | Both | Static pages, no API |
+| Terms, Privacy, Help links | Both | Static pages, no API. Terms and Privacy go to `/terms` and `/privacy` (landing LP-25); Help goes to `/help` (LOGIN-31). |
 | "Admins log in here too." | Both | Static |
+| Theme toggle (decided 2026-11-06, not in the mockup) | Both | Icon button at the right end of the top row, after the Sign up / Log in switch. It cycles System, Light and Dark and is saved in `localStorage` (README, Theme). No API. |
 | After success | Both | Redirect by `role` in the response (table below) |
-| Page load (assumption, not in the mockup) | Both | `GET /api/v1/auth/me`. `200`: already logged in, so redirect by role. `401`: show the form. |
+| Page load (decided 2026-11-06, not in the mockup) | Both | `GET /api/v1/auth/me`. `200`: already logged in, so the user is sent on as after a log in (LOGIN-30). `401`: show the form. |
 
-Where server errors appear. The mockup only has per-field error slots and a toast, so this mapping is an assumption:
+Where server errors appear (decided 2026-11-06, LOGIN-32). Errors about one field go under that field; everything else goes in an error banner at the top of the form, under the heading. The mockup has the field slots but no banner yet:
 
 | Server error | Shown |
 |---|---|
-| `errors[].field` is `fullName` or `companyName` | Under Full name / Company name |
+| `errors[].field` is `fullName`, `companyName` or `phone` | Under that field |
 | `errors[].field` is `email`, `password` or `acceptTerms` | Under that field or the checkbox |
-| `401`, `403` or `429` from log in | `detail` under Password |
-| Network error or `5xx` | Toast: "Something went wrong. Try again." |
+| `401` from log in | Banner: `detail` ("Email or password is incorrect"). The email stays filled in; the password is cleared and gets the focus. |
+| `403` from log in | Banner: `detail` ("This account is suspended. Contact RentXe support.") with a link to `/help` |
+| `429` from log in | Banner: `detail` ("Too many attempts. Try again in 15 minutes."), the time taken from `Retry-After` |
+| Network error or `5xx` | Banner: "Something went wrong. Try again." |
 
-Where the user goes after log in or sign up:
+Where the user goes after log in or sign up. A customer with a valid `next` goes there instead (LOGIN-29):
 
 | `role` | Goes to | Source |
 |---|---|---|
-| `CUSTOMER` | My bookings | Mockup toast: "this would open your bookings" |
+| `CUSTOMER` | After sign-up: Search. After log in: My bookings when the customer has an active booking (`activeCount` > 0), otherwise Search (LOGIN-28). | Decided 2026-11-06 (Q3). The mockup's toast still says "this would open your bookings" for both. |
 | `COMPANY` | Company dashboard | Mockup toast: "this would open the rental company dashboard" |
 | `ADMIN` | Admin dashboard | Assumption. The mockup only says admins log in here. |
 
 None of these pages has a mockup yet.
 
 ## Endpoints
+
+Written for option A (Spring Security sessions). The auth approach is still open (Q16).
 
 | Method | Path | Access | Success |
 |---|---|---|---|
@@ -74,7 +82,7 @@ None of these pages has a mockup yet.
 
 All are in SRS 2.1. CurrentUser is defined under [`GET /api/v1/auth/me`](#get-apiv1authme).
 
-**Two register endpoints, not one with a role field.** The server sets the role from the path. A client can never ask for `ADMIN`, and there is no role value to validate or reject. Each request body is a plain DTO with Bean Validation annotations, so no field is "required only when role is X". Company sign-up will likely gain fields (see Open questions) without touching customer sign-up. The page already knows which one to call from the toggle.
+**Two register endpoints, not one with a role field.** The server sets the role from the path. A client can never ask for `ADMIN`, and there is no role value to validate or reject. Each request body is a plain DTO with Bean Validation annotations, so no field is "required only when role is X". Company sign-up has fields that customer sign-up doesn't (`companyName`, `phone`). The page already knows which one to call from the toggle.
 
 **No "is this email taken" endpoint.** The mockup checks fields on submit, not as the user types. A public check would let anyone test which emails have accounts. The register endpoints return `409` on `email` instead.
 
@@ -164,7 +172,9 @@ Creates a `COMPANY` account and its Company, then logs the account in.
 
 | Name | Type | Required | Rules |
 |---|---|---|---|
-| `companyName` | string | yes | Trimmed. 1 to 100 characters (LOGIN-7). Unique, ignoring case (LOGIN-11, assumption). |
+| `companyName` | string | yes | Trimmed. 1 to 100 characters (LOGIN-7). Unique, ignoring case and extra spaces (LOGIN-11). |
+| `fullName` | string | yes | The person registering the company. As for customer sign-up (LOGIN-7). |
+| `phone` | string | yes | The company's contact number. 8 to 15 digits (LOGIN-25). Stored on the Company. |
 | `email` | string | yes | As for customer sign-up |
 | `password` | string | yes | As for customer sign-up |
 | `acceptTerms` | boolean | yes | Must be `true` |
@@ -175,6 +185,8 @@ Content-Type: application/json
 
 {
   "companyName": "Saigon Wheels Co.",
+  "fullName": "Lan Nguyen",
+  "phone": "0412 345 678",
   "email": "hello@saigonwheels.example",
   "password": "fleet-district1",
   "acceptTerms": true
@@ -186,7 +198,7 @@ Content-Type: application/json
 ```json
 {
   "id": 57,
-  "fullName": "Saigon Wheels Co.",
+  "fullName": "Lan Nguyen",
   "email": "hello@saigonwheels.example",
   "role": "COMPANY",
   "status": "ACTIVE",
@@ -195,6 +207,7 @@ Content-Type: application/json
   "company": {
     "id": 7,
     "name": "Saigon Wheels Co.",
+    "phone": "0412345678",
     "verified": false,
     "rating": null,
     "reviewCount": 0
@@ -206,13 +219,14 @@ Content-Type: application/json
 
 | Status | When |
 |---|---|
-| `400` | A field breaks a rule |
+| `400` | A field breaks a rule. One `errors` entry per field. |
 | `409` | The email is used (`errors[].field` = `email`), or the company name is taken (`companyName`). Both are listed if both clash. |
 
 Notes:
 - Creates one User and one Company in one transaction (LOGIN-10). The Company starts with `verified: false`.
-- The mockup asks only for the company name. The User's `fullName` is set to the company name, because there is no person's name to store (see Changes to shared models).
-- The customer and company bodies differ only in `fullName` vs `companyName`. Keep them separate so each name matches what it stores.
+- `fullName` is the person who fills in the form, for example a manager. It goes on the User (the login), so the account menu shows a person: "LN · Lan · Company account". `companyName` and `phone` go on the Company.
+- The admin sees the company name, the person's name and the phone number before verifying the company, and can phone them to check.
+- One login per company. Separate logins for several staff are not in the MVP. The model allows it later, because each User points to its Company through `companyId`.
 
 ### POST /api/v1/auth/login
 
@@ -453,9 +467,13 @@ Notes:
 
 ## Endpoints used from other pages
 
-None. The pages users reach after log in (My bookings, company dashboard, admin dashboard) load their own data.
+| Endpoint | Defined in | When |
+|---|---|---|
+| `GET /api/v1/bookings/summary` | [search.md](search.md) | Right after a `CUSTOMER` logs in, to choose between My bookings and Search (LOGIN-28). Not called after sign-up, or when a valid `next` is given. |
 
-The admin endpoint that suspends an account belongs to the admin page, which is not written yet. LOGIN-15 and LOGIN-16 say what a suspension does to log in.
+The pages users reach after log in (My bookings, Search, company dashboard, admin dashboard) load their own data.
+
+The admin endpoints that verify a company and suspend an account belong to the admin page, which is not written yet. LOGIN-15 and LOGIN-16 say what a suspension does to log in. LOGIN-26 and LOGIN-27 say what verifying and rejecting a company do.
 
 ## Validation and business rules
 
@@ -466,16 +484,16 @@ The mockup gives only "required", the email format and "at least 8 characters". 
 | LOGIN-1 | The server applies every rule below even when the page has already checked it. A sign-up sent straight to the API with a 7-character password gets `400`. | 2.1, 3.2 |
 | LOGIN-2 | Email is trimmed and lower-cased before it is stored or looked up. After signing up as `Minh.Tran@example.com`, logging in as `minh.tran@example.com` succeeds. | 2.1 |
 | LOGIN-3 | Email must match `^[^\s@]+@[^\s@]+\.[^\s@]+$` (the page's own check) and be at most 254 characters. Otherwise `400` on `email`. | 2.1 |
-| LOGIN-4 | An email can belong to only one account, whatever the role. Signing up with a used email returns `409` on `email` and creates nothing. | 2.1 |
-| LOGIN-5 | A password set at sign-up or reset has 8 to 72 characters and at most 72 bytes in UTF-8 (the BCrypt limit). It is not trimmed. A 7-character password gets `400` "must be at least 8 characters". | 2.1, 3.2 |
+| LOGIN-4 | An email can belong to only one account, whatever the role. Signing up with a used email returns `409` on `email` and creates nothing. Each account has exactly one role, set at sign-up; no endpoint changes it. Someone who rents and also runs a company uses two accounts with two emails (decided 2026-11-06). | 2.1 |
+| LOGIN-5 | A password set at sign-up or reset has 8 to 72 characters and at most 72 bytes in UTF-8 (the BCrypt limit). It is not trimmed. There are no other rules: no required upper case, digits or symbols, and no common-password list (decided 2026-11-06). A 7-character password gets `400` "must be at least 8 characters". | 2.1, 3.2 |
 | LOGIN-6 | Passwords are stored only as BCrypt hashes. No response ever contains a password or a hash. | 3.2 |
-| LOGIN-7 | `fullName` and `companyName` are trimmed and must be 1 to 100 characters. A name of only spaces gets `400`. | 2.1 |
+| LOGIN-7 | Both sign-ups need `fullName`; company sign-up also needs `companyName`. Each is trimmed and must be 1 to 100 characters. A name of only spaces gets `400`. | 2.1 |
 | LOGIN-8 | Sign-up needs `acceptTerms: true`. If it is `false` or missing, the response is `400` on `acceptTerms` and nothing is created. The time of acceptance is stored. | 2.1 |
-| LOGIN-9 | Sign-up creates only `CUSTOMER` or `COMPANY` accounts, and the endpoint sets the role. No API request can create an `ADMIN`. Admin accounts are seeded when the app starts (assumption). | 2.1, 3.2 |
+| LOGIN-9 | Sign-up creates only `CUSTOMER` or `COMPANY` accounts, and the endpoint sets the role. No API request can create an `ADMIN`. In the MVP there is exactly one admin, seeded when the app starts: if no `ADMIN` account exists, Spring creates one from the settings `RENTXE_ADMIN_EMAIL`, `RENTXE_ADMIN_PASSWORD` and `RENTXE_ADMIN_NAME` (default "RentXe Admin"). The password must meet LOGIN-5. If an admin already exists, nothing changes, even if the settings do. If the settings are missing, no admin is created and a warning is logged. The password is never in the code or the repository; the dev and test profiles may seed a known admin for demos and tests, production never does. | 2.1, 3.2 |
 | LOGIN-10 | Company sign-up creates one `ACTIVE` User with role `COMPANY` and one Company with `verified: false`, linked by `companyId`, in one transaction. If either fails, neither is saved. | 2.1, 2.8 |
-| LOGIN-11 | Assumption: company names are unique, ignoring case. Registering "saigon wheels co." when "Saigon Wheels Co." exists returns `409` on `companyName`. | 2.1 |
+| LOGIN-11 | Company names are unique. Two names clash if they match after trimming, turning runs of spaces into one, and ignoring case: registering "saigon  wheels co." when "Saigon Wheels Co." exists returns `409` on `companyName` with "A company with this name is already registered." The name is stored as typed (trimmed). Suspended companies keep their name, so it can't be reused to borrow their reviews. The same rule applies when a company renames itself later. The database enforces it with a unique index on the normalised name (decided 2026-11-06). | 2.1 |
 | LOGIN-12 | A successful sign-up logs the new user in with a session cookie and no remember-me cookie. | 2.1 |
-| LOGIN-13 | Log in ignores the Renter / Rental company toggle. The account's role decides where the user goes: `CUSTOMER` to My bookings, `COMPANY` to the company dashboard, `ADMIN` to the admin dashboard. A company logging in with "Renter" selected still reaches the company dashboard. | 2.1 |
+| LOGIN-13 | Log in ignores the Renter / Rental company toggle. The account's role decides where the user goes: `CUSTOMER` as in LOGIN-28, `COMPANY` to the company dashboard, `ADMIN` to the admin dashboard. A company logging in with "Renter" selected still reaches the company dashboard. | 2.1 |
 | LOGIN-14 | A wrong password and an unknown email return the same `401` status and body. | 3.2 |
 | LOGIN-15 | A `SUSPENDED` account cannot log in. With the correct password the response is `403` "suspended". With a wrong password it is the plain `401` from LOGIN-14. No session is created in either case. | 2.1, 2.8 |
 | LOGIN-16 | Once an account is suspended, its open sessions and remember-me cookies stop working. Its next request that needs a session gets `401`. | 2.1, 2.8 |
@@ -487,6 +505,14 @@ The mockup gives only "required", the email format and "at least 8 characters". 
 | LOGIN-22 | After a reset, the old password fails and the new one works. The token cannot be used again, remember-me cookies issued before the reset stop working, and the reset does not log the user in. | 2.1, 3.2 |
 | LOGIN-23 | Proposal: after 5 failed log ins for one email from one IP address within 15 minutes, log in for that email and IP returns `429` with `Retry-After` for 15 minutes, even with the correct password. The same applies to emails that have no account. | 3.2 |
 | LOGIN-24 | Proposal: at most 3 reset emails per address per hour. Further requests still return `204` but send nothing. | 3.2 |
+| LOGIN-25 | Company sign-up needs `phone`. It may contain digits, spaces, brackets, dashes and a leading `+`. With those removed it must have 8 to 15 digits, otherwise `400` on `phone`. It is stored without spaces, brackets or dashes: `0412 345 678` is stored as `0412345678`. | 2.1 |
+| LOGIN-26 | A company is **live** when its Company is `verified` and its account is `ACTIVE`. Only an admin can set `verified`. Before that, the company can log in, edit its profile and add vehicles, but its vehicles are not live: they are left out of search, return `404` from public vehicle endpoints (the company itself and admins can still read them) and cannot be requested. While `verified` is `false`, its dashboard says "Waiting for verification. Your vehicles go live once an admin approves you." Once an admin verifies it, all its listed vehicles go live with no further step. | 2.1, 2.8 |
+| LOGIN-27 | There is no "rejected" state. To reject a company, an admin suspends its account. LOGIN-15 and LOGIN-16 then apply, and its vehicles leave search because the company is no longer live. The same happens when an admin suspends a company that is already verified. | 2.1, 2.8 |
+| LOGIN-28 | Where a `CUSTOMER` goes after success. Sign-up: always Search. Log in: the page calls `GET /api/v1/bookings/summary`; with `activeCount` above 0 (a `REQUESTED`, `APPROVED` or `PICKED_UP` booking, SR-24) it goes to My bookings, and with 0 it goes to Search. A customer whose bookings are all returned or cancelled therefore lands on Search. If the summary call fails, it goes to Search. A valid `next` wins over both (LOGIN-29). | 2.1 |
+| LOGIN-29 | Pages that send a logged-out user to log in add `next`, the path they were on, including its query: "Request to book" on the vehicle page, and any logged-in page whose API call returns `401` because the session ended. After a successful log in or sign-up, a `CUSTOMER` goes to `next` instead of the LOGIN-28 page; `COMPANY` and `ADMIN` ignore it and go to their dashboard. The same applies when an already logged-in customer opens the login page with `next`. `next` is used only if it is a path on our own site: it starts with one `/`, not `//` or `/\`, has no scheme or host, and is not the login page itself. Otherwise it is ignored and LOGIN-28 applies, with no error shown. Example: `next=https://evil.example` and `next=//evil.example` are ignored; `next=/vehicles/68?start=2026-12-11&end=2026-12-14` returns to that vehicle with the dates filled in. Returning never sends a booking request by itself; the customer clicks again. The check runs in the page; no endpoint takes `next`. | 2.1, 3.2 |
+| LOGIN-30 | When the login page loads, it calls `GET /api/v1/auth/me` before showing the form. On `200` the user is already logged in: the page sends them where a fresh log in would (LOGIN-13, LOGIN-28, LOGIN-29) and never shows the form. On `401`, or if the call fails, it shows the form. Example: a logged-in customer with an approved booking who opens `/login` lands on My bookings; with `?next=/vehicles/68` they land on that vehicle. To switch accounts, a user logs out first from the account menu. | 2.1 |
+| LOGIN-31 | Help links to `/help`, a static FAQ page with no API, for every visitor rather than for companies. Sections: **Your account** (signing up, forgot password, Keep me logged in, one role per email, so renting and running a company need two emails); **Renting** (request, the company approves, pick-up, return, review; the earliest pick-up is tomorrow; free cancellation until 24 h before pick-up, then 50%; RentXe takes no payment; bring your licence, the company checks it at pick-up); **Contact** (the support email from Contact us). Company questions get one line only: "Run a rental company? See how it works" linking to `/for-companies`. The answers must match the rules they describe, so update them when a rule changes. Needs a simple wireframe (decided 2026-11-06). | 5 |
+| LOGIN-32 | Errors about one field (`400`, `409`) show under that field. Errors that aren't about one field (`401`, `403`, `429`, network errors and `5xx`) show in a single error banner at the top of the form, under the heading, with `role="alert"` so screen readers announce it. The banner stays until the user edits a field or submits again, and a new error replaces the old one. A `401` keeps the email, clears the password and moves the focus to it. Errors never use the toast; the toast is only for notices (decided 2026-11-06). | 3.3 |
 
 ## Changes to shared models
 
@@ -495,7 +521,8 @@ Merged into the README on 2026-11-06. Kept here as the reason for each change.
 | Model | Change | Why |
 |---|---|---|
 | User | Add `termsAcceptedAt` (timestamp). Set at sign-up. Stored but never returned, like the password hash. `null` for seeded admins. | Record of consent (LOGIN-8) |
-| User | Note on `fullName`: for `COMPANY` accounts it holds the company name at sign-up. | Company sign-up asks for no person's name |
+| User | Note on `fullName`: for `COMPANY` accounts it is the person who registered the company. | Q1: company sign-up asks for the person's name |
+| Company | Add `phone` (string). Set at sign-up. Returned only to the company itself (in CurrentUser) and to admins, never in public responses such as search or the vehicle page. | Q1: the admin needs a way to contact the company before verifying it (LOGIN-25) |
 | Company | Note on `verified`: `false` when created at sign-up | LOGIN-10 |
 | New: CurrentUser | All User fields plus `company` (Company \| null, set when `role` is `COMPANY`) | Returned by log in, both register endpoints and `/auth/me`. Every logged-in nav uses it. |
 | New, server-only: PasswordResetToken | `id`, `userId`, `tokenHash`, `expiresAt`, `usedAt` (timestamp \| null), `createdAt`. Never returned. | LOGIN-21. Needed for the ER diagram. |
@@ -511,12 +538,19 @@ Changes to the README conventions:
 
 ## Open questions
 
-1. **Company sign-up details.** The mockup asks only for the company name, email and password. What does an admin check before verifying a company? If the answer is an ABN or Vietnamese tax code, phone, address or a contact person's name, add those fields to `register/company` and the Company model.
-2. **Unverified companies.** What can a company do before an admin verifies it? Proposal: log in and add vehicles, but its vehicles don't appear in search until it is verified. This affects `search.md`.
-3. **Where new customers land.** The mockup sends renters to My bookings after both log in and sign up. A new customer has no bookings. Should sign-up go to Search instead?
+1. **Company sign-up details.** Resolved 2026-11-06 ([decision](../decisions/company-signup-contact-person.md)): company sign-up also asks for the name of the person registering (`fullName`, on the User) and a phone number (`phone`, on the Company). The admin can phone them before verifying. ABN and business address are left out of sign-up; the company profile page can ask for them later. Mockup to-do: add "Your name" and "Phone" to the company sign-up form.
+2. **Unverified companies.** Resolved 2026-11-06 ([decision](../decisions/unverified-company-setup-hidden.md)): an unverified company can log in, edit its profile and add vehicles, but nothing is public until an admin verifies it (LOGIN-26). An admin rejects a company by suspending its account; there is no "rejected" state (LOGIN-27). The admin page still needs a list of companies waiting for approval and a verify endpoint, and seed data should start the demo companies as verified.
+3. **Where new customers land.** Resolved 2026-11-06 ([decision](../decisions/customer-landing-after-login.md)): sign-up goes to Search. Log in goes to My bookings only when the customer has an active booking, otherwise to Search (LOGIN-28). Mockup to-do: the toast after sign-up should say Search.
 4. **Forgot and reset views.** The mockup has no screen to type an email for a reset, or to set a new password. Add `?view=forgot` and `?view=reset&token=…` to the log in mockup and wireframes. Also choose how email is sent: Spring Mail with SMTP is the simplest. In development, log the link instead of sending it.
 5. **CSRF.** The README doesn't cover it, and Spring Security turns it on for session logins. Either (a) use `CookieCsrfTokenRepository.withHttpOnlyFalse()`, have the page send the `X-XSRF-TOKEN` header, and add `GET /api/v1/auth/csrf` (Public, `204`, sets `XSRF-TOKEN`) so the page can get a token before its first `POST`; or (b) turn CSRF off for `/api/**` and rely on `SameSite=Lax` cookies. Option (a) is safer.
 6. **Nav booking count.** Resolved: the count stays out of `/me`. The nav reads `activeCount` from `GET /api/v1/bookings/summary` (search.md).
-7. **Return to the previous page.** Should log in send the user back to where they were, for example a vehicle they tried to book while logged out (`?next=`)? The mockup doesn't show this.
+7. **Return to the previous page.** Resolved 2026-11-06 ([decision](../decisions/return-to-page-after-login.md)): yes, with `?next=` (LOGIN-29). Customers only, after log in and sign-up, and only to a page on our own site.
 8. **Throttling.** Do LOGIN-23 and LOGIN-24 go in the SRS (§3.2), and are the numbers right?
 9. **Email verification.** New accounts can use the site straight away. Should they confirm their email first? It isn't in the mockup, so the proposal is no, at least for the MVP.
+10. **Admin accounts.** Resolved 2026-11-06 ([decision](../decisions/one-seeded-admin.md)): one admin, seeded at start-up from settings (LOGIN-9). Later, not in the MVP: the seeded admin can make other accounts admins. That feature has its own questions, listed in the decision file.
+11. **Several roles on one account.** Resolved 2026-11-06 ([decision](../decisions/one-role-per-account.md)): no, one role per account (LOGIN-4). A customer who also runs a company uses two accounts. Customer and company on one account, with a view switcher, is a possible later feature; admin always stays a separate account.
+12. **Unique company names.** Resolved 2026-11-06 ([decision](../decisions/unique-company-names.md)): yes, ignoring case and extra spaces, including suspended companies and later renames (LOGIN-11).
+13. **Theme toggle and dark styles.** Resolved 2026-11-06 ([decision](../decisions/light-dark-theme.md)): the toggle goes at the right end of the top row, the same top-right spot as on other pages; on small screens it stays there after the logo and Back to home. Mockup to-do, dark styles: the side panel uses `--theme-band` with a `--theme-line` edge; the form, inputs and muted text use the `--theme-*` colours; the selected Renter / Company button turns white with black text; the orange submit button and the logo don't change.
+14. **Help link.** Resolved 2026-11-06 ([decision](../decisions/static-help-page.md)): a static `/help` FAQ page for every visitor, about accounts and renting, with one line pointing companies to `/for-companies` (LOGIN-31). Mockup to-do: point Help at `/help` and add a wireframe for the page.
+15. **Where server errors show.** Resolved 2026-11-06 ([decision](../decisions/form-error-banner.md)): field errors under the field; `401`, `403`, `429`, network errors and `5xx` in an error banner at the top of the form (LOGIN-32). Mockup to-do: add the banner, and stop using the toast for errors.
+16. **Auth approach: open, not decided.** Kept open on 2026-11-06 for the team to choose ([options](../decisions/login-auth-approach.md), [diagram](../architecture/auth-flows.html), [PNG](../architecture/auth-flows-a-vs-b.png)). Both options keep Supabase as the Postgres database. **A, Spring Security sessions (recommended):** Spring checks the password (BCrypt, our `users` table) and keeps a server session; the browser holds only an `HttpOnly` `JSESSIONID` cookie, plus remember-me. This file is written for A. **B, Supabase Auth on the page:** the page signs up and logs in with Supabase's JavaScript library; Spring checks the Supabase JWT on each request against Supabase's public keys. Q4 (reset emails), Q5 (CSRF), Q8 (throttling), Q9 (email confirmation) and session length (LOGIN-17) wait on this choice.
